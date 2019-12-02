@@ -33,22 +33,31 @@ Our storage or "node" software will interact with the underlying operating syste
 
 Provides an overview of the business organization sponsoring the development of this system / product or in which the system / product will / could be deployed. Note - may not be applicable to all projects
 
-Since the project involves dealing with a network of computers, we will need to rent a network like that for testing purposes. 
+To test our project in real life, we will need to use our own computers and rent servers in order to create our private cloud storage platform.
 
-As students we can use AWS, Google Cloud, or Microsoft Azure servers.
+As students we can use various cloud computing services for free. GCP free tier always lets us create a compute engine instance (Windows/Linux VM). Azure provides free Linux and Windows VM's for the first twelve months, similarly to AWS.
 
+Similar products have been created before. However, our unique USP is that we will provide software.
 
 ### 1.3 Glossary
 
 Define and technical terms used in this document. Only include those with which the reader may not be familiar.
 
-**Storage Cloud** - user-controlled private network of computers, that stores data using our software.
+**Cloud storage platform** - storing data on a network of computers accessible via the Internet.
 
-**Node** - any computer system capable of participating in the storage cloud. Including but not limited to virtual machines, servers, PC's.
+**Node** - any computer system capable of participating in a cloud storage platform. Including but not limited to virtual machines, servers, PC's.
+
+**VM** - virtual machine.
+
+**GCP** - Google Cloud Platform, paid and free cloud services by Google.
+
+**AWS** - Amazon Web Services, cloud services by Amazon.
+
+**Azure** - Microsoft Azure, cloud services by Microsoft.
 
 **Go** - modern C-like general-purpose programming language.
 
-**React Native** - framework for building hybrid mobile applications using JavaScript.
+**React Native** - framework for building hybrid (Android and iOS) mobile applications using JavaScript.
 
 
 ## 2. General Description
@@ -59,10 +68,51 @@ Define and technical terms used in this document. Only include those with which 
 
 Describes the general functionality of the system / product.
 
+The product comes in two parts
+	* The "node".
+	* The "client".
+	
+The "node" software turns the current machine into a participant of the cloud storage platform. It is like a daemon.
+
+The "client" software allows the "end user" to access the data stored on the cloud storage platform uniformly and easily through a UI.
+
+The "client" will be many different things - a desktop program with a GUI, a website hosted or ran locally, and a mobile application.
+
 
 ### 2.2 User Characteristics and Objectives
 
 Describes the features of the user community, including their expected expertise with software systems and the application domain. Explain the objectives and requirements for the system from the user's perspective. It may include a "wish list" of desirable characteristics, along with more feasible solutions that are in line with the business objectives.
+
+We can identify two user groups (which may overlap):
+1. Systems Administrator - sets up nodes to create a cloud storage platform.
+2. Non-technical or end user - acesses the cloud storage platform through a client.
+
+The Systems Administrator
+
+Should be able to install the software through some standard procedure such as download and run the software as an executable.
+
+Should be able to control the node daemon through CLI/GUI (desired) or OS-specific daemon manager such as systemd (feasible).
+
+The user should be able to follow a GUI (desired) or a command-line interface (feasible) to set up the node.
+
+The user should modify the node's settings through a GUI (desired) or a configuration file (feasible).
+
+**This user does not necessarily need to know anything about cloud storage. Such details must be abstracted away.**
+
+The End User
+
+If needed, the user should be able to download and install the client easily through an executable. They should be able to launch the client easily through an executable and stop it through graphical controls.
+
+Should be able to enter their credentials to access their cloud storage platform.
+
+Should be able to see a list of files currently stored on the platform as an intuitive directory structure, view file metadata, preview the files (desired), and download the files [read permission]. 
+
+Should be able to upload new files, create a directory structure, move the files within the directory structure, delete directories [write permission].
+
+Should be able to cache the files on the device running the client for quick access (desired).
+
+**This user does not need to know anything about the underlying cloud network, how the data is distributed and replicated, etc.**
+
 
 
 ### 2.3 Operational Scenarios
@@ -71,11 +121,28 @@ This section should describe a set of scenarios that illustrate, from the user's
 
     In the article Inquiry-Based Requirements Analysis (IEEE Software, March 1994), scenarios are defined as follows:
     In the broad sense, a scenario is simply a proposed specific use of the system. More specifically, a scenario is a description of one or more end-to-end transactions involving the required system and its environment. Scenarios can be documented in different ways, depending up on the level of detail needed. The simplest form is a use case, which consists merely of a short description with a number attached. More detailed forms are called scripts.
+    
+
+Scenario ID: 1
+User Objective: Upload file to the cloud.
+User Action: Using a client the user selects their file, selects destination directory if any, initiates the upload, sees the progress of the upload, and sees the file appear in cloud directory structure.
+Comment:
 
 
 ### 2.4 Constraints
 
 Lists general constraints placed upon the design team, including speed requirements, industry protocols, hardware platforms, and so forth.
+
+Speed - the users expect the reading and writing of data to the cloud to be as fast as possible. Thus we must use node benchmarking, compression, etc.
+
+Security - we boast of privacy and control, therefore we must upkeep it with encryption, redundancy/replication.
+
+Operating Systems - we must support Linux, Windows, and Mac OS X for our nodes and desktop client software. We must support Android and iOS for our mobile client software. We will prioritise Linux and Windows support at first as that is the operating system of most servers. Through the use of portable technologies like Go or React Native we may not need additional coding for different hardware, but our testing may be limited to the hardware that we own as a team.
+
+Time - there may not be enough time for everything
+	* One of the team members is not as experienced at Go.
+	* The team may not be as experienced at desktop GUI applications, web and mobile development.
+	* A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
 
 
 ## 3. Functional Requirements
@@ -114,4 +181,8 @@ Specifies other useful information for understanding the requirements.
 
 
 ### 7.1 References
-	
+
+* https://cloud.google.com/free/ - Google Cloud Platform free tier.
+* https://azure.microsoft.com/en-us/free/free-account-faq/ - Microsoft Azure free tier.
+* https://aws.amazon.com/free/ - AWS free tier.
+* https://facebook.github.io/react-native/docs/out-of-tree-platforms - React Native platform support.
