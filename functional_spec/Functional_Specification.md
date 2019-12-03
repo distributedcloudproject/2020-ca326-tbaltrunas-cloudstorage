@@ -17,35 +17,37 @@ A table of contents with pages numbers indicated for all sections / headings sho
 ## 1. Introduction
 
 
-
 ### 1.1 Overview
 
-Provides a brief overview of the system / product to be developed. It should include a description of the need for the system, briefly describe its functions and explain how it will work with other systems (if appropriate).
 
-Our project – Distributed Cloud Storage – is essentially your own "Google Drive/DropBox/OneDrive". Using our software you can turn your private cloud network into a cloud storage platform. Simply install our storage software onto your "nodes" (networked computers capable of storing data) and use our client software to access your data on your cloud with a File Explorer-like interface.
+Our project – Distributed Cloud Storage – is essentially your own Google Drive/DropBox/OneDrive. Using our software you can turn a private cloud network into a cloud storage platform. Simply configure our storage software on your "nodes" (networked computers capable of storing data) and use our client software to access the data on your cloud with a File Explorer-like interface.
 
-Why? We only have to search for the terms "google drive privacy" or "google drive breach" to see the amount of trust that we place into giant corporations like Google or Microsoft when we use their "free" services. We can not be sure that our data will not be used as part of an advertisement campaign or not get stolen through some cyber attack. For this reason, where privacy is critical we provide our software that you are fully in control of, that you can use on top of your own secure private network. It is true that your data will only be as protected as far as the network itself is protected. However, control of data is still transferred to the user.
+Why? We only have to do a search for "google drive privacy" or "google drive breach" to see the amount of trust that we place into giant corporations like Google or Microsoft when we use their "free" services. We can not be sure that our data will not be used as part of an advertisement campaign or not get stolen through some cyber attack. Thus, we provide software that you can use on top of your own secure private network and be in control of your data, where the protection of your data is only limited to the protection of the network itself.
 
-Our storage or "node" software will interact with the underlying operating systems of your nodes, be it Linux, Windows or Mac OS X, to carry out its networking, storage, and other ad hoc functions. On the client-side we will have graphical user interfaces for desktop, web, and mobile.
+Our storage or "node" software will interact with the underlying operating systems of your nodes, be it Linux, Windows or Mac OS X, to carry out its networking, storage, and other ad hoc functions. On the client-side we will have graphical user interfaces for desktop, web, and mobile devices.
 
 
 ### 1.2 Business Context
 
-Provides an overview of the business organization sponsoring the development of this system / product or in which the system / product will / could be deployed. Note - may not be applicable to all projects
 
-To test our project in real life, we will need to use our own computers and rent servers in order to create our private cloud storage platform.
+To test our project in practice, we will need to use our own computers and rent servers to create a private cloud and turn it into a storage platform.
 
-As students we can use various cloud computing services for free. GCP free tier always lets us create a compute engine instance (Windows/Linux VM). Azure provides free Linux and Windows VM's for the first twelve months, similarly to AWS.
+As students we can use various cloud computing services for free. GCP free tier always lets us create a compute engine instance (Windows/Linux VM). Azure provides free Linux and Windows VM's for the first twelve months, and so does AWS.
 
-Similar products have been created before. However, our unique USP is that we will provide software.
+Products that propose an alternative to "cloud storage giants" already exist in the market. See [Storj](https://storj.io) and [Sia](https://sia.tech/) for examples. However, such products are paid and manage the underlying cloud network. Our business model would be to provide free unmanaged software and charge for tech support.
+
 
 ### 1.3 Glossary
 
 Define and technical terms used in this document. Only include those with which the reader may not be familiar.
 
-**Cloud storage platform** - storing data on a network of computers accessible via the Internet.
+**Cloud storage platform** - network of computers accessible via the Internet that stores user data.
 
-**Node** - any computer system capable of participating in a cloud storage platform. Including but not limited to virtual machines, servers, PC's.
+**Node** - any computer system capable of participating in a cloud storage platform. Including but not limited to virtual machines, servers, and PC's.
+
+**Go** - modern C-like general-purpose programming language.
+
+**React Native** - framework for building hybrid (Android and iOS) mobile applications using JavaScript.
 
 **VM** - virtual machine.
 
@@ -54,10 +56,6 @@ Define and technical terms used in this document. Only include those with which 
 **AWS** - Amazon Web Services, cloud services by Amazon.
 
 **Azure** - Microsoft Azure, cloud services by Microsoft.
-
-**Go** - modern C-like general-purpose programming language.
-
-**React Native** - framework for building hybrid (Android and iOS) mobile applications using JavaScript.
 
 
 ## 2. General Description
