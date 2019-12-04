@@ -57,6 +57,8 @@ Define and technical terms used in this document. Only include those with which 
 
 **Azure** - Microsoft Azure, cloud services by Microsoft.
 
+**Systemd** - Linux software for managing services (daemons).
+
 
 ## 2. General Description
 
@@ -64,53 +66,80 @@ Define and technical terms used in this document. Only include those with which 
 
 ### 2.1 Product / System Functions
 
-Describes the general functionality of the system / product.
+The system comes in two parts:
 
-The product comes in two parts
-	* The "node".
-	* The "client".
-	
-The "node" software turns the current machine into a participant of the cloud storage platform. It is like a daemon.
+* The "node" software.
+* The "client" software.
 
-The "client" software allows the "end user" to access the data stored on the cloud storage platform uniformly and easily through a UI.
 
-The "client" will be many different things - a desktop program with a GUI, a website hosted or ran locally, and a mobile application.
+**The "node" software** turns the machine it is running on into a participant of the cloud storage platform (a "node"). The machine must have the properties of a "node", including networking and storage capabilities.
 
+After being configured the software will run as a daemon. 
+
+There is no server. Multiple nodes will create a decentralised network.
+
+The following is an overview of it functionalities:
+
+* Perform file IO - read and write data persistently on the node.
+* Perform network IO - receive and send packets over the Internet.
+* Distribute data - split a file and share it with other nodes.
+* Replicate data - send a copy of data to another node for redundancy.
+* Select the best node - benchmark other nodes to pick the node to send data to.
+* Resolve concurrent modification - check with other nodes to see if a file modification is allowed.
+
+
+**The "client" software** allows the "end user" to access their data stored on their cloud storage platform.
+
+The "client" is proposed to be implemented on many platforms - as a desktop program with a GUI, a web application, and a mobile application.
+
+The following is an overview of its functionalities:
+
+* Authenticate a user - the user running the client is capable of supplying credentials to authenticate with the cloud storage platform.
+* Provide a File Explorer - the user can access, organise, and modify the files on the cloud storage platform.
+* Encrypt and decrypt data - encrypt data before sending it from client to storage, and decrypt data locally once it is downloaded from the storage platform.
+* Compress and uncompress data - before sending data compress it, and decompress data upon download.
+
+*See the Functional Requirements section for a detailed description of functionalities.*
 
 ### 2.2 User Characteristics and Objectives
 
-Describes the features of the user community, including their expected expertise with software systems and the application domain. Explain the objectives and requirements for the system from the user's perspective. It may include a "wish list" of desirable characteristics, along with more feasible solutions that are in line with the business objectives.
+We can identify two user groups in our user community:
 
-We can identify two user groups (which may overlap):
-1. Systems Administrator - sets up nodes to create a cloud storage platform.
-2. Non-technical or end user - acesses the cloud storage platform through a client.
+1. Node Administrator.
+2. End User.
 
-The Systems Administrator
+#### Node Administrator
 
-Should be able to install the software through some standard procedure such as download and run the software as an executable.
+The Node Administrator sets up and manages nodes on the cloud storage platform. This may be a systems administrator, software developer, or a self-taught individual.
 
-Should be able to control the node daemon through CLI/GUI (desired) or OS-specific daemon manager such as systemd (feasible).
+The Node Operator's objective is to turn a private cloud into a cloud storage platform by configuring the nodes on their cloud.
 
-The user should be able to follow a GUI (desired) or a command-line interface (feasible) to set up the node.
+This user needs to have basic systems administration skills such as installing and configuring software through command-line interfaces, graphical user interfaces, and configuration files on Windows/Linux/Mac OS X platforms, on their desktop, VM, or a remote machine. The user does not necessarily need to have any domain-specific knowledge about cloud storage except for basic computing terms such as encryption, compression, and disk space.
 
-The user should modify the node's settings through a GUI (desired) or a configuration file (feasible).
+The Node Operator's wish list includes:
 
-**This user does not necessarily need to know anything about cloud storage. Such details must be abstracted away.**
+* To download and install the node software conveniently.
+* To configure the node through a GUI (desirable), CLI, or a config file.
+* To ensure node software runs in the background at all times through a GUI/CLI (desirable) or OS-specific program such as systemd.
 
-The End User
 
-If needed, the user should be able to download and install the client easily through an executable. They should be able to launch the client easily through an executable and stop it through graphical controls.
+#### End User
 
-Should be able to enter their credentials to access their cloud storage platform.
+The End User accesses the cloud storage platform through a client program. This may be an employee or client in a business or a private individual.
 
-Should be able to see a list of files currently stored on the platform as an intuitive directory structure, view file metadata, preview the files (desired), and download the files [read permission]. 
+The objective of the End User is to store their data on the cloud.
 
-Should be able to upload new files, create a directory structure, move the files within the directory structure, delete directories [write permission].
+This user is non-technical and only needs basic computer skills. The user does not need to know anything about cloud storage.
 
-Should be able to cache the files on the device running the client for quick access (desired).
+The End User's wish list includes:
 
-**This user does not need to know anything about the underlying cloud network, how the data is distributed and replicated, etc.**
-
+* To download, install, and launch the client software easily.
+* To be able to authenticate with the cloud storage platform.
+* To view, preview (desired), and download their files on the cloud.
+* To upload, organise (desired), and delete their files on the cloud.
+* To have quick response times from the cloud.
+* To be able to encrypt their files.
+* To be able to have access to their files reliably and at all times.
 
 
 ### 2.3 Operational Scenarios
@@ -125,6 +154,13 @@ Scenario ID: 1
 User Objective: Upload file to the cloud.
 User Action: Using a client the user selects their file, selects destination directory if any, initiates the upload, sees the progress of the upload, and sees the file appear in cloud directory structure.
 Comment:
+
+Concurrent modification.
+
+Node goes down behind the scenes.
+
+One node gets compromised by attacker.
+
 
 
 ### 2.4 Constraints
@@ -154,6 +190,9 @@ As an example, each functional requirement could be specified in a format simila
     Technical issues - Describes any design or implementation issues involved in satisfying this requirement.
     Dependencies with other requirements - Describes interactions with other requirements.
     Others as appropriate
+
+
+Should be able to cache the files on the client device for quick access and freeing up space on the device (desired).
 
 
 ## 4. System Architecture
