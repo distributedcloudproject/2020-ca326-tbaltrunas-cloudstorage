@@ -167,9 +167,13 @@ One node gets compromised by attacker.
 
 Lists general constraints placed upon the design team, including speed requirements, industry protocols, hardware platforms, and so forth.
 
-Speed - the users expect the reading and writing of data to the cloud to be as fast as possible. Thus we must use node benchmarking, compression, etc.
+#### Speed
 
-Security - we boast of privacy and control, therefore we must upkeep it with encryption, redundancy/replication.
+The users expect the reading and writing of data to the cloud to be as fast as possible. Thus we must use node benchmarking, compression, etc.
+
+#### Security
+
+We boast of privacy and control, therefore we must upkeep it with encryption, redundancy/replication.
 
 Operating Systems - we must support Linux, Windows, and Mac OS X for our nodes and desktop client software. We must support Android and iOS for our mobile client software. We will prioritise Linux and Windows support at first as that is the operating system of most servers. Through the use of portable technologies like Go or React Native we may not need additional coding for different hardware, but our testing may be limited to the hardware that we own as a team.
 
@@ -192,6 +196,99 @@ As an example, each functional requirement could be specified in a format simila
     Others as appropriate
 
 
+* **Requirement ID:**
+* **Description:**
+* **Criticality:**
+* **Technical issues:** 
+* **Dependencies:** 
+
+
+* **Requirement ID:** 1
+* **Description:** Node networking, including listening for requests, sending back responses, initiating connections with other nodes, and accepting streams of data.
+* **Criticality:** Very high. Network IO is an essential component for this project.
+* **Technical issues:** Nodes must be reachable by IP address and port number, i.e. be on a public network or port forwarded.
+* **Dependencies:** N/A.
+
+* **Requirement ID:** 2
+* **Description:** Node set up, including storage allocation.
+* **Criticality:** Very high. If there are no active nodes, then the cloud storage platform can not be used.
+* **Technical issues:** N/A.
+* **Dependencies:** Node networking.
+
+* **Requirement ID:** 3
+* **Description:** Node update status to the cloud, including its state (*active*/*inactive*), free space left, latency, bandwidth, etc.
+* **Criticality:** Very high. If a node suddenly goes down this puts a risk to data. Also, knowing performance information about nodes is important for decisions.
+* **Technical issues:** Communicating information with all nodes efficiently. 
+* **Dependencies:** Node set up.
+
+* **Requirement ID:** 4
+* **Description:** Node distribute file across the cloud. This includes: 1. Splitting the file contents into chunks. 2. Replicating each chunk. 3. Distributing replicas to other nodes making the file redundant.
+* **Criticality:** Very high. Distributing a file is essential for data redundancy.
+* **Technical issues:** Managing the distribution of a single file is a complex routine with multiple steps. We need to think about whether to store only file contents or also file metadata. Also if only certain file chunks have changed, we do not need to change other chunks.
+* **Dependencies:** Node set up, node status update.
+
+* **Requirement ID:** 5
+* **Description:** Node accept file from client and distribute file on the cloud.
+* **Criticality:** Very high. One of the core functionalities of this project.
+* **Technical issues:** Will need to call the "distribute file" routine.
+* **Dependencies:** Node distribute file.
+
+* **Requirement ID:** 6
+* **Description:** Node collect and serve file (contents or metadata) to client.
+* **Criticality:** Very high. The user must view and download whatever they uploaded to the cloud. Collecting back chunks of a file well is important for performance and data integrity.
+* **Technical issues:** Collecting the file's chunks from remote locations is a complex task.
+* **Dependencies:** Node accept file from client.
+
+* **Requirement ID:** 7
+* **Description:** Node daemonization, where the node software always runs as a background process and is managed by some daemon tool.
+* **Criticality:** High. The node process is directly responsible for the availability of the node itself.
+* **Technical issues:** Node software must be high performance to not unnecessarily use resources on its host machine. 
+* **Dependencies:** N/A.
+
+* **Requirement ID:** 8
+* **Description:** Node uninstall software by shutting down the node and deleting all data on the host's data store.
+* **Criticality:** High. Cleanly uninstalling software is an important feature for users.
+* **Technical issues:** Communicating node uninstall to other nodes and moving data to other nodes to ensure no data loss.
+* **Dependencies:** Node set up, node distribute file.
+
+* **Requirement ID:** 9
+* **Description:** Node configuration ability, including modifying the allocated storage space, network limits, etc.
+* **Criticality:** Medium. This is a convenient feature.
+* **Technical issues:** Node must be able to pick up the changes effectively without any or long downtime.
+* **Dependencies:** Node set up.
+
+* **Requirement ID:** 10
+* **Description:** Node handle changes in case multiple users modify the same file.
+* **Criticality:** Low. This is a proposed enhancement where multiple users share the same files and perform a concurrent write.
+* **Technical issues:** We have to think about how to resolve concurrency conflicts.
+* **Dependencies:** Node accept file, node serve file.
+
+
+
+
+Client connect to cloud.
+
+Client show files.
+
+Client download files.
+
+Client upload files.
+
+Client delete files.
+
+Client CRUD on files.
+
+Client CRUD on directories.
+
+Client create directory structure.
+
+Client preview file.
+
+Client encrypt and decrypt files.
+
+Client compress and uncompress files.
+
+Cache files on the client
 Should be able to cache the files on the client device for quick access and freeing up space on the device (desired).
 
 
@@ -222,4 +319,4 @@ Specifies other useful information for understanding the requirements.
 * https://cloud.google.com/free/ - Google Cloud Platform free tier.
 * https://azure.microsoft.com/en-us/free/free-account-faq/ - Microsoft Azure free tier.
 * https://aws.amazon.com/free/ - AWS free tier.
-* https://facebook.github.io/react-native/docs/out-of-tree-platforms - React Native platform support.
+* https://facebook.github.io/react-native/docs/out-of-tree-platforms - React Native platform support.	
