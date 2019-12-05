@@ -265,31 +265,39 @@ As an example, each functional requirement could be specified in a format simila
 
 
 
+Client connect and authenticate to the cloud.
+Very high. We must ensure that the cloud is reachable by external machines but also that whoever connects is authorised to access the cloud.
+Certain nodes on the cloud must be "public" while others can be private. We can also add a reverse proxy or load balancer.
+Cloud is reachable to the public.
 
-Client connect to cloud.
+Client file explorer with CRUD operations, including ability to create (upload), read (view metadata and download), update, and delete files through a UI.
+Very high. This is how the user primarily interacts with the cloud.
+N/A.
+Cloud is functional.
 
-Client show files.
+Client file explorer with CRUD on directories, with ability to create, list and view contents of, rename and add new files to, and delete directories.
+High. Without a directory structure soon a user's files will become unmanageable.
+Adding directory support on the cloud side, i.e. is a directory just another type of file?
+Client files CRUD.
 
-Client download files.
+Client viewer to preview file contents for certain file types such as PDF, text files, etc.
+Medium. This is a convenient feature but not a priority.
+Client files CRUD.
 
-Client upload files.
+Client encrypt files before sending and decrypt files upon receipt.
+High. If a node gets compromised but its data store is encrypted, the user's data will likely not be compromised.
+Which encryption method to use. How to distribute keys in case of multiple users.
+N/A.
 
-Client delete files.
+Client compress files before sending and uncompress at reception.
+High. Compression reduces file size and thus improves the cloud performance.
+Which compression codecs to use for which file types.
+N/A.
 
-Client CRUD on files.
-
-Client CRUD on directories.
-
-Client create directory structure.
-
-Client preview file.
-
-Client encrypt and decrypt files.
-
-Client compress and uncompress files.
-
-Cache files on the client
-Should be able to cache the files on the client device for quick access and freeing up space on the device (desired).
+Cache files that are frequently previewed or downloaded on the client host for quick access.
+Medium. This is a desired but not critical requirement.
+Invalidating the cache.
+Client preview files, client CRUD on files.
 
 
 ## 4. System Architecture
