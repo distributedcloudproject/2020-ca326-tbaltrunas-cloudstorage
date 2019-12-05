@@ -173,34 +173,28 @@ The users expect the reading and writing of data to the cloud to be as fast as p
 
 #### Security
 
-We boast of privacy and control, therefore we must upkeep it with encryption, redundancy/replication.
+We boast of privacy and control, therefore we must upkeep it with encryption.
 
-Operating Systems - we must support Linux, Windows, and Mac OS X for our nodes and desktop client software. We must support Android and iOS for our mobile client software. We will prioritise Linux and Windows support at first as that is the operating system of most servers. Through the use of portable technologies like Go or React Native we may not need additional coding for different hardware, but our testing may be limited to the hardware that we own as a team.
+#### Data Integrity
 
-Time - there may not be enough time for everything
-	* One of the team members is not as experienced at Go.
-	* The team may not be as experienced at desktop GUI applications, web and mobile development.
-	* A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
+Some data is priceless. We must take every step to ensure data redundancy in case of node failure.
+
+#### Operating Systems
+
+We must support Linux, Windows, and Mac OS X for our nodes and desktop client software. We must support Android and iOS for our mobile client software. We will prioritise Linux and Windows support at first as that is the operating system of most servers. Through the use of portable technologies like Go or React Native we may not need additional coding for different hardware, but our testing may be limited to the hardware that we own as a team.
+
+#### Time
+
+There may not be enough time for everything
+
+* One of the team members is not as experienced at Go.
+* The team may not be as experienced at desktop GUI applications, web and mobile development.
+* A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
 
 
 ## 3. Functional Requirements
 
 This section lists the functional requirements in ranked order. Functional requirements describes the possible effects of a software system, in other words, what the system must accomplish. Other kinds of requirements (such as interface requirements, performance requirements, or reliability requirements) describe how the system accomplishes its functional requirements.
-
-As an example, each functional requirement could be specified in a format similar to the following:
-
-    Description - A full description of the requirement.
-    Criticality - Describes how essential this requirement is to the overall system.
-    Technical issues - Describes any design or implementation issues involved in satisfying this requirement.
-    Dependencies with other requirements - Describes interactions with other requirements.
-    Others as appropriate
-
-
-* **Requirement ID:**
-* **Description:**
-* **Criticality:**
-* **Technical issues:** 
-* **Dependencies:** 
 
 
 * **Requirement ID:** 1
@@ -263,41 +257,47 @@ As an example, each functional requirement could be specified in a format simila
 * **Technical issues:** We have to think about how to resolve concurrency conflicts.
 * **Dependencies:** Node accept file, node serve file.
 
+* **Requirement ID:** 11
+* **Description:** Client connect and authenticate to the cloud.
+* **Criticality:** Very high. We must ensure that the cloud is reachable by external machines but also that whoever connects is authorised to access the cloud.
+* **Technical issues:**  Certain nodes on the cloud must be "public" while others can be private. We can also add a reverse proxy or load balancer.
+* **Dependencies:** Cloud is reachable to the public.
 
+* **Requirement ID:** 12
+* **Description:** Client file explorer with CRUD operations, including ability to create (upload), read (view metadata and download), update, and delete files through a UI.
+* **Criticality:** Very high. This is how the user primarily interacts with the cloud.
+* **Technical issues:** N/A.
+* **Dependencies:** Cloud is functional.
 
-Client connect and authenticate to the cloud.
-Very high. We must ensure that the cloud is reachable by external machines but also that whoever connects is authorised to access the cloud.
-Certain nodes on the cloud must be "public" while others can be private. We can also add a reverse proxy or load balancer.
-Cloud is reachable to the public.
+* **Requirement ID:** 13
+* **Description:** Client file explorer with CRUD on directories, with ability to create, list and view contents of, rename and add new files to, and delete directories.
+* **Criticality:** High. Without a directory structure soon a user's files will become unmanageable.
+* **Technical issues:** Adding directory support on the cloud side, i.e. is a directory just another type of file?
+* **Dependencies:** Client files CRUD.
 
-Client file explorer with CRUD operations, including ability to create (upload), read (view metadata and download), update, and delete files through a UI.
-Very high. This is how the user primarily interacts with the cloud.
-N/A.
-Cloud is functional.
+* **Requirement ID:** 14
+* **Description:**  Client viewer to preview file contents for certain file types such as PDF, text files, etc.
+* **Criticality:** Medium. This is a convenient feature but not a priority.
+* **Technical issues:** Do we use third-party components for viewers or write our own?
+* **Dependencies:** Client files CRUD.
 
-Client file explorer with CRUD on directories, with ability to create, list and view contents of, rename and add new files to, and delete directories.
-High. Without a directory structure soon a user's files will become unmanageable.
-Adding directory support on the cloud side, i.e. is a directory just another type of file?
-Client files CRUD.
+* **Requirement ID:** 15
+* **Description:** Client encrypt files before sending and decrypt files upon receipt.
+* **Criticality:** High. If a node gets compromised but its data store is encrypted, the user's data will likely not be compromised.
+* **Technical issues:** Which encryption method to use. How to distribute keys in case of multiple users.
+* **Dependencies:** N/A.
 
-Client viewer to preview file contents for certain file types such as PDF, text files, etc.
-Medium. This is a convenient feature but not a priority.
-Client files CRUD.
+* **Requirement ID:** 16
+* **Description:** Client compress files before sending and uncompress at reception.
+* **Criticality:** High. Compression reduces file size and thus improves the cloud performance.
+* **Technical issues:** Which compression codecs to use for which file types.
+* **Dependencies:** N/A.
 
-Client encrypt files before sending and decrypt files upon receipt.
-High. If a node gets compromised but its data store is encrypted, the user's data will likely not be compromised.
-Which encryption method to use. How to distribute keys in case of multiple users.
-N/A.
-
-Client compress files before sending and uncompress at reception.
-High. Compression reduces file size and thus improves the cloud performance.
-Which compression codecs to use for which file types.
-N/A.
-
-Cache files that are frequently previewed or downloaded on the client host for quick access.
-Medium. This is a desired but not critical requirement.
-Invalidating the cache.
-Client preview files, client CRUD on files.
+* **Requirement ID:** 17
+* **Description:** Cache files that are frequently previewed or downloaded on the client host for quick access.
+* **Criticality:** Medium. This is a desired but not critical requirement.
+* **Technical issues:** Invalidating the cache.
+* **Dependencies:** Client preview files, client CRUD on files.
 
 
 ## 4. System Architecture
