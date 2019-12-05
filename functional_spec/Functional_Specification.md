@@ -37,13 +37,30 @@ As students we can use various cloud computing services for free. GCP free tier 
 Products that propose an alternative to "cloud storage giants" already exist in the market. See [Storj](https://storj.io) and [Sia](https://sia.tech/) for examples. However, such products are paid and manage the underlying cloud network. Our business model would be to provide free unmanaged software and charge for tech support.
 
 
-### 1.3 Glossary
+### 1.3 Glossary (project-defined terms)
 
-Define and technical terms used in this document. Only include those with which the reader may not be familiar.
 
-**Cloud storage platform** - network of computers accessible via the Internet that stores user data.
+**Cloud storage platform / Cloud** - network of computers accessible via the Internet that stores user data.
 
-**Node** - any computer system capable of participating in a cloud storage platform. Including but not limited to virtual machines, servers, and PC's.
+**Node** - any computer system that participates in the cloud storage platform. Including but not limited to virtual machines, servers, and PC's.
+
+**Capable machine** - machine that could potentially be turned into a node, due to its storage and networking abilities.
+
+**Node software** - program installed to turn a machine into a node.
+
+**Host** - the machine on which node software is running, the node.
+
+**Client / client software** - program that a user uses to access their files on the cloud.
+
+**Active node** - node successfully participating in the cloud.
+
+**Inactive node** - node that can no longer participate in the cloud due to some problem.
+
+**Data store** - the place where user data is stored on a node, such as a directory on the hard disk's file system.
+
+
+### 1.4 Glossary (other terms)
+
 
 **Go** - modern C-like general-purpose programming language.
 
@@ -61,8 +78,6 @@ Define and technical terms used in this document. Only include those with which 
 
 
 ## 2. General Description
-
-
 
 ### 2.1 Product / System Functions
 
@@ -90,9 +105,9 @@ The following is an overview of it functionalities:
 
 **The "client" software** allows the "end user" to access their data stored on their cloud storage platform.
 
-The "client" is proposed to be implemented on many platforms - as a desktop program with a GUI, a web application, and a mobile application.
+The "client" is proposed to be implemented on multiple platforms: on desktop as a program with a GUI, on the web as a web application, and on mobile as an app.
 
-The following is an overview of its functionalities:
+The following is an overview of a client's functionalities:
 
 * Authenticate a user - the user running the client is capable of supplying credentials to authenticate with the cloud storage platform.
 * Provide a File Explorer - the user can access, organise, and modify the files on the cloud storage platform.
@@ -121,6 +136,7 @@ The Node Operator's wish list includes:
 * To download and install the node software conveniently.
 * To configure the node through a GUI (desirable), CLI, or a config file.
 * To ensure node software runs in the background at all times through a GUI/CLI (desirable) or OS-specific program such as systemd.
+* To uninstall the software or delete the data stored easily and without unintended side effects.
 
 
 #### End User
@@ -144,28 +160,50 @@ The End User's wish list includes:
 
 ### 2.3 Operational Scenarios
 
-This section should describe a set of scenarios that illustrate, from the user's perspective, what will be experienced when utilizing the system under various situations.
 
-    In the article Inquiry-Based Requirements Analysis (IEEE Software, March 1994), scenarios are defined as follows:
-    In the broad sense, a scenario is simply a proposed specific use of the system. More specifically, a scenario is a description of one or more end-to-end transactions involving the required system and its environment. Scenarios can be documented in different ways, depending up on the level of detail needed. The simplest form is a use case, which consists merely of a short description with a number attached. More detailed forms are called scripts.
-    
+**Scenario ID:** 1 
+* **User Objective:** Add a machine to the cloud.
+* **User Action:** User installs and configures node software on the machine, turning the machine into a *node*.
+* **Comment:** The *nodes* self-organise with each other as long as they can reach each other over the Internet.
 
-Scenario ID: 1
-User Objective: Upload file to the cloud.
-User Action: Using a client the user selects their file, selects destination directory if any, initiates the upload, sees the progress of the upload, and sees the file appear in cloud directory structure.
-Comment:
+**Scenario ID:** 2
+* **User Objective:** Remove a machine from the cloud.
+* **User Action:** User follows the procedure to uninstall node software.
+* **Comment:** Behind the scenes the cloud may redistribute data.
 
-Concurrent modification.
+**Scenario ID:** 3
+* **User Objective:** Authenticate with the cloud.
+* **User Action:** The user opens a client and uses the built-in authentication mechanism.
+* **Comment:** N/A.
 
-Node goes down behind the scenes.
+**Scenario ID:** 4
+* **User Objective:** View files on the cloud.
+* **User Action:** Using a client the user opens the file explorer interface and sees the files that are currently on the cloud.
+* **Comment:** N/A.
 
-One node gets compromised by attacker.
+**Scenario ID:** 5
+* **User Objective:** Upload a file to the cloud.
+* **User Action:** Using a client the user selects their file from the client file explorer, selects destination directory if any, initiates the upload, and sees the file appear in the cloud file viewer.
+* **Comment:** N/A.
 
+**Scenario ID:** 6
+* **User Objective:** Download a file from the cloud.
+* **User Action:** Using a client the user selects a file, initiates the download, and receives the file on their local file system.
+* **Comment:** N/A.
+
+**Scenario ID:** 7
+* **User Objective:** Organise files on the cloud into directories.
+* **User Action:** Using a client the user creates/updates/deletes directories via the client file explorer interface.
+* **Comment:** Directories are a "nice to have" feature and are not essential to the system.
+
+**Scenario ID:** 8
+* **User Objective:** Modify the same file concurrently.
+* **User Action:** Two users proceed to upload different versions of the same file at the same time. The cloud either accepts or rejects one or both of the user changes.
+* **Comment:** Multiple user support is a "nice to have" feature.
 
 
 ### 2.4 Constraints
 
-Lists general constraints placed upon the design team, including speed requirements, industry protocols, hardware platforms, and so forth.
 
 #### Speed
 
@@ -175,11 +213,11 @@ The users expect the reading and writing of data to the cloud to be as fast as p
 
 We boast of privacy and control, therefore we must upkeep it with encryption.
 
-#### Data Integrity
+#### Data integrity
 
 Some data is priceless. We must take every step to ensure data redundancy in case of node failure.
 
-#### Operating Systems
+#### Operating Systems support
 
 We must support Linux, Windows, and Mac OS X for our nodes and desktop client software. We must support Android and iOS for our mobile client software. We will prioritise Linux and Windows support at first as that is the operating system of most servers. Through the use of portable technologies like Go or React Native we may not need additional coding for different hardware, but our testing may be limited to the hardware that we own as a team.
 
@@ -188,6 +226,7 @@ We must support Linux, Windows, and Mac OS X for our nodes and desktop client so
 There may not be enough time for everything
 
 * One of the team members is not as experienced at Go.
+* The team will have to desing some networking protocols, which may be difficult.
 * The team may not be as experienced at desktop GUI applications, web and mobile development.
 * A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
 
@@ -197,103 +236,103 @@ There may not be enough time for everything
 This section lists the functional requirements in ranked order. Functional requirements describes the possible effects of a software system, in other words, what the system must accomplish. Other kinds of requirements (such as interface requirements, performance requirements, or reliability requirements) describe how the system accomplishes its functional requirements.
 
 
-* **Requirement ID:** 1
+**Requirement ID:** 1
 * **Description:** Node networking, including listening for requests, sending back responses, initiating connections with other nodes, and accepting streams of data.
 * **Criticality:** Very high. Network IO is an essential component for this project.
 * **Technical issues:** Nodes must be reachable by IP address and port number, i.e. be on a public network or port forwarded.
 * **Dependencies:** N/A.
 
-* **Requirement ID:** 2
+**Requirement ID:** 2
 * **Description:** Node set up, including storage allocation.
 * **Criticality:** Very high. If there are no active nodes, then the cloud storage platform can not be used.
 * **Technical issues:** N/A.
 * **Dependencies:** Node networking.
 
-* **Requirement ID:** 3
+**Requirement ID:** 3
 * **Description:** Node update status to the cloud, including its state (*active*/*inactive*), free space left, latency, bandwidth, etc.
 * **Criticality:** Very high. If a node suddenly goes down this puts a risk to data. Also, knowing performance information about nodes is important for decisions.
 * **Technical issues:** Communicating information with all nodes efficiently. 
 * **Dependencies:** Node set up.
 
-* **Requirement ID:** 4
+**Requirement ID:** 4
 * **Description:** Node distribute file across the cloud. This includes: 1. Splitting the file contents into chunks. 2. Replicating each chunk. 3. Distributing replicas to other nodes making the file redundant.
 * **Criticality:** Very high. Distributing a file is essential for data redundancy.
 * **Technical issues:** Managing the distribution of a single file is a complex routine with multiple steps. We need to think about whether to store only file contents or also file metadata. Also if only certain file chunks have changed, we do not need to change other chunks.
 * **Dependencies:** Node set up, node status update.
 
-* **Requirement ID:** 5
+**Requirement ID:** 5
 * **Description:** Node accept file from client and distribute file on the cloud.
 * **Criticality:** Very high. One of the core functionalities of this project.
 * **Technical issues:** Will need to call the "distribute file" routine.
 * **Dependencies:** Node distribute file.
 
-* **Requirement ID:** 6
+**Requirement ID:** 6
 * **Description:** Node collect and serve file (contents or metadata) to client.
 * **Criticality:** Very high. The user must view and download whatever they uploaded to the cloud. Collecting back chunks of a file well is important for performance and data integrity.
 * **Technical issues:** Collecting the file's chunks from remote locations is a complex task.
 * **Dependencies:** Node accept file from client.
 
-* **Requirement ID:** 7
+**Requirement ID:** 7
 * **Description:** Node daemonization, where the node software always runs as a background process and is managed by some daemon tool.
 * **Criticality:** High. The node process is directly responsible for the availability of the node itself.
 * **Technical issues:** Node software must be high performance to not unnecessarily use resources on its host machine. 
 * **Dependencies:** N/A.
 
-* **Requirement ID:** 8
+**Requirement ID:** 8
 * **Description:** Node uninstall software by shutting down the node and deleting all data on the host's data store.
 * **Criticality:** High. Cleanly uninstalling software is an important feature for users.
 * **Technical issues:** Communicating node uninstall to other nodes and moving data to other nodes to ensure no data loss.
 * **Dependencies:** Node set up, node distribute file.
 
-* **Requirement ID:** 9
+**Requirement ID:** 9
 * **Description:** Node configuration ability, including modifying the allocated storage space, network limits, etc.
 * **Criticality:** Medium. This is a convenient feature.
 * **Technical issues:** Node must be able to pick up the changes effectively without any or long downtime.
 * **Dependencies:** Node set up.
 
-* **Requirement ID:** 10
+**Requirement ID:** 10
 * **Description:** Node handle changes in case multiple users modify the same file.
 * **Criticality:** Low. This is a proposed enhancement where multiple users share the same files and perform a concurrent write.
 * **Technical issues:** We have to think about how to resolve concurrency conflicts.
 * **Dependencies:** Node accept file, node serve file.
 
-* **Requirement ID:** 11
+**Requirement ID:** 11
 * **Description:** Client connect and authenticate to the cloud.
 * **Criticality:** Very high. We must ensure that the cloud is reachable by external machines but also that whoever connects is authorised to access the cloud.
 * **Technical issues:**  Certain nodes on the cloud must be "public" while others can be private. We can also add a reverse proxy or load balancer.
 * **Dependencies:** Cloud is reachable to the public.
 
-* **Requirement ID:** 12
+**Requirement ID:** 12
 * **Description:** Client file explorer with CRUD operations, including ability to create (upload), read (view metadata and download), update, and delete files through a UI.
 * **Criticality:** Very high. This is how the user primarily interacts with the cloud.
 * **Technical issues:** N/A.
 * **Dependencies:** Cloud is functional.
 
-* **Requirement ID:** 13
+**Requirement ID:** 13
 * **Description:** Client file explorer with CRUD on directories, with ability to create, list and view contents of, rename and add new files to, and delete directories.
 * **Criticality:** High. Without a directory structure soon a user's files will become unmanageable.
 * **Technical issues:** Adding directory support on the cloud side, i.e. is a directory just another type of file?
 * **Dependencies:** Client files CRUD.
 
-* **Requirement ID:** 14
+**Requirement ID:** 14
 * **Description:**  Client viewer to preview file contents for certain file types such as PDF, text files, etc.
 * **Criticality:** Medium. This is a convenient feature but not a priority.
 * **Technical issues:** Do we use third-party components for viewers or write our own?
 * **Dependencies:** Client files CRUD.
 
-* **Requirement ID:** 15
+**Requirement ID:** 15
 * **Description:** Client encrypt files before sending and decrypt files upon receipt.
 * **Criticality:** High. If a node gets compromised but its data store is encrypted, the user's data will likely not be compromised.
 * **Technical issues:** Which encryption method to use. How to distribute keys in case of multiple users.
 * **Dependencies:** N/A.
 
-* **Requirement ID:** 16
+**Requirement ID:** 16
 * **Description:** Client compress files before sending and uncompress at reception.
 * **Criticality:** High. Compression reduces file size and thus improves the cloud performance.
 * **Technical issues:** Which compression codecs to use for which file types.
 * **Dependencies:** N/A.
 
-* **Requirement ID:** 17
+**Requirement ID:** 17
 * **Description:** Cache files that are frequently previewed or downloaded on the client host for quick access.
 * **Criticality:** Medium. This is a desired but not critical requirement.
 * **Technical issues:** Invalidating the cache.
