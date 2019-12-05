@@ -343,6 +343,18 @@ This section lists the functional requirements in ranked order. Functional requi
 
 This section describes a high-level overview of the anticipated system architecture showing the distribution functions across (potential) system modules. Architectural components that are reused or 3rd party should be highlighted.
 
+### Top-level network architecture
+
+The following diagram illustrates the top-level network architecture:
+
+![alt text](sys-arch-top-level.png "Logo Title Text 1")
+
+(The diagram can also be found at )
+
+In this diagram, we illustrate how user machines are classified and networked. First we have one or more *client* machines (they run client software and end-users use these machines to access the cloud). The client machines connect to the *cloud*, a set of *nodes* that create a *cloud storage platform*. In particular, the cloud consists of two types of nodes — *public nodes* and *internal nodes*. Public nodes are accessible through the Internet. Clients connect to **one** of the public nodes to access the cloud (a later enhancement would be to let the client connect to many nodes at a time, or have a reverse proxy/load balancer in front of all the nodes). Internal nodes are private to the cloud network (not accessible through Internet) but other nodes can connect to them. Thus, public nodes act as servers or gateways, while internal nodes make the cloud more performant. There is a direct or indirect path between every node (similar to Internet routing, not every node has to be connect to every other node, but nodes can connect through intermediaries).
+
+The protocol used for connections will be a custom application-level protocol. However, the protocol will most likely use TCP for its transport layer.
+
 
 ## 5. High-Level Design
 
