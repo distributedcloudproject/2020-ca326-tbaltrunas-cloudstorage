@@ -347,13 +347,38 @@ This section describes a high-level overview of the anticipated system architect
 
 The following diagram illustrates the top-level network architecture:
 
-![alt text](sys-arch-top-level.png "Logo Title Text 1")
+![top level network architecture diagram](sys-arch-top-level.png "Top level network architecture")
 
 (The diagram can also be found at https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage/raw/master/functional_spec/sys-arch-top-level.png)
 
 In this diagram, we illustrate how user machines are classified and networked. First we have one or more *client* machines (they run client software and end-users use these machines to access the cloud). The client machines connect to the *cloud*, a set of *nodes* that create a *cloud storage platform*. In particular, the cloud consists of two types of nodes — *public nodes* and *internal nodes*. Public nodes are accessible through the Internet. Clients connect to **one** of the public nodes to access the cloud (a later enhancement would be to let the client connect to many nodes at a time, or have a reverse proxy/load balancer in front of all the nodes). Internal nodes are private to the cloud network (not accessible through Internet) but other nodes can connect to them. Thus, public nodes act as servers or gateways, while internal nodes make the cloud more performant. There is a direct or indirect path between every node (similar to Internet routing, not every node has to be connect to every other node, but nodes can connect through intermediaries).
 
 The protocol used for connections will be a custom application-level protocol. However, the protocol will most likely use TCP for its transport layer.
+
+
+### Program architecture
+
+The following diagram illustrates the program architectures:
+
+![program architecture diagram](sys-arch-prog.png "Program architecture")
+
+(The diagram can also be found at https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage/raw/master/functional_spec/sys-arch-prog.png)
+
+In the diagram above, we can see the architectures of both the client and the node software. We have decided that both programs will be layered. Certain layers are essential while others are optional.
+
+In the case of client, these are the layers from innermost to the outermost:
+
+* **File System layer:** interacts with the local file system to read and write files.
+* **Compression layer (optional):** compresses and decompresses files.
+* **Encryption layer (optional):** encrypts and decrypts files.
+* **Network layer:** interacts with the outside world (the cloud).
+
+The following are the layers for the node software, from the innermost to the outermost:
+
+* **Data Store layer:** persistently stores and retrieves chunks of files.
+* **Distribution layer:** manages file splitting and replication. Collects files from other nodes. Keeps an internal state of a list of other nodes and locations of file chunks.
+
+The client and the node applications will interact with each other only through the network layers. Specifically, the client will send and receive files or other metadata. The nodes will listen for client requests and serve those requests with a response. The nodes will interact between each other by distributing chunks or replicas of a file received. The nodes will also interact by collecting chunks of a file from other nodes in order to serve it.
 
 
 ## 5. High-Level Design
