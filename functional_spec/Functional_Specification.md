@@ -377,6 +377,7 @@ The following are the layers for the node software, from the innermost to the ou
 
 * **Data Store layer:** persistently stores and retrieves chunks of files.
 * **Distribution layer:** manages file splitting and replication. Collects files from other nodes. Keeps an internal state of a list of other nodes and locations of file chunks.
+* **Network layer:** Interacts with the outside world (clients and other nodes).
 
 The client and the node applications will interact with each other only through the network layers. Specifically, the client will send and receive files or other metadata. The nodes will listen for client requests and serve those requests with a response. The nodes will interact between each other by distributing chunks or replicas of a file received. The nodes will also interact by collecting chunks of a file from other nodes in order to serve it.
 
