@@ -45,8 +45,6 @@ A table of contents with pages numbers indicated for all sections / headings sho
 	- [7. Appendices](#7-Appendices)
 		- [7.1 References](#71-References)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
 
 ## 1. Introduction
 
