@@ -6,7 +6,9 @@
 **Student Name:** Bartosz Śwituszak
 **Student Number:** 17437072
 
+
 **Supervisor:** Ray Walshe
+
 **Date:** 06/12/2019
 
 ## 0. Table of contents
