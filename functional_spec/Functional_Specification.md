@@ -13,33 +13,35 @@
 
 A table of contents with pages numbers indicated for all sections / headings should be included.
 
-- [Distributed Cloud Storage – Functional Specification](#distributed-cloud-storage---functional-specification)
-  * [0. Table of contents](#0-table-of-contents)
-  * [1. Introduction](#1-introduction)
-    + [1.1 Overview](#11-overview)
-    + [1.2 Business Context](#12-business-context)
-    + [1.3 Glossary (project-defined terms)](#13-glossary--project-defined-terms-)
-    + [1.4 Glossary (other terms)](#14-glossary--other-terms-)
-  * [2. General Description](#2-general-description)
-    + [2.1 Product / System Functions](#21-product---system-functions)
-    + [2.2 User Characteristics and Objectives](#22-user-characteristics-and-objectives)
-      - [Node Administrator](#node-administrator)
-      - [End User](#end-user)
-    + [2.3 Operational Scenarios](#23-operational-scenarios)
-    + [2.4 Constraints](#24-constraints)
-      - [Speed](#speed)
-      - [Security](#security)
-      - [Data integrity](#data-integrity)
-      - [Operating Systems support](#operating-systems-support)
-      - [Time](#time)
-  * [3. Functional Requirements](#3-functional-requirements)
-  * [4. System Architecture](#4-system-architecture)
-    + [Top-level network architecture](#top-level-network-architecture)
-    + [Program architecture](#program-architecture)
-  * [5. High-Level Design](#5-high-level-design)
-  * [6. Preliminary Schedule](#6-preliminary-schedule)
-  * [7. Appendices](#7-appendices)
-    + [7.1 References](#71-references)
+- [Distributed Cloud Storage – Functional Specification](#Distributed-Cloud-Storage-%E2%80%93-Functional-Specification)
+	- [0. Table of contents](#0-Table-of-contents)
+	- [1. Introduction](#1-Introduction)
+		- [1.1 Overview](#11-Overview)
+		- [1.2 Business Context](#12-Business-Context)
+		- [1.3 Glossary (project-defined terms)](#13-Glossary-project-defined-terms)
+		- [1.4 Glossary (other terms)](#14-Glossary-other-terms)
+	- [2. General Description](#2-General-Description)
+		- [2.1 Product / System Functions](#21-Product--System-Functions)
+		- [2.2 User Characteristics and Objectives](#22-User-Characteristics-and-Objectives)
+			- [Node Administrator](#Node-Administrator)
+			- [End User](#End-User)
+		- [2.3 Operational Scenarios](#23-Operational-Scenarios)
+		- [2.4 Constraints](#24-Constraints)
+			- [Speed](#Speed)
+			- [Security](#Security)
+			- [Data integrity](#Data-integrity)
+			- [Operating Systems support](#Operating-Systems-support)
+			- [Time](#Time)
+	- [3. Functional Requirements](#3-Functional-Requirements)
+	- [4. System Architecture](#4-System-Architecture)
+		- [Top-level network architecture](#Top-level-network-architecture)
+		- [Program architecture](#Program-architecture)
+	- [5. High-Level Design](#5-High-Level-Design)
+		- [User Data Flow Diagram](#User-Data-Flow-Diagram)
+		- [Nodes Data Flow Diagram](#Nodes-Data-Flow-Diagram)
+	- [6. Preliminary Schedule](#6-Preliminary-Schedule)
+	- [7. Appendices](#7-Appendices)
+		- [7.1 References](#71-References)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -450,11 +452,6 @@ The data is then transmitted to the new node.
 
 
 ## 6. Preliminary Schedule
-
-|   Sprint	|  Length	|  Start   |    End	 | Objectives					|
-|:---------:|:---------:|:---------|:---------|:-----------------------------|
-|     1		| Two Weeks	| 7/12/19  | 21/12/19 | Upskill in Go. Create basic network of nodes with no data storage. |
-|     2     | Two Weeks | 21/12/19 | 29/12/19 | Node benchmarking and basic data storage |
 
 This section provides an initial version of the project plan, including the major tasks to be accomplished, their interdependencies, and their tentative start/stop dates. The plan also includes information on hardware, software, and wetware resource requirements.
 
