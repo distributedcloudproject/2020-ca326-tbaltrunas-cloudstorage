@@ -54,7 +54,7 @@ Products that propose an alternative to "cloud storage giants" already exist in 
 
 **Active node** - node successfully participating in the cloud.
 
-**Inactive node** - node that can no longer participate in the cloud due to some problem.
+**Inactive node** - node that is currently not participating in the cloud, due to being offline or some technical problem.
 
 **Data store** - the place where user data is stored on a node, such as a directory on the hard disk's file system.
 
@@ -62,7 +62,7 @@ Products that propose an alternative to "cloud storage giants" already exist in 
 ### 1.4 Glossary (other terms)
 
 
-**Go** - modern C-like general-purpose programming language.
+**Go** - modern C-like general-purpose programming language. [golang.org](https://golang.org/)
 
 **React Native** - framework for building hybrid (Android and iOS) mobile applications using JavaScript.
 
@@ -91,7 +91,7 @@ The system comes in two parts:
 
 After being configured the software will run as a daemon. 
 
-There is no server. Multiple nodes will create a decentralised network.
+There is no master server, that is a server that makes decisions on the network. Multiple nodes will create a decentralised network.
 
 The following is an overview of it functionalities:
 
@@ -164,7 +164,7 @@ The End User's wish list includes:
 **Scenario ID:** 1 
 * **User Objective:** Add a machine to the cloud.
 * **User Action:** User installs and configures node software on the machine, turning the machine into a *node*.
-* **Comment:** The *nodes* self-organise with each other as long as they can reach each other over the Internet.
+* **Comment:** The *nodes* self-organise with each other as long as they can reach each other over the Internet. The new node will start downloading a copy of some data.
 
 **Scenario ID:** 2
 * **User Objective:** Remove a machine from the cloud.
@@ -189,7 +189,7 @@ The End User's wish list includes:
 **Scenario ID:** 6
 * **User Objective:** Download a file from the cloud.
 * **User Action:** Using a client the user selects a file, initiates the download, and receives the file on their local file system.
-* **Comment:** N/A.
+* **Comment:** The nodes determine the best node to download the file from based on availability, latency and available bandwidth.
 
 **Scenario ID:** 7
 * **User Objective:** Organise files on the cloud into directories.
@@ -199,7 +199,7 @@ The End User's wish list includes:
 **Scenario ID:** 8
 * **User Objective:** Modify the same file concurrently.
 * **User Action:** Two users proceed to upload different versions of the same file at the same time. The cloud either accepts or rejects one or both of the user changes.
-* **Comment:** Multiple user support is a "nice to have" feature.
+* **Comment:** The first change that gets 51% of the nodes approve the change is the one committed.  Multiple user support is a "nice to have" feature.
 
 
 ### 2.4 Constraints
@@ -207,15 +207,15 @@ The End User's wish list includes:
 
 #### Speed
 
-The users expect the reading and writing of data to the cloud to be as fast as possible. Thus we must use node benchmarking, compression, etc.
+The users expect the reading and writing of data to the cloud to be as fast as possible. Thus we must use node benchmarking and compression to speed the process up. We will need to benchmark available bandwith of nodes and their latencies, while monitoring current usage to determine the best node to communicate with the user.
 
 #### Security
 
-We boast of privacy and control, therefore we must upkeep it with encryption.
+We boast of privacy and control, therefore we must upkeep it with encryption. All of the files have to be transfered securely and all users have to be securely authenticated.
 
 #### Data integrity
 
-Some data is priceless. We must take every step to ensure data redundancy in case of node failure.
+Some data is priceless. We must take every step to ensure data redundancy in case of node failure. We aim to keep every data available on as many nodes as possible. We will also rank nodes in terms of availability. Ideally every piece of data will be present in the most available nodes.
 
 #### Operating Systems support
 
@@ -227,6 +227,8 @@ There may not be enough time for everything
 
 * One of the team members is not as experienced at Go.
 * The team will have to desing some networking protocols, which may be difficult.
+* The team will have to design routing and data sharding between the nodes based on many factors.
+* The team will have to implement rebalancing in the network based on the current usage and the available nodes.
 * The team may not be as experienced at desktop GUI applications, web and mobile development.
 * A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
 
@@ -239,18 +241,18 @@ This section lists the functional requirements in ranked order. Functional requi
 **Requirement ID:** 1
 * **Description:** Node networking, including listening for requests, sending back responses, initiating connections with other nodes, and accepting streams of data.
 * **Criticality:** Very high. Network IO is an essential component for this project.
-* **Technical issues:** Nodes must be reachable by IP address and port number, i.e. be on a public network or port forwarded.
+* **Technical issues:** Nodes must be reachable by IP address and port number, i.e. be on a private network or port forwarded.
 * **Dependencies:** N/A.
 
 **Requirement ID:** 2
 * **Description:** Node set up, including storage allocation.
-* **Criticality:** Very high. If there are no active nodes, then the cloud storage platform can not be used.
+* **Criticality:** Very high. If there are no active nodes, then the cloud storage platform can not be used. Limited nodes available will limit the redundancy of data and the speed of the network.
 * **Technical issues:** N/A.
 * **Dependencies:** Node networking.
 
 **Requirement ID:** 3
-* **Description:** Node update status to the cloud, including its state (*active*/*inactive*), free space left, latency, bandwidth, etc.
-* **Criticality:** Very high. If a node suddenly goes down this puts a risk to data. Also, knowing performance information about nodes is important for decisions.
+* **Description:** Node update status to the cloud, including its state (*active*/*inactive*), availability, free space left, latency, available bandwidth, current bandwidth, region, etc.
+* **Criticality:** Very high. If a node suddenly goes down this puts a risk to losing data. Also, knowing performance information about nodes is important for routing data through the network.
 * **Technical issues:** Communicating information with all nodes efficiently. 
 * **Dependencies:** Node set up.
 
@@ -287,7 +289,7 @@ This section lists the functional requirements in ranked order. Functional requi
 **Requirement ID:** 9
 * **Description:** Node configuration ability, including modifying the allocated storage space, network limits, etc.
 * **Criticality:** Medium. This is a convenient feature.
-* **Technical issues:** Node must be able to pick up the changes effectively without any or long downtime.
+* **Technical issues:** Node must be able to pick up the changes effectively without any or long downtime. Node has to rebalance it's data based on new storage space and network performance.
 * **Dependencies:** Node set up.
 
 **Requirement ID:** 10
@@ -316,7 +318,7 @@ This section lists the functional requirements in ranked order. Functional requi
 
 **Requirement ID:** 14
 * **Description:**  Client viewer to preview file contents for certain file types such as PDF, text files, etc.
-* **Criticality:** Medium. This is a convenient feature but not a priority.
+* **Criticality:** Low. This is a convenient feature but not a priority.
 * **Technical issues:** Do we use third-party components for viewers or write our own?
 * **Dependencies:** Client files CRUD.
 
@@ -328,7 +330,7 @@ This section lists the functional requirements in ranked order. Functional requi
 
 **Requirement ID:** 16
 * **Description:** Client compress files before sending and uncompress at reception.
-* **Criticality:** High. Compression reduces file size and thus improves the cloud performance.
+* **Criticality:** High. Compression reduces file size and thus improves the cloud performance as network bandwidth will most likely be the bottleneck.
 * **Technical issues:** Which compression codecs to use for which file types.
 * **Dependencies:** N/A.
 
@@ -384,10 +386,45 @@ The client and the node applications will interact with each other only through 
 
 ## 5. High-Level Design
 
-This section should set out the high-level design of the system. It should include one or more system models showing the relationship between system components and the systems and its environment. These might be object-models, DFD, etc.
+### User Data Flow Diagram
+
+The following diagram illustrates the user data flow diagram:
+
+![user data flow diagram](using-cloud.png "User Data Flow Diagram")
+
+(The diagram can also be found at https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage/raw/master/functional_spec/using-cloud.png)
+
+The User will utilize the cloud using either a GUI/CLI Program, Web App or a Mobile App. Those Programs/Apps will utilize our library to communicate with the node network.
+
+The library will use one node on the network as it's communicating point. The node will then communicate with the rest of the network as needed.
+
+When the user wishes to upload a file, the node will inform the network of what files will be affected. Once the network approves of the change, the user starts uploading the data to the node. This node will start replicating the data to other nodes.
+
+When the user requests to download any data, the node determines which nodes have that data and uses their benchmark information to determine which nodes will be the fastest. The user downloads the data from the nodes.
+
+### Nodes Data Flow Diagram
+
+The following diagram illustrates the node data flow diagram:
+
+![node data flow diagram](nodes-dfd.png "Node Data Flow Diagram")
+
+(The diagram can also be found at https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage/raw/master/functional_spec/nodes-dfd.png)
+
+The new node starts by contacting a bootstrap node, a node already in the network, with the request to join the network. The bootstrap node authenticates the new node, and if approved, sends the network information (e.g list of nodes) to the new node. The bootstrap node informs the network of the new node.
+
+The new node is then benchmarked by the network. It's latency, bandwidth and capacity are all tested and the results are saved.
+
+The results of this benchmark are then used to determine what data should be replicated to the nodes.
+
+The data is then transmitted to the new node.
 
 
 ## 6. Preliminary Schedule
+
+|   Sprint	|  Length	|  Start   |    End	 | Objectives					|
+|:---------:|:---------:|:---------|:---------|:-----------------------------|
+|     1		| Two Weeks	| 7/12/19  | 21/12/19 | Upskill in Go. Create basic network of nodes with no data storage. |
+|     2     | Two Weeks | 21/12/19 | 29/12/19 | Node benchmarking and basic data storage |
 
 This section provides an initial version of the project plan, including the major tasks to be accomplished, their interdependencies, and their tentative start/stop dates. The plan also includes information on hardware, software, and wetware resource requirements.
 
