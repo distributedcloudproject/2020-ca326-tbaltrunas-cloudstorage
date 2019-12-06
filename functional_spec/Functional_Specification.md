@@ -13,6 +13,36 @@
 
 A table of contents with pages numbers indicated for all sections / headings should be included.
 
+- [Distributed Cloud Storage – Functional Specification](#distributed-cloud-storage---functional-specification)
+  * [0. Table of contents](#0-table-of-contents)
+  * [1. Introduction](#1-introduction)
+    + [1.1 Overview](#11-overview)
+    + [1.2 Business Context](#12-business-context)
+    + [1.3 Glossary (project-defined terms)](#13-glossary--project-defined-terms-)
+    + [1.4 Glossary (other terms)](#14-glossary--other-terms-)
+  * [2. General Description](#2-general-description)
+    + [2.1 Product / System Functions](#21-product---system-functions)
+    + [2.2 User Characteristics and Objectives](#22-user-characteristics-and-objectives)
+      - [Node Administrator](#node-administrator)
+      - [End User](#end-user)
+    + [2.3 Operational Scenarios](#23-operational-scenarios)
+    + [2.4 Constraints](#24-constraints)
+      - [Speed](#speed)
+      - [Security](#security)
+      - [Data integrity](#data-integrity)
+      - [Operating Systems support](#operating-systems-support)
+      - [Time](#time)
+  * [3. Functional Requirements](#3-functional-requirements)
+  * [4. System Architecture](#4-system-architecture)
+    + [Top-level network architecture](#top-level-network-architecture)
+    + [Program architecture](#program-architecture)
+  * [5. High-Level Design](#5-high-level-design)
+  * [6. Preliminary Schedule](#6-preliminary-schedule)
+  * [7. Appendices](#7-appendices)
+    + [7.1 References](#71-references)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 ## 1. Introduction
 
@@ -105,7 +135,7 @@ The following is an overview of it functionalities:
 
 **The "client" software** allows the "end user" to access their data stored on their cloud storage platform.
 
-The "client" is proposed to be implemented on multiple platforms: on desktop as a program with a GUI, on the web as a web application, and on mobile as an app.
+The "client" is proposed to be implemented on multiple platforms: on desktop as a program with a GUI, on the web as a web application with a server, and on mobile as an app.
 
 The following is an overview of a client's functionalities:
 
@@ -230,7 +260,7 @@ There may not be enough time for everything
 * The team will have to design routing and data sharding between the nodes based on many factors.
 * The team will have to implement rebalancing in the network based on the current usage and the available nodes.
 * The team may not be as experienced at desktop GUI applications, web and mobile development.
-* A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
+* A plethora of clients could be created. If there is not enough time we may not implement the mobile client and/or the web client.
 
 
 ## 3. Functional Requirements
@@ -430,6 +460,31 @@ This section provides an initial version of the project plan, including the majo
 
 The project plan should be accompanied by one or more PERT or GANTT charts.
 
+The following is a GANTT chart of our proposed schedule:
+
+| Task Name | Duration | Length | Start | Finish | Assignees |
+| --------- | -------- | ------ | ----- | ------ | --------- |
+N network
+N data store
+N distribution
+DC network
+DC file system
+DC GUI
+DC compression
+DC encryption
+WC network
+WC file system
+WC compression
+WC encryption
+MC network
+MC file system
+MC compression
+MC encryption
+
+N = Node
+DC = desktop client
+WC = web client
+MC = mobile client
 
 ## 7. Appendices
 
