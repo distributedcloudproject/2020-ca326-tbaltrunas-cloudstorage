@@ -230,8 +230,8 @@ The End User's wish list includes:
 
 **Scenario ID:** 8
 * **User Objective:** Modify the same file concurrently.
-* **User Action:** Two users proceed to upload different versions of the same file at the same time. The cloud either accepts or rejects one or both of the user changes.
-* **Comment:** The first change that gets 51% of the nodes approve the change is the one committed.  Multiple user support is a "nice to have" feature.
+* **User Action:** Two users proceed to upload different versions of the same file at the same time. The cloud either accepts one change or both if possible.
+* **Comment:** The first change that gets 51% of the nodes approve the change is the one committed. Ideally, if possible, merge the changes together. Merging files together is low priority, but cloud deciding on a change is high priority to handle race conditions.
 
 
 ### 2.4 Constraints
