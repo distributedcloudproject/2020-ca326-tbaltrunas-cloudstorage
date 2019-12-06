@@ -471,7 +471,9 @@ Specifies other useful information for understanding the requirements.
 
 ### 7.1 References
 
+* https://golang.org/ - The Go language.
 * https://cloud.google.com/free/ - Google Cloud Platform free tier.
 * https://azure.microsoft.com/en-us/free/free-account-faq/ - Microsoft Azure free tier.
 * https://aws.amazon.com/free/ - AWS free tier.
 * https://facebook.github.io/react-native/docs/out-of-tree-platforms - React Native platform support.	
+* https://en.wikipedia.org/wiki/Systemd - the systemd linux software.
