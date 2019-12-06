@@ -13,6 +13,36 @@
 
 A table of contents with pages numbers indicated for all sections / headings should be included.
 
+- [Distributed Cloud Storage – Functional Specification](#distributed-cloud-storage---functional-specification)
+  * [0. Table of contents](#0-table-of-contents)
+  * [1. Introduction](#1-introduction)
+    + [1.1 Overview](#11-overview)
+    + [1.2 Business Context](#12-business-context)
+    + [1.3 Glossary (project-defined terms)](#13-glossary--project-defined-terms-)
+    + [1.4 Glossary (other terms)](#14-glossary--other-terms-)
+  * [2. General Description](#2-general-description)
+    + [2.1 Product / System Functions](#21-product---system-functions)
+    + [2.2 User Characteristics and Objectives](#22-user-characteristics-and-objectives)
+      - [Node Administrator](#node-administrator)
+      - [End User](#end-user)
+    + [2.3 Operational Scenarios](#23-operational-scenarios)
+    + [2.4 Constraints](#24-constraints)
+      - [Speed](#speed)
+      - [Security](#security)
+      - [Data integrity](#data-integrity)
+      - [Operating Systems support](#operating-systems-support)
+      - [Time](#time)
+  * [3. Functional Requirements](#3-functional-requirements)
+  * [4. System Architecture](#4-system-architecture)
+    + [Top-level network architecture](#top-level-network-architecture)
+    + [Program architecture](#program-architecture)
+  * [5. High-Level Design](#5-high-level-design)
+  * [6. Preliminary Schedule](#6-preliminary-schedule)
+  * [7. Appendices](#7-appendices)
+    + [7.1 References](#71-references)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 ## 1. Introduction
 
