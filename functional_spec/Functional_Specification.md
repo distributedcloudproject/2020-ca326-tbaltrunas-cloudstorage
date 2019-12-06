@@ -105,7 +105,7 @@ The following is an overview of it functionalities:
 
 **The "client" software** allows the "end user" to access their data stored on their cloud storage platform.
 
-The "client" is proposed to be implemented on multiple platforms: on desktop as a program with a GUI, on the web as a web application, and on mobile as an app.
+The "client" is proposed to be implemented on multiple platforms: on desktop as a program with a GUI, on the web as a web application with a server, and on mobile as an app.
 
 The following is an overview of a client's functionalities:
 
@@ -228,7 +228,7 @@ There may not be enough time for everything
 * One of the team members is not as experienced at Go.
 * The team will have to desing some networking protocols, which may be difficult.
 * The team may not be as experienced at desktop GUI applications, web and mobile development.
-* A plethora of clients could be created. If there is not enough time we may not do the mobile client and/or the web client.
+* A plethora of clients could be created. If there is not enough time we may not implement the mobile client and/or the web client.
 
 
 ## 3. Functional Requirements
@@ -393,6 +393,31 @@ This section provides an initial version of the project plan, including the majo
 
 The project plan should be accompanied by one or more PERT or GANTT charts.
 
+The following is a GANTT chart of our proposed schedule:
+
+| Task Name | Duration | Length | Start | Finish | Assignees |
+| --------- | -------- | ------ | ----- | ------ | --------- |
+N network
+N data store
+N distribution
+DC network
+DC file system
+DC GUI
+DC compression
+DC encryption
+WC network
+WC file system
+WC compression
+WC encryption
+MC network
+MC file system
+MC compression
+MC encryption
+
+N = Node
+DC = desktop client
+WC = web client
+MC = mobile client
 
 ## 7. Appendices
 
