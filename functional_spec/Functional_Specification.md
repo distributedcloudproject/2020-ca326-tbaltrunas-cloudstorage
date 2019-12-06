@@ -453,35 +453,14 @@ The data is then transmitted to the new node.
 
 ## 6. Preliminary Schedule
 
-This section provides an initial version of the project plan, including the major tasks to be accomplished, their interdependencies, and their tentative start/stop dates. The plan also includes information on hardware, software, and wetware resource requirements.
-
-The project plan should be accompanied by one or more PERT or GANTT charts.
-
 The following is a GANTT chart of our proposed schedule:
 
-| Task Name | Duration | Length | Start | Finish | Assignees |
-| --------- | -------- | ------ | ----- | ------ | --------- |
-N network
-N data store
-N distribution
-DC network
-DC file system
-DC GUI
-DC compression
-DC encryption
-WC network
-WC file system
-WC compression
-WC encryption
-MC network
-MC file system
-MC compression
-MC encryption
+![gannt chart](schedule.jpg "gaant chart")
 
-N = Node
-DC = desktop client
-WC = web client
-MC = mobile client
+In the first few weeks we will be improving and polishing our Go skills. We will work on Node networking, which is the base setup that everything is built upon. We allocated good amount of time for this as we want to get it right.
+
+Looking at the schedule, we may not be able to complete every task in the given time. The mobile tasks are a "nice to have", we will prioritize other tasks over mobile app.
+
 
 ## 7. Appendices
 
