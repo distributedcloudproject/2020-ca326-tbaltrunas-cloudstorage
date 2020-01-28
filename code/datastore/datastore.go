@@ -39,7 +39,7 @@ type FileChunk struct {
 type FileChunkLocations map[FileChunkIDType]network.Node
 
 
-// DataStore is a data structure for actually storing the user's files on a node.
+// DataStore is a data structure that keeps track of user files stored on the cloud.
 type DataStore struct {
-	Chunks [] FileChunk
+	Files [] File
 }
