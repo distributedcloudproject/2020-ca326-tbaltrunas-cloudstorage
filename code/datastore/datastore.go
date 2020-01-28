@@ -12,31 +12,34 @@ type FileChunkIDType hash.Hash
 type FileContentsType [] byte
 
 
-// a user file stored on the cloud
+// File represents a user's file stored on the cloud.
+// Contains the path, file size, and a list of the file's chunk ID's.
 type File struct {
 	Path 		string
 	
 	Size 		FileSizeType
 	
-	ChunkIDs [] FileChunkIDType  // list of chunks belonging to the file
+	ChunkIDs [] FileChunkIDType  // List of chunks belonging to the file.
 }
 
 
-// a part of a file
+// FileChunk represents a "chunk" of a file, a sequential part of a file.
+// Each chunk has an ID, a sequence number, and actual contents of the chunk.
 type FileChunk struct {
-	ID 				FileChunkIDType  // unique id of the chunk (hash value of the contents)
+	ID 				FileChunkIDType  // Unique ID of the chunk (hash value of the contents).
 
-	SequenceNumber 	int // chunk sequence inside a file it belongs to
+	SequenceNumber 	int // Chunk sequence used to place the chunk in the correct position in the file.
 
-	Contents 		FileContentsType // actual contents of the chunk
+	Contents 		FileContentsType
 }
 
 
-// data structure that keeps track of which nodes contain which chunks
+// FileChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
+// The data structure keeps track of which nodes contain which chunks.
 type FileChunkLocations map[FileChunkIDType]network.Node
 
 
-// data structure for actually storing user files on a node
+// DataStore is a data structure for actually storing the user's files on a node.
 type DataStore struct {
 	Chunks [] FileChunk
 }
