@@ -20,3 +20,7 @@ re: fclean make
 run: re
 	# run as: make run ARGS="args"
 	@./$(PROJECT_BINARY) $(ARGS)
+
+
+test:
+	@go test ./...
