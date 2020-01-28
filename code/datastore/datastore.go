@@ -8,7 +8,7 @@ import (
 
 
 type FileSizeType int
-type FileChunkIdType hash.Hash
+type FileChunkIDType hash.Hash
 type FileContentsType [] byte
 
 
@@ -18,25 +18,25 @@ type File struct {
 	
 	Size 		FileSizeType
 	
-	ChunkIds [] FileChunkIdType  // list of chunks belonging to the file
+	ChunkIDs [] FileChunkIDType  // list of chunks belonging to the file
 }
 
 
 // a part of a file
 type FileChunk struct {
-	id 				FileChunkIdType  // unique id of the chunk
+	ID 				FileChunkIDType  // unique id of the chunk (hash value of the contents)
 
-	sequenceNumber 	int // chunk sequence inside a file it belongs to
+	SequenceNumber 	int // chunk sequence inside a file it belongs to
 
-	contents 		FileContentsType // actual contents of the chunk
+	Contents 		FileContentsType // actual contents of the chunk
 }
 
 
 // data structure that keeps track of which nodes contain which chunks
-type FileChunkLocations map[FileChunkIdType]network.Node
+type FileChunkLocations map[FileChunkIDType]network.Node
 
 
 // data structure for actually storing user files on a node
 type DataStore struct {
-	chunks [] FileChunk
+	Chunks [] FileChunk
 }
