@@ -23,4 +23,5 @@ run: re
 
 
 test:
-	@go test ./...
+	# run with ARGS="-v" flag for verbose mode
+	@go test ./... $(ARGS)
