@@ -7,11 +7,6 @@ import (
 	"encoding/gob"
 )
 
-func init() {
-	gob.Register(&DataStore{})
-	gob.Register(&FileChunkLocations{})
-}
-
 // Save persistently stores the struct s into a file at path as bytes.
 // The implementation closely follows the following tutorial:
 // https://medium.com/@matryer/golang-advent-calendar-day-eleven-persisting-go-objects-to-disk-7caf1ee3d11d
