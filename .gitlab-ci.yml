@@ -6,15 +6,12 @@ stages:
   - deploy
 
 before_script:
-  - cd $GOPATH/src
-  - echo "In `pwd`"
-  
+  - echo "Creating symlink between repo/code and GOPATH/src"
+  - cd $GOPATH/src  
   - ln -s $CI_PROJECT_DIR/code cloud
-  - echo "Created symlink"
   - ls
-  
+  - ls cloud
   - cd $CI_PROJECT_DIR/code
-  - echo "In `pwd`"
 
 build:
   stage: build
