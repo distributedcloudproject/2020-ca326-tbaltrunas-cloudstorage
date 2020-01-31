@@ -5,7 +5,13 @@ import (
 	"io/ioutil"
 	"bytes"
 	"encoding/gob"
+	"reflect"
 )
+
+func init() {
+	gob.Register(&DataStore{})
+	gob.Register(&FileChunkLocations{})
+}
 
 // Save persistently stores the struct s into a file at path as bytes.
 // The implementation closely follows the following tutorial:
@@ -40,7 +46,7 @@ func Load(path string, s interface{}) error {
 	buffer.Write(contents)
 	// decode buffer into s
 	dec := gob.NewDecoder(&buffer)
-	err = dec.Decode(&s)
+	err = dec.Decode(addr)
 	if err != nil {
 		return err
 	}
