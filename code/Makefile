@@ -22,5 +22,9 @@ run: re
 	@./$(PROJECT_BINARY) $(ARGS)
 
 
-test:
+test: make
 	@go test ./...
+
+
+deploy: make
+	mv cloud /bin

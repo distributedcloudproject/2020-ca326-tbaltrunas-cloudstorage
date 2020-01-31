@@ -24,9 +24,9 @@ build:
 test:
   stage: test
   script:
-    - go test ./...
+    - make test
 
 deploy:
   stage: deploy
   script:
-    - mv cloud /bin
+    - make deploy
