@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"bytes"
 	"encoding/gob"
-	"reflect"
 )
 
 func init() {
@@ -46,7 +45,7 @@ func Load(path string, s interface{}) error {
 	buffer.Write(contents)
 	// decode buffer into s
 	dec := gob.NewDecoder(&buffer)
-	err = dec.Decode(addr)
+	err = dec.Decode(&s)
 	if err != nil {
 		return err
 	}

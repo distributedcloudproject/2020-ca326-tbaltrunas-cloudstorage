@@ -86,7 +86,8 @@ func TestPersistDataStore(t *testing.T) {
 	// https://stackoverflow.com/a/45222521
 	// An alternative struct comparison method may be needed in the future.
 	if !reflect.DeepEqual(dataStore, dataStore2) {
-		t.Errorf("Mismatch between original data store and loaded data store. Original: %v. Loaded: %v", dataStore, dataStore2)
+		t.Errorf("Mismatch between original data store and loaded data store. Original: %v. Loaded: %v",
+				 dataStore, dataStore2)
 	}
 
 	// err = Save(persistency_path, chunkLocations)
@@ -99,6 +100,7 @@ func TestPersistDataStore(t *testing.T) {
 	// 	t.Error(err)
 	// }
 	// if !reflect.DeepEqual(chunkLocations, chunkLocations2) {
-	// 	t.Errorf("Mismatch between original chunk structure and loaded chunk structure. Original: %v. Loaded: %v", chunkLocations, chunkLocations2)
+		// t.Errorf("Mismatch between original chunk structure and loaded chunk structure. Original: %v. Loaded: %v", 
+		// 		 chunkLocations, chunkLocations2)
 	// }
 }
