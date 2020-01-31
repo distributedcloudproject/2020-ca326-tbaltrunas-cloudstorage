@@ -7,8 +7,14 @@ stages:
 
 before_script:
   - cd $GOPATH
+  - echo "In `pwd`"
+  
   - ln -s $CI_PROJECT_DIR/code cloud
+  - echo "Created symlink"
+  - ls
+  
   - cd $CI_PROJECT_DIR/code
+  - echo "In `pwd`"
 
 build:
   stage: build
