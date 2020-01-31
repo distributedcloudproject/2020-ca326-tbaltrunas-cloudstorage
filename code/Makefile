@@ -1,3 +1,9 @@
+# This assumes that we have done the proper linking
+# i.e. we need a symlink from local project files to $GOPATH
+# cd $GOPATH/src
+# ln -s /project/dir/name name
+
+
 PROJECT_NAME=cloud
 PROJECT_BINARY=cloud
 
