@@ -1,0 +1,26 @@
+image: "golang:latest"
+
+stages:
+  - build
+  - test
+  - deploy
+
+before_script:
+  - cd $GOPATH
+  - ln -s $CI_PROJECT_DIR/code cloud
+  - cd $CI_PROJECT_DIR/code
+
+build:
+  stage: build
+  script:
+    - make
+
+test:
+  stage: test
+  script:
+    - go test ./...
+
+deploy:
+  stage: deploy
+  script:
+    - mv cloud /bin
