@@ -6,23 +6,35 @@ import (
 
 const (
 	NetworkInfoMsg = "NetworkInfo"
+	NodeInfoMsg = "NodeInfo"
 	AddNodeMsg = "AddNode"
 )
 
 func init() {
-	gob.Register(&Network{})
-	gob.Register(&Node{})
+	gob.Register(Network{})
+	gob.Register(Node{})
 }
 
-func (n *Node) NetworkInfo() (*Network, error) {
+func (n *Node) NetworkInfo() (Network, error) {
 	ret, err := n.client.SendMessage(NetworkInfoMsg)
-	return ret[0].(*Network), err
+	return ret[0].(Network), err
 }
 
-func (r request) OnNetworkInfoRequest() *Network {
-	r.network.mutex.RLock()
-	defer r.network.mutex.RUnlock()
-	return r.network
+func (r request) OnNetworkInfoRequest() Network {
+	r.cloud.Mutex.RLock()
+	defer r.cloud.Mutex.RUnlock()
+	return r.cloud.Network
+}
+
+func (n *Node) NodeInfo() (Node, error) {
+	ret, err := n.client.SendMessage(NodeInfoMsg)
+	return ret[0].(Node), err
+}
+
+func (r request) OnNodeInfoRequest() Node {
+	r.node.mutex.RLock()
+	defer r.node.mutex.RUnlock()
+	return *r.node
 }
 
 func (n *Node) AddNode(node Node) error {
@@ -31,7 +43,7 @@ func (n *Node) AddNode(node Node) error {
 }
 
 func (r request) OnAddNodeRequest(node Node) {
-	r.network.mutex.Lock()
-	defer r.network.mutex.Unlock()
-	r.network.Nodes = append(r.network.Nodes, &node)
+	r.cloud.Mutex.Lock()
+	defer r.cloud.Mutex.Unlock()
+	r.cloud.Network.Nodes = append(r.cloud.Network.Nodes, &node)
 }

@@ -30,6 +30,8 @@ type Client interface {
 	RegisterRequest(message string, f interface{})
 	AddRequestHandler(handler RequestHandler)
 
+	Address() string
+
 	SendMessage(msg string, data ...interface{}) ([]interface{}, error)
 	HandleConnection() error
 	Close() error
@@ -74,6 +76,10 @@ func NewClientDial(address string) (Client, error) {
 		return nil, err
 	}
 	return NewClient(conn), nil
+}
+
+func (c *client) Address() string {
+	return c.conn.RemoteAddr().String()
 }
 
 func (c *client) Close() error {
