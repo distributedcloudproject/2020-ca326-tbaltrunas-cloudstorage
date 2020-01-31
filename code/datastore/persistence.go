@@ -45,7 +45,7 @@ func Load(path string, s interface{}) error {
 	buffer.Write(contents)
 	// decode buffer into s
 	dec := gob.NewDecoder(&buffer)
-	err = dec.Decode(&s)
+	err = dec.Decode(s)
 	if err != nil {
 		return err
 	}

@@ -77,7 +77,7 @@ func TestPersistDataStore(t *testing.T) {
 		t.Error(err)
 	}
 	var dataStore2 DataStore
-	err = Load(persistency_path, dataStore2)
+	err = Load(persistency_path, &dataStore2)
 	if err != nil {
 		t.Error(err)
 	}
