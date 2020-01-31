@@ -6,7 +6,7 @@ stages:
   - deploy
 
 before_script:
-  - cd $GOPATH
+  - cd $GOPATH/src
   - echo "In `pwd`"
   
   - ln -s $CI_PROJECT_DIR/code cloud
