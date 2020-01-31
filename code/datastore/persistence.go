@@ -11,6 +11,8 @@ import (
 // The implementation closely follows the following tutorial:
 // https://medium.com/@matryer/golang-advent-calendar-day-eleven-persisting-go-objects-to-disk-7caf1ee3d11d
 // Except that the encoding format used is gob.
+// Use as follows:
+// Save('/path', structure)
 func Save(path string, s interface{}) error {
 	f, err := os.Create(path)
 	if err != nil {
@@ -30,6 +32,9 @@ func Save(path string, s interface{}) error {
 }
 
 // Load decodes bytes at the filepath into the struct s.
+// Note that s must be a reference.
+// For example, use as follows:
+// Load('/path', &structure)
 func Load(path string, s interface{}) error {
 	// read file into buffer
 	contents, err := ioutil.ReadFile(path)
