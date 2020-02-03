@@ -5,6 +5,8 @@ import (
 	"os"
 	"io"
 	"math"
+	"hash"
+	"hash/fnv"
 )
 
 type FileSizeType int
@@ -115,4 +117,18 @@ func (file *File) GetChunk(n int) ([]byte, int, error) {
 		return nil, 0, err
 	}
 	return buffer, bytesRead, nil
+}
+
+// GetChunkID returns the ID of the nth chunk in the file, or error.
+// In implementation this is a hash of the contents of the nth chunk.
+func (file *File) GetChunkID(n int) (FileChunkIDType, error) {
+	buffer, _, err := file.GetChunk(n)
+	if err != nil {
+		return "", err
+	}
+	h := hash.Hash(fnv.New32())
+	h.Write(buffer)
+	chunkHash := h.Sum(make([]byte, 0))
+	chunkID := FileChunkIDType(chunkHash)
+	return chunkID, nil
 }

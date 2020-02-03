@@ -42,7 +42,8 @@ func TestGetFileChunk(t *testing.T) {
 	contents, bytesRead, err := file.GetChunk(0)
 	t.Logf("Bytes read: %d", bytesRead)
 	t.Logf("Contents read: %v (string: %v)", contents, string(contents))
-
+	chunkID, err := file.GetChunkID(0)
+	t.Logf("ChunkID: %s", chunkID)
 
 	chunkSize := int(math.Ceil(float64(size)/float64(chunkNumber)))
 	t.Logf("Operating with chunk size: %d", chunkSize)
