@@ -41,3 +41,12 @@ type FileChunkLocations map[FileChunkIDType][]ChunkNodeType
 type DataStore struct {
 	Files [] File
 }
+
+// // GetChunk returns the contents of the nth chunk in the file.
+// func GetChunk(file string, n int) []byte {
+
+// }
+
+// func SplitFile(file string, chunkSize int) n {
+
+// }
