@@ -3,70 +3,71 @@ package datastore
 import (
 	"testing"
 	"os"
-	"io"
-	"math"
-	"hash"
-	"hash/fnv"
+	"io/ioutil"
 )
 
 func TestGetFileChunk(t *testing.T) {
+	// create a file with test contents
 	path := "/tmp/cloud_test_file"
+	t.Logf("File path: %s", path)
 
-	f, err := os.Open(path)
+	fileContents := "hellothere"  // 10 bytes
+	err := ioutil.WriteFile(path, []byte(fileContents), os.ModePerm)
 	if err != nil {
 		t.Error(err)
 	}
-	defer f.Close()
-
-	// fileInfo, err := f.Stat()
-	// if err != nil {
-	// 	t.Error(err)
-	// }
-
-	// size := fileInfo.Size()
-	// t.Logf("File size: %d", size)
+	fileContentsRead, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("File contents: %s", string(fileContentsRead))
 
 	file, err := NewFile(path)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Logf("File: %v", file)
-	size := file.Size
 
-	chunkNumber := 4
+	// split the file into two chunks
+	chunkNumber := 2
 	t.Logf("Operating with chunk number: %d", chunkNumber)
 
 	file.Split(chunkNumber)
 	t.Logf("File: %v", file)
 
-	contents, bytesRead, err := file.GetChunk(0)
+	n := 0
+	t.Logf("Chunk: %d", n)
+	contents0, bytesRead, err := file.GetChunk(n)
+	if err != nil {
+		t.Error(err)
+	}
 	t.Logf("Bytes read: %d", bytesRead)
-	t.Logf("Contents read: %v (string: %v)", contents, string(contents))
-	chunkID, err := file.GetChunkID(0)
+	t.Logf("Contents read: %v (string: %v)", contents0, string(contents0))
+	chunkID, err := file.GetChunkID(n)
+	if err != nil {
+		t.Error(err)
+	}
 	t.Logf("ChunkID: %s", chunkID)
 
-	chunkSize := int(math.Ceil(float64(size)/float64(chunkNumber)))
-	t.Logf("Operating with chunk size: %d", chunkSize)
+	n = 1
+	t.Logf("Chunk: %d", n)
+	contents1, bytesRead, err := file.GetChunk(n)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("Bytes read: %d", bytesRead)
+	t.Logf("Contents read: %v (string: %v)", contents1, string(contents1))
+	chunkID, err = file.GetChunkID(n)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("ChunkID: %s", chunkID)
 
-	for	n := 0; n < chunkNumber; n++ {
-		t.Logf("Operating on chunk number: %d", n)
-		// read chunk
-		contents := make([]byte, chunkSize)
-		offset := int64(n*chunkSize)
-		bytesRead, err := f.ReadAt(contents, offset)
-		if err == io.EOF {
-			n = chunkNumber + 1
-		} else if err != nil {
-			t.Error(err)
-		}
-		t.Logf("Bytes read: %d", bytesRead)
-		t.Logf("Contents read: %v (string: %v)", contents, string(contents))
-
-		// hash chunk
-		h := hash.Hash(fnv.New32())
-		h.Write(contents)
-		chunkHash := h.Sum(make([]byte, 0))
-		chunkID := FileChunkIDType(chunkHash)
-		t.Logf("Hash of contents: %v (string: %v)", chunkHash, chunkID)
+	// collect back the chunks and check against original content
+	retrievedContents := string(contents0) + string(contents1)
+	t.Logf("Actual contents: %s", fileContents)
+	t.Logf("Read contents: %s", retrievedContents)
+	if retrievedContents != fileContents {
+		t.Errorf("Actual and read contents differ.")
 	}
 }
