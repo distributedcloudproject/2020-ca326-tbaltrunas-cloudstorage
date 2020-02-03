@@ -16,7 +16,7 @@ func SampleDataStoreFile() File {
 	fileChunks := FileChunks{
 		ChunkNumber: 1,
 		ChunkSize: 9,
-		ChunkIDs: []FileChunkIDType{chunkID},
+		Chunks: []FileChunk{FileChunk{chunkID, 0}},
 	}
 
 	file := File{
@@ -47,7 +47,7 @@ func TestPersistDataStore(t *testing.T) {
 	// set up sample data structures
 	file := SampleDataStoreFile()
 	t.Logf("sample file: %v", file)
-	chunkID := file.Chunks.ChunkIDs[0]
+	chunkID := file.Chunks.Chunks[0].ID
 	t.Logf("chunkID hash: %v", chunkID)
 	dataStore := SampleDataStore(file)
 	t.Logf("data store: %v", dataStore)

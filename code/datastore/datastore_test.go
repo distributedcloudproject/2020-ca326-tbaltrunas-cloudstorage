@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-func TestGetFileChunk(t *testing.T) {
+func TestFileChunks(t *testing.T) {
 	// create a file with test contents
 	path := "/tmp/cloud_test_file"
 	t.Logf("File path: %s", path)
@@ -22,19 +22,16 @@ func TestGetFileChunk(t *testing.T) {
 	}
 	t.Logf("File contents: %s", string(fileContentsRead))
 
-	file, err := NewFile(path)
+	chunkNumber := 2
+	t.Logf("Operating with chunk number: %d", chunkNumber)
+
+	file, err := NewFile(path, chunkNumber)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Logf("File: %v", file)
 
 	// split the file into two chunks
-	chunkNumber := 2
-	t.Logf("Operating with chunk number: %d", chunkNumber)
-
-	file.Split(chunkNumber)
-	t.Logf("File: %v", file)
-
 	n := 0
 	t.Logf("Chunk: %d", n)
 	contents0, bytesRead, err := file.GetChunk(n)
