@@ -3,6 +3,7 @@ package datastore
 import (
 	"testing"
 	"os"
+	"io"
 	"math"
 	"hash"
 	"hash/fnv"
@@ -31,21 +32,25 @@ func TestGetFileChunk(t *testing.T) {
 	chunkNumber := int(math.Ceil(float64(size)/float64(chunkSize)))
 	t.Logf("Number of chunks in file: %d", chunkNumber)
 
-	// read chunk
-	contents := make([]byte, chunkSize)
-	n := 0
-	offset := int64(n*chunkSize)
-	bytesRead, err := f.ReadAt(contents, offset)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("Chunk number: %d. Bytes read: %d.", n, bytesRead)
-	t.Logf("Contents read: %v (string: %v)", contents, string(contents))
+	for	n := 0; n < chunkNumber+1; n++ {
+		t.Logf("Operating on chunk number: %d", n)
+		// read chunk
+		contents := make([]byte, chunkSize)
+		offset := int64(n*chunkSize)
+		bytesRead, err := f.ReadAt(contents, offset)
+		if err == io.EOF {
+			
+		} else if err != nil {
+			t.Error(err)
+		}
+		t.Logf("Bytes read: %d", bytesRead)
+		t.Logf("Contents read: %v (string: %v)", contents, string(contents))
 
-	// hash chunk
-	h := hash.Hash(fnv.New32())
-	h.Write(contents)
-	chunkHash := h.Sum(make([]byte, 0))
-	chunkID := FileChunkIDType(chunkHash)
-	t.Logf("Hash of contents: %v (string: %v)", chunkHash, chunkID)
+		// hash chunk
+		h := hash.Hash(fnv.New32())
+		h.Write(contents)
+		chunkHash := h.Sum(make([]byte, 0))
+		chunkID := FileChunkIDType(chunkHash)
+		t.Logf("Hash of contents: %v (string: %v)", chunkHash, chunkID)
+	}
 }
