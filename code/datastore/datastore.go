@@ -5,8 +5,6 @@ import (
 	"os"
 	"io"
 	"math"
-	"hash"
-	"hash/fnv"
 )
 
 type FileSizeType int
@@ -85,11 +83,6 @@ func fileSize(path string) (int, error) {
 	return size, err
 }
 
-// GetChunk returns the contents of the nth chunk in the file.
-// func GetChunk(file string, n int) []byte {
-
-// }
-
 // Split divides up the current file into chunks.
 // By calculating the required offsets and hashes for the File.
 func (file *File) Split(chunkNumber int) {
@@ -97,8 +90,6 @@ func (file *File) Split(chunkNumber int) {
 
 	chunkSize := int(math.Ceil(float64(file.Size)/float64(chunkNumber)))
 	file.Chunks.ChunkSize = chunkSize
-
-
 }
 
 // GetChunk reads the nth chunk in the file.
@@ -126,9 +117,7 @@ func (file *File) GetChunkID(n int) (FileChunkIDType, error) {
 	if err != nil {
 		return "", err
 	}
-	h := hash.Hash(fnv.New32())
-	h.Write(buffer)
-	chunkHash := h.Sum(make([]byte, 0))
+	chunkHash := HashBytes(buffer)
 	chunkID := FileChunkIDType(chunkHash)
 	return chunkID, nil
 }
