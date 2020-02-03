@@ -11,8 +11,6 @@ import (
 
 func TestGetFileChunk(t *testing.T) {
 	path := "/tmp/cloud_test_file"
-	chunkSize := 20
-	t.Logf("Operating with chunk size: %d", chunkSize)
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -20,26 +18,43 @@ func TestGetFileChunk(t *testing.T) {
 	}
 	defer f.Close()
 
-	fileInfo, err := f.Stat()
+	// fileInfo, err := f.Stat()
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+
+	// size := fileInfo.Size()
+	// t.Logf("File size: %d", size)
+
+	file, err := NewFile(path)
 	if err != nil {
 		t.Error(err)
 	}
+	t.Logf("File: %v", file)
+	size := file.Size
 
-	size := fileInfo.Size()
-	t.Logf("File size: %d", size)
+	chunkNumber := 4
+	t.Logf("Operating with chunk number: %d", chunkNumber)
 
-	// calculate number of chunks
-	chunkNumber := int(math.Ceil(float64(size)/float64(chunkSize)))
-	t.Logf("Number of chunks in file: %d", chunkNumber)
+	file.Split(chunkNumber)
+	t.Logf("File: %v", file)
 
-	for	n := 0; n < chunkNumber+1; n++ {
+	contents, bytesRead, err := file.GetChunk(0)
+	t.Logf("Bytes read: %d", bytesRead)
+	t.Logf("Contents read: %v (string: %v)", contents, string(contents))
+
+
+	chunkSize := int(math.Ceil(float64(size)/float64(chunkNumber)))
+	t.Logf("Operating with chunk size: %d", chunkSize)
+
+	for	n := 0; n < chunkNumber; n++ {
 		t.Logf("Operating on chunk number: %d", n)
 		// read chunk
 		contents := make([]byte, chunkSize)
 		offset := int64(n*chunkSize)
 		bytesRead, err := f.ReadAt(contents, offset)
 		if err == io.EOF {
-			
+			n = chunkNumber + 1
 		} else if err != nil {
 			t.Error(err)
 		}

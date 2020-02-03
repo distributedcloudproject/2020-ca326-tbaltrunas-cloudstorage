@@ -13,11 +13,16 @@ func SampleDataStoreFile() File {
 	h := hash.Hash(fnv.New32())
 	h.Write([]byte("test data"))
 	chunkID := FileChunkIDType(string(h.Sum(make([]byte, 0))))
-	
+	fileChunks := FileChunks{
+		ChunkNumber: 1,
+		ChunkSize: 9,
+		ChunkIDs: []FileChunkIDType{chunkID},
+	}
+
 	file := File{
 		Path: "/home/test",
 		Size: 100,
-		ChunkIDs: []FileChunkIDType{chunkID},
+		Chunks: fileChunks,
 	}
 	return file
 }
@@ -42,7 +47,7 @@ func TestPersistDataStore(t *testing.T) {
 	// set up sample data structures
 	file := SampleDataStoreFile()
 	t.Logf("sample file: %v", file)
-	chunkID := file.ChunkIDs[0]
+	chunkID := file.Chunks.ChunkIDs[0]
 	t.Logf("chunkID hash: %v", chunkID)
 	dataStore := SampleDataStore(file)
 	t.Logf("data store: %v", dataStore)

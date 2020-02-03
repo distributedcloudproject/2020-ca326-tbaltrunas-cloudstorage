@@ -2,6 +2,9 @@ package datastore
 
 import (
 	"cloud/network"
+	"os"
+	"io"
+	"math"
 )
 
 type FileSizeType int
@@ -20,6 +23,14 @@ type File struct {
 	
 	Size 		FileSizeType
 	
+	Chunks 		FileChunks
+}
+
+type FileChunks struct {
+	ChunkNumber int  // Number of chunks that this file is split into
+
+	ChunkSize 	int  // The maximum size of each chunk
+
 	ChunkIDs [] FileChunkIDType  // List of chunks belonging to the file.
 }
 
@@ -42,11 +53,66 @@ type DataStore struct {
 	Files [] File
 }
 
-// // GetChunk returns the contents of the nth chunk in the file.
+// NewFile creates a new File structure from the given filepath.
+// If the filepath is invalid, an error is returned.
+func NewFile(path string) (*File, error) {
+	file := new(File)
+	file.Path = path
+
+	size, err := fileSize(path)
+	file.Size = FileSizeType(size)
+
+	return file, err
+}
+
+// fileSize computes the size of the file in bytes at the given path.
+// Returns 0 and error if file size can not be computed.
+func fileSize(path string) (int, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	size := int(fileInfo.Size())
+	return size, err
+}
+
+// GetChunk returns the contents of the nth chunk in the file.
 // func GetChunk(file string, n int) []byte {
 
 // }
 
-// func SplitFile(file string, chunkSize int) n {
+// Split divides up the current file into chunks.
+// By calculating the required offsets and hashes for the File.
+func (file *File) Split(chunkNumber int) {
+	file.Chunks.ChunkNumber = chunkNumber
 
-// }
+	chunkSize := int(math.Ceil(float64(file.Size)/float64(chunkNumber)))
+	file.Chunks.ChunkSize = chunkSize
+
+
+}
+
+// GetChunk reads the nth chunk in the file.
+// Returns the contents as bytes, the amount of actual bytes read, and error if any.
+func (file *File) GetChunk(n int) ([]byte, int, error) {
+	f, err := os.Open(file.Path)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer f.Close()
+
+	buffer := make([]byte, file.Chunks.ChunkSize)
+	offset := int64(n * file.Chunks.ChunkSize)
+	bytesRead, err := f.ReadAt(buffer, offset)
+	if err != io.EOF && err != nil {
+		return nil, 0, err
+	}
+	return buffer, bytesRead, nil
+}
