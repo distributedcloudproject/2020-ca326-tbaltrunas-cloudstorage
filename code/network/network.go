@@ -3,6 +3,7 @@ package network
 import (
 	"cloud/comm"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -40,6 +41,9 @@ type Cloud struct {
 
 	Listener net.Listener
 	Mutex sync.RWMutex
+	Port uint16
+
+	SaveFunc func() io.Writer
 }
 
 type request struct {
@@ -86,10 +90,8 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	node.client.Close()
 	// Create dial connection to every node.
 	for i := range network.Nodes {
-		err := cloud.connectToNode(network.Nodes[i])
-		if err != nil {
-			fmt.Println(err)
-		}
+		// It may not connect to some nodes (e.g offline) which is fine. That's why error is ignored.
+		cloud.connectToNode(network.Nodes[i])
 	}
 
 	cloud.Network = network
@@ -106,22 +108,6 @@ func SetupNetwork(me *Node, networkName string) *Cloud {
 		MyNode: me,
 	}
 	return cloud
-}
-
-func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
-	r := request{
-		cloud: cloud,
-		node: node,
-	}
-
-	return func(message string) interface{} {
-		switch message {
-		case "ping": return r.PingRequest
-		case NetworkInfoMsg: return r.OnNetworkInfoRequest
-		case NodeInfoMsg: return r.OnNodeInfoRequest
-		}
-		return nil
-	}
 }
 
 func (n *Cloud) Listen(port int) error {
@@ -165,6 +151,16 @@ func (c *Cloud) connectToNode(n *Node) error {
 		n.client.AddRequestHandler(createRequestHandler(n, c))
 	}
 	return nil
+}
+
+func (c *Cloud) OnlineNodesNum() int {
+	i := 0
+	for _, n := range c.Network.Nodes {
+		if n.client != nil || n.ID == c.MyNode.ID {
+			i++
+		}
+	}
+	return i
 }
 
 func (n *Node) Ping() (string, error) {

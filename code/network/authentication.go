@@ -46,33 +46,20 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) {
 	r.node.client.AddRequestHandler(createRequestHandler(r.node, r.cloud))
 
 	r.cloud.Mutex.Lock()
-	defer r.cloud.Mutex.Unlock()
-
 	for i := 0; i < len(r.cloud.PendingNodes); i++ {
 		if r.cloud.PendingNodes[i] == r.node {
 			r.cloud.PendingNodes[i] = r.cloud.PendingNodes[len(r.cloud.PendingNodes) - 1]
 			r.cloud.PendingNodes = r.cloud.PendingNodes[:len(r.cloud.PendingNodes)]
 		}
 	}
+	r.cloud.Mutex.Unlock()
 
-	alreadyInNetwork := false
+	r.OnAddNodeRequest(*r.node)
 	for i := 0; i < len(r.cloud.Network.Nodes); i++ {
-		if r.cloud.Network.Nodes[i].ID == r.node.ID {
-			if r.cloud.Network.Nodes[i].client != nil {
-				return
-			}
-
-			r.cloud.Network.Nodes[i].IP = r.node.IP
-			r.cloud.Network.Nodes[i].Name = r.node.Name
-			r.cloud.Network.Nodes[i].client = r.node.client
-			alreadyInNetwork = true
+		if r.cloud.Network.Nodes[i].client != nil {
+			go r.cloud.Network.Nodes[i].AddNode(*r.node)
 		}
 	}
-	if !alreadyInNetwork {
-		r.cloud.Network.Nodes = append(r.cloud.Network.Nodes, r.node)
-	}
-
-	// TODO: Send to other nodes to add.
 }
 
 func createAuthRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {

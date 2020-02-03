@@ -102,10 +102,11 @@ func (c *client) AddRequestHandler(handler RequestHandler) {
 func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, error) {
 	id := atomic.AddUint32(&c.msgID, 1)
 
-	// The first 4 bytes will hold the message ID (used to link the response back).
+	// The first byte will be used as a boolean to see if it's a response.
+	// The next 4 bytes will hold the message ID (used to link the response back).
 	// The next 4 bytes will hold the message length.
-	buffer := make([]byte, 8)
-	binary.LittleEndian.PutUint32(buffer[:4], id)
+	buffer := make([]byte, 9)
+	binary.LittleEndian.PutUint32(buffer[1:5], id)
 
 	// Add the message/function name to the buffer, finished by the \000.
 	buffer = append(buffer, []byte(msg)...)
@@ -123,9 +124,9 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 	// Copy over the encoded bytes buffer into our buffer variable.
 	buffer = append(buffer, b.Bytes()...)
 
-	// Put the buffer length into [4:8] bytes. -8 because the message length should not include the headers(message ID
+	// Put the buffer length into [5:9] bytes. -9 because the message length should not include the headers(message ID
 	// and message length), which the buffer contains.
-	binary.LittleEndian.PutUint32(buffer[4:8], uint32(len(buffer)-8))
+	binary.LittleEndian.PutUint32(buffer[5:9], uint32(len(buffer)-9))
 
 	// Place our message into the map, so that it can be used when receiving responses.
 	m := &message{
@@ -174,7 +175,7 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 
 func (c *client) HandleConnection() error {
 	for {
-		headerBuffer := make([]byte, 8)
+		headerBuffer := make([]byte, 9)
 		_, err := c.conn.Read(headerBuffer)
 		if err != nil {
 			if err == io.EOF || !err.(net.Error).Temporary() {
@@ -183,8 +184,12 @@ func (c *client) HandleConnection() error {
 			continue
 		}
 
-		messageID := binary.LittleEndian.Uint32(headerBuffer[:4])
-		messageLength := int(binary.LittleEndian.Uint32(headerBuffer[4:8]))
+		response := false
+		if headerBuffer[0] == 1 {
+			response = true
+		}
+		messageID := binary.LittleEndian.Uint32(headerBuffer[1:5])
+		messageLength := int(binary.LittleEndian.Uint32(headerBuffer[5:9]))
 
 		buffer := make([]byte, messageLength)
 		totalRead := 0
@@ -199,7 +204,7 @@ func (c *client) HandleConnection() error {
 
 		// Once the data is retrieved, process it in another thread so that we can continue receiving data.
 		go func() {
-			err := c.processRequest(messageID, buffer)
+			err := c.processRequest(response, messageID, buffer)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -207,21 +212,25 @@ func (c *client) HandleConnection() error {
 	}
 }
 
-func (c *client) processRequest(messageID uint32, data []byte) error {
-	c.messagesMutex.Lock()
-	message, ok := c.messages[messageID]
-	if ok {
-		delete(c.messages, messageID)
-	}
-	c.messagesMutex.Unlock()
-	if ok {
-		// The request is a response to a request sent.
-		message.value = data
-		message.wg.Done()
+func (c *client) processRequest(response bool, messageID uint32, data []byte) error {
+	if response {
+		c.messagesMutex.Lock()
+		message, ok := c.messages[messageID]
+		if ok {
+			delete(c.messages, messageID)
+			message.value = data
+			message.wg.Done()
+		}
+		c.messagesMutex.Unlock()
+
 		return nil
 	}
 	// Extract the function name from the request.
 	index := bytes.IndexByte(data, '\000')
+	if index == -1 {
+		fmt.Println(index, data)
+		return errors.New("request incorrectly formed - could not extract function name")
+	}
 	funcName := string(data[:index])
 	c.requestsMutex.RLock()
 	request, ok := c.requests[funcName]
@@ -267,10 +276,11 @@ func (c *client) processRequest(messageID uint32, data []byte) error {
 		}
 	}
 
-	buffer := make([]byte, 8+b.Len())
-	binary.LittleEndian.PutUint32(buffer[:4], messageID)
-	binary.LittleEndian.PutUint32(buffer[4:8], uint32(b.Len()))
-	copy(buffer[8:], b.Bytes())
+	buffer := make([]byte, 9+b.Len())
+	buffer[0] = 1 // This is a response.
+	binary.LittleEndian.PutUint32(buffer[1:5], messageID)
+	binary.LittleEndian.PutUint32(buffer[5:9], uint32(b.Len()))
+	copy(buffer[9:], b.Bytes())
 
 	written := 0
 	c.writeMutex.Lock()

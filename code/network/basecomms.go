@@ -15,6 +15,23 @@ func init() {
 	gob.Register(Node{})
 }
 
+func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
+	r := request{
+		cloud: cloud,
+		node: node,
+	}
+
+	return func(message string) interface{} {
+		switch message {
+		case "ping": return r.PingRequest
+		case NetworkInfoMsg: return r.OnNetworkInfoRequest
+		case NodeInfoMsg: return r.OnNodeInfoRequest
+		case AddNodeMsg: return r.OnAddNodeRequest
+		}
+		return nil
+	}
+}
+
 func (n *Node) NetworkInfo() (Network, error) {
 	ret, err := n.client.SendMessage(NetworkInfoMsg)
 	return ret[0].(Network), err
@@ -45,5 +62,17 @@ func (n *Node) AddNode(node Node) error {
 func (r request) OnAddNodeRequest(node Node) {
 	r.cloud.Mutex.Lock()
 	defer r.cloud.Mutex.Unlock()
+
+	for _, n := range r.cloud.Network.Nodes {
+		if n.ID == node.ID {
+			if n.client == nil {
+				n.IP = r.node.IP
+				n.Name = r.node.Name
+				n.client = r.node.client
+			}
+			return
+		}
+	}
 	r.cloud.Network.Nodes = append(r.cloud.Network.Nodes, &node)
+	r.cloud.Save()
 }
