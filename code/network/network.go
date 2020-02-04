@@ -154,6 +154,8 @@ func (c *Cloud) connectToNode(n *Node) error {
 }
 
 func (c *Cloud) OnlineNodesNum() int {
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
 	i := 0
 	for _, n := range c.Network.Nodes {
 		if n.client != nil || n.ID == c.MyNode.ID {
