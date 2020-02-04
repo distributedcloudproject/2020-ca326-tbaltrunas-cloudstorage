@@ -4,15 +4,23 @@ import (
 	"testing"
 	"os"
 	"io/ioutil"
+	"bytes"
 )
 
-func TestFileChunks(t *testing.T) {
+// CreateTestFile utility function creates a file with contents.
+// An error is returned if the operation can no be performed.
+func CreateTestFile(path string, contents string) error {
+	err := ioutil.WriteFile(path, []byte(contents), os.ModePerm)
+	return err
+}
+
+func TestFileSplit(t *testing.T) {
 	// create a file with test contents
 	path := "/tmp/cloud_test_file"
 	t.Logf("File path: %s", path)
 
 	fileContents := "hellothere"  // 10 bytes
-	err := ioutil.WriteFile(path, []byte(fileContents), os.ModePerm)
+	err := CreateTestFile(path, fileContents)
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,5 +74,39 @@ func TestFileChunks(t *testing.T) {
 	t.Logf("Read contents: %s", retrievedContents)
 	if retrievedContents != fileContents {
 		t.Errorf("Actual and read contents differ.")
+	}
+}
+
+func TestFileSave(t *testing.T) {
+	// get a file
+	path := "/tmp/cloud_test_file"
+	fileContents := "hellothere"
+	err := CreateTestFile(path, fileContents)
+	if err != nil { t.Error(err) }
+
+	// get a chunk from the file
+	chunkNumber := 2
+	file, err := NewFile(path, chunkNumber)
+	if err != nil { t.Error(err) }
+	t.Logf("File: %v", file)
+
+	// save the chunk
+	n := 0
+	chunkPath := "/tmp/cloud_test_chunk_save"
+	// TODO: do something with bytesRead, i.e. only send what was read.
+	chunk, _, err := file.GetChunk(n)
+	if err != nil { t.Error(err) }
+	err = Save(chunkPath, chunk)
+	if err != nil { t.Error(err) }
+
+	// retrieve and compare the chunk
+	readChunk := make([]byte, file.Chunks.ChunkSize)
+	err = Load(chunkPath, readChunk)
+	if err != nil { t.Error(err) }
+
+	t.Logf("Actual chunk: %v", chunk)
+	t.Logf("Read chunk: %v", readChunk)
+	if bytes.Compare(chunk, readChunk) != 0 {
+		t.Errorf("Actual and read chunks differ.")
 	}
 }
