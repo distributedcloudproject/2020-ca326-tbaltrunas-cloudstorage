@@ -133,7 +133,19 @@ func (n *Cloud) AcceptListener() {
 		}
 		node.client.AddRequestHandler(createAuthRequestHandler(node, n))
 		n.PendingNodes = append(n.PendingNodes, node)
-		go node.client.HandleConnection()
+		go func(node *Node) {
+			node.client.HandleConnection()
+
+			n.Mutex.Lock()
+			for _, c := range n.Network.Nodes {
+				if c.ID == node.ID {
+					c.mutex.Lock()
+					c.client = nil
+					c.mutex.Unlock()
+				}
+			}
+			n.Mutex.Unlock()
+		}(node)
 	}
 }
 
