@@ -2,14 +2,16 @@ package datastore
 
 import (
 	"cloud/network"
-	"hash"
 )
 
 type FileSizeType int
 
-type FileChunkIDType hash.Hash
+// FileChunkIDType is a hash as a string of bytes.
+type FileChunkIDType string
 
 type FileContentsType [] byte
+
+type ChunkNodeType network.Node
 
 // File represents a user's file stored on the cloud.
 // Contains the path, file size, and a list of the file's chunk ID's.
@@ -33,7 +35,7 @@ type FileChunk struct {
 
 // FileChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
 // The data structure keeps track of which nodes contain which chunks.
-type FileChunkLocations map[FileChunkIDType]network.Node
+type FileChunkLocations map[FileChunkIDType][]ChunkNodeType
 
 // DataStore is a data structure that keeps track of user files stored on the cloud.
 type DataStore struct {
