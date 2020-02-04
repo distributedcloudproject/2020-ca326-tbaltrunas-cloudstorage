@@ -22,6 +22,7 @@ func (c *Cloud) LoadNetwork (r io.Reader) (error) {
 	}
 
 	for i := range c.Network.Nodes {
+		c.Network.Nodes[i].client = nil
 		c.connectToNode(c.Network.Nodes[i])
 	}
 
