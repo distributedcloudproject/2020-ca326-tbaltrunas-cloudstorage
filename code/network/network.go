@@ -176,3 +176,7 @@ func (r request) PingRequest(ping string) string {
 	}
 	return ""
 }
+
+func (n *Node) Online() bool {
+	return n.client != nil
+}
