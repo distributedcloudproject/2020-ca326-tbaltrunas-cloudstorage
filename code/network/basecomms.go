@@ -66,9 +66,9 @@ func (r request) OnAddNodeRequest(node Node) {
 	for _, n := range r.cloud.Network.Nodes {
 		if n.ID == node.ID {
 			if n.client == nil {
-				n.IP = r.node.IP
-				n.Name = r.node.Name
-				n.client = r.node.client
+				n.IP = node.IP
+				n.Name = node.Name
+				n.client = node.client
 			}
 			return
 		}
