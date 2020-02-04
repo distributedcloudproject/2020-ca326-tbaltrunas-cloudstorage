@@ -13,6 +13,7 @@ func (c *Cloud) Save() error {
 	return nil
 }
 
+// LoadNetwork reads the saved network state from the reader and resumes the network.
 func (c *Cloud) LoadNetwork (r io.Reader) (*Cloud, error) {
 	decoder := gob.NewDecoder(r)
 	err := decoder.Decode(&c.Network)
