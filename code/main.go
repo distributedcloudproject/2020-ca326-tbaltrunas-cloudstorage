@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"strconv"
-	"time"
 )
 
 type File struct {
@@ -47,54 +46,28 @@ func main() {
 		}
 	}
 
+	c := &network.Cloud{
+		Network: network.Network{
+			Name: *networkNamePtr,
+			Nodes: []*network.Node{me},
+		},
+		MyNode: me,
+		SaveFunc: saveFunc,
+	}
+
 	if *saveFilePtr != "" {
 		r, err := os.Open(*saveFilePtr)
 		if err == nil {
-			c := &network.Cloud{
-				MyNode: me,
-				Port: uint16(*portPtr),
-				SaveFunc: saveFunc,
-			}
-
-			go func(c *network.Cloud) {
-				for {
-					time.Sleep(time.Second * 2)
-					fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", c.Network.Name, len(c.Network.Nodes), c.OnlineNodesNum())
-				}
-			}(c)
-
-			c, err := c.LoadNetwork(r)
+			err := c.LoadNetwork(r)
 			r.Close()
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
-
-			err = c.Listen(*portPtr)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			c.AcceptListener()
 		}
 	}
 
-	if *networkPtr == "new" {
-		n := &network.Cloud{
-			Network: network.Network{
-				Name: *networkNamePtr,
-				Nodes: []*network.Node{me},
-			},
-			MyNode: me,
-			SaveFunc: saveFunc,
-		}
-		err := n.Listen(*portPtr)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		n.AcceptListener()
-	} else {
+	if *networkPtr != "new" {
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
 		n, err := network.BootstrapToNetwork(ip, me)
@@ -103,13 +76,15 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		err = n.Listen(*portPtr)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		n.AcceptListener()
+		c = n
 	}
+
+	err := c.Listen(*portPtr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.AcceptListener()
 }
 
 func ExploreNode(ip string) {
