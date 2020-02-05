@@ -157,3 +157,33 @@ func (file *File) GetChunkID(n int) (FileChunkIDType, error) {
 	chunkID := FileChunkIDType(chunkHash)
 	return chunkID, nil
 }
+
+// SaveChunk persistently stores the nth chunk at the given filepath.
+// An error is returned if the storage operation fails.
+func (file *File) SaveChunk(n int, path string) error {
+	// TODO: do something with bytesRead, i.e. only send what was read.
+	chunk, _, err := file.GetChunk(n)
+	if err != nil { return err }
+
+	f, err := os.Create(path)
+	if err != nil { return err }
+	defer f.Close()
+
+	_, err = f.Write(chunk)
+	if err != nil { return err }
+
+	return nil
+}
+
+// LoadChunk retrieves the chunk as bytes from the given filepath.
+func (file *File) LoadChunk(path string) ([]byte, error) {
+	chunk := make([]byte, file.Chunks.ChunkSize)
+	
+	f, err := os.Open(path)
+	if err != nil { return nil, err }
+	defer f.Close()
+
+	_, err = f.Read(chunk)
+	if err != nil { return nil, err }
+	return chunk, nil
+}

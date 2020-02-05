@@ -93,15 +93,14 @@ func TestFileSave(t *testing.T) {
 	// save the chunk
 	n := 0
 	chunkPath := "/tmp/cloud_test_chunk_save"
-	// TODO: do something with bytesRead, i.e. only send what was read.
-	chunk, _, err := file.GetChunk(n)
-	if err != nil { t.Error(err) }
-	err = Save(chunkPath, chunk)
+
+	err = file.SaveChunk(n, chunkPath)
 	if err != nil { t.Error(err) }
 
 	// retrieve and compare the chunk
-	readChunk := make([]byte, file.Chunks.ChunkSize)
-	err = Load(chunkPath, readChunk)
+	chunk, _, err := file.GetChunk(n)
+	if err != nil { t.Error(err) }
+	readChunk, err := file.LoadChunk(chunkPath)
 	if err != nil { t.Error(err) }
 
 	t.Logf("Actual chunk: %v", chunk)
