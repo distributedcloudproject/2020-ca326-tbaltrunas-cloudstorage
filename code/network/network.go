@@ -139,9 +139,7 @@ func (n *Cloud) AcceptListener() {
 			n.Mutex.Lock()
 			for _, c := range n.Network.Nodes {
 				if c.ID == node.ID {
-					c.mutex.Lock()
 					c.client = nil
-					c.mutex.Unlock()
 				}
 			}
 			n.Mutex.Unlock()
