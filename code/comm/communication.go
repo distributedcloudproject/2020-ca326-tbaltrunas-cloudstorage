@@ -102,6 +102,8 @@ func (c *client) AddRequestHandler(handler RequestHandler) {
 func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, error) {
 	id := atomic.AddUint32(&c.msgID, 1)
 
+	// The headers take up 9 bytes.
+	// | Is a response (1) | Message ID (4) | Message Length (4) |
 	// The first byte will be used as a boolean to see if it's a response.
 	// The next 4 bytes will hold the message ID (used to link the response back).
 	// The next 4 bytes will hold the message length.
