@@ -1,0 +1,29 @@
+image: "golang:latest"
+
+stages:
+  - build
+  - test
+  - deploy
+
+before_script:
+  - echo "Creating symlink between repo/code and GOPATH/src"
+  - cd $GOPATH/src  
+  - ln -s $CI_PROJECT_DIR/code cloud
+  - ls
+  - ls cloud
+  - cd $CI_PROJECT_DIR/code
+
+build:
+  stage: build
+  script:
+    - make
+
+test:
+  stage: test
+  script:
+    - make test
+
+deploy:
+  stage: deploy
+  script:
+    - make deploy

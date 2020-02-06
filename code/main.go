@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-type File struct {
-}
 
 func main() {
 	networkPtr := flag.String("network", "new", "Bootstrap IP of a node in an existing network or 'new' to create new network.")
