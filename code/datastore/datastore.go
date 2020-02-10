@@ -28,9 +28,9 @@ type File struct {
 }
 
 type FileChunks struct {
-	NumberOfChunks int  // Number of chunks that this file is split into
+	NumberOfChunks int  // Number of chunks that this file is split into.
 
-	ChunkSize 	int  // The maximum size of each chunk
+	ChunkSize 	int  // The maximum size of each chunk.
 
 	Chunks []FileChunk  // List of chunks belonging to the file.
 }
