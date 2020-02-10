@@ -22,10 +22,10 @@ func TestFileChunks(t *testing.T) {
 	}
 	t.Logf("File contents: %s", string(fileContentsRead))
 
-	chunkNumber := 2
-	t.Logf("Operating with chunk number: %d", chunkNumber)
+	NumberOfChunks := 2
+	t.Logf("Operating with chunk number: %d", NumberOfChunks)
 
-	file, err := NewFile(path, chunkNumber)
+	file, err := NewFile(path, NumberOfChunks)
 	if err != nil {
 		t.Error(err)
 	}
