@@ -5,18 +5,25 @@ import (
 )
 
 func TestNode_NetworkInfo(t *testing.T) {
-	network := &Network{
-		Name: "My new network",
+	me := &Node{
+		ID: "1",
+		Name: "test",
 	}
-	network.Listen(0)
-	go network.AcceptListener()
 
-	n2, err := BootstrapToNetwork(network.listener.Addr().String())
+	cloud := SetupNetwork(me, "My new network")
+	cloud.Listen(0)
+	go cloud.AcceptListener()
+	me.IP = cloud.Listener.Addr().String()
+
+	n2, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
+		ID: "2",
+		Name: "test2",
+	})
 	if err != nil {
 		t.Error(err)
 	}
 
-	n, err := n2.Nodes[0].NetworkInfo()
+	n, err := n2.Network.Nodes[0].NetworkInfo()
 	if err != nil {
 		t.Error(err)
 	}
