@@ -64,10 +64,13 @@ func TestFileChunks(t *testing.T) {
 
 func TestFileSave(t *testing.T) {
 	// get a file
-	path := "/tmp/cloud_test_file"
-	fileContents := "hellothere"
-	err := CreateTestFile(path, fileContents)
+	tmpfile, err := ioutil.TempFile("", "cloud_test_file_*")
 	if err != nil { t.Error(err) }
+	defer os.Remove(tmpfile.Name())
+	defer tmpfile.Close()
+
+	path := tmpfile.Name()
+	t.Logf("Temporary filepath: %s", path)
 
 	// get a chunk from the file
 	chunkNumber := 2
