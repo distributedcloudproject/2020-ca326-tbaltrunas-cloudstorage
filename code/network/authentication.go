@@ -77,7 +77,7 @@ func createAuthRequestHandler(node *Node, cloud *Cloud) func(string) interface{}
 		cloud: cloud,
 		node: node,
 	}
-	utils.GetLogger().Printf("Initialied request with fields: %v.", r)
+	utils.GetLogger().Printf("Initialised request with fields: %v.", r)
 
 	return func(message string) interface{} {
 		switch message {

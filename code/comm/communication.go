@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"cloud/utils"
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
@@ -60,17 +61,20 @@ type client struct {
 
 // NewClient creates a new client with an existing network connection.
 func NewClient(conn net.Conn) Client {
+	utils.GetLogger().Printf("Creating new client from connection: %v.", conn)
 	client := &client{}
 
 	client.conn = conn
 	client.messages = make(map[uint32]*message)
 	client.requests = make(map[string]interface{})
 
+	utils.GetLogger().Printf("Created new client: %v.", client)
 	return client
 }
 
 // NewClientDial creates a new client by dialing the ip and creating a new socket connection.
 func NewClientDial(address string) (Client, error) {
+	utils.GetLogger().Printf("Creating a new client from a dial to address: %v.", address)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
@@ -89,17 +93,20 @@ func (c *client) Close() error {
 func (c *client) RegisterRequest(message string, f interface{}) {
 	c.requestsMutex.Lock()
 	defer c.requestsMutex.Unlock()
+	utils.GetLogger().Printf("Registering request for message: %v, with interface: %v.", message, f)
 	c.requests[message] = f
 }
 
 func (c *client) AddRequestHandler(handler RequestHandler) {
 	c.requestsMutex.Lock()
 	defer c.requestsMutex.Unlock()
+	utils.GetLogger().Printf("Adding request handler: %v.", handler)
 	c.requestsHandlers = append(c.requestsHandlers, handler)
 }
 
 // SendMessage sends a request with the msg and the data passed. Returns a list of arguments that were returned.
 func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, error) {
+	utils.GetLogger().Printf("Sending message: %v, with data: %v.", msg, data)
 	id := atomic.AddUint32(&c.msgID, 1)
 
 	// The headers take up 9 bytes.
@@ -176,6 +183,7 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 }
 
 func (c *client) HandleConnection() error {
+	utils.GetLogger().Println("Starting handling connection loop.")
 	for {
 		headerBuffer := make([]byte, 9)
 		_, err := c.conn.Read(headerBuffer)
@@ -215,6 +223,7 @@ func (c *client) HandleConnection() error {
 }
 
 func (c *client) processRequest(response bool, messageID uint32, data []byte) error {
+	utils.GetLogger().Printf("Processing request of response type: %v, messageID: %v, data: %v.", response, messageID, data)
 	if response {
 		c.messagesMutex.Lock()
 		message, ok := c.messages[messageID]
