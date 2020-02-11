@@ -2,12 +2,17 @@ package network
 
 import (
 	"cloud/comm"
+	"cloud/datastore"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
 	"sync"
 )
+
+// FileChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
+// The data structure keeps track of which nodes contain which chunks.
+type FileChunkLocations map[datastore.FileChunkIDType][]Node
 
 type Node struct {
 	ID string
@@ -19,7 +24,6 @@ type Node struct {
 	// Display name of the node.
 	Name string
 
-
 	// client is the communication socket between us and the node.
 	client comm.Client
 
@@ -30,6 +34,10 @@ type Node struct {
 type Network struct {
 	Name string
 	Nodes []*Node
+
+	// Data Store data structures of the node.
+	ChunkLocations FileChunkLocations
+	DataStore datastore.DataStore
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.

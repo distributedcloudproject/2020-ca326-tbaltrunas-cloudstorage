@@ -2,6 +2,7 @@ package main
 
 import (
 	"cloud/network"
+	"cloud/datastore"
 	"flag"
 	"fmt"
 	"io"
@@ -24,6 +25,7 @@ func main() {
 	portPtr := flag.Int("port", 9000, "Port to listen on")
 
 	fancyDisplayPtr := flag.Bool("fancy-display", false, "Display node information in a fancy-way.")
+	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
 
 	flag.Parse()
 
@@ -81,6 +83,14 @@ func main() {
 		}
 		c = n
 	}
+	if *networkPtr == "new" {
+		file, err := datastore.NewFile("/tmp/cloud_test_file", 3)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		c.Network.DataStore.Files = append(c.Network.DataStore.Files, *file)
+	}
 
 	if *fancyDisplayPtr {
 		go func(c *network.Cloud) {
@@ -101,8 +111,16 @@ func main() {
 					}
 				}
 				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", c.Network.Name, len(c.Network.Nodes), c.OnlineNodesNum())
+				if *verbosePtr {
+					fmt.Printf("Network: %v\n", c.Network)
+				}
+				fmt.Printf("Name, ID, Online[, Node]:\n")
 				for _, n := range c.Network.Nodes {
-					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, n.Online())
+					row := fmt.Sprintf("|%-20v|%-20v|%-8v|", n.Name, n.ID, n.Online())
+					if *verbosePtr {
+						row = fmt.Sprintf("%s\t%v|", row, n)
+					}
+					fmt.Printf("%v\n", row)
 				}
 			}
 		}(c)
