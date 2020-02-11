@@ -2,6 +2,7 @@ package network
 
 import (
 	"cloud/comm"
+	"cloud/utils"
 	"fmt"
 	"io"
 	"net"
@@ -52,6 +53,7 @@ type request struct {
 }
 
 func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
+	utils.GetLogger().Printf("Bootstrapping with ip: %v, and node: %v.", ip, me)
 	client, err := comm.NewClientDial(ip)
 	if err != nil {
 		return nil, err
@@ -61,8 +63,10 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 		IP: ip,
 		client: client,
 	}
+	utils.GetLogger().Printf("Remote node: %v.", node)
 
 	cloud := &Cloud{MyNode: me}
+	utils.GetLogger().Printf("Initial cloud: %v.", cloud)
 	node.client.AddRequestHandler(createAuthRequestHandler(node, cloud))
 	go node.client.HandleConnection()
 
@@ -81,6 +85,7 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	node.ID = nodeInfo.ID
 	node.Name = nodeInfo.Name
 	node.mutex.Unlock()
+	utils.GetLogger().Printf("Updated remote node info: %v.", node)
 
 	network, err := node.NetworkInfo()
 	if err != nil {
@@ -95,11 +100,13 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	}
 
 	cloud.Network = network
+	utils.GetLogger().Printf("Cloud with new network: %v.", cloud)
 
 	return cloud, nil
 }
 
 func SetupNetwork(me *Node, networkName string) *Cloud {
+	utils.GetLogger().Printf("Setting up network with name: %v, and initial node: %v.", networkName, me)
 	cloud := &Cloud{
 		Network: Network{
 			Name: "My new network",
@@ -111,8 +118,10 @@ func SetupNetwork(me *Node, networkName string) *Cloud {
 }
 
 func (n *Cloud) Listen(port int) error {
+	utils.GetLogger().Printf("Listening to port %v.", port)
 	var err error
 	n.Listener, err = net.Listen("tcp", ":"+strconv.Itoa(port))
+	utils.GetLogger().Printf("New listener on node: %v.", n)
 	if err != nil {
 		return err
 	}
@@ -120,25 +129,30 @@ func (n *Cloud) Listen(port int) error {
 }
 
 func (n *Cloud) AcceptListener() {
+	utils.GetLogger().Println("Entering loop to accept clients.")
 	for {
 		conn, err := n.Listener.Accept()
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+		utils.GetLogger().Printf("Accepted connection: %v", conn)
 
 		node := &Node{
 			IP: conn.RemoteAddr().String(),
 			client: comm.NewClient(conn),
 		}
+		utils.GetLogger().Printf("Connected to a new node: %v", node)
 		node.client.AddRequestHandler(createAuthRequestHandler(node, n))
 		n.PendingNodes = append(n.PendingNodes, node)
+		utils.GetLogger().Printf("Added node to pending nodes: %v", n.PendingNodes)
 		go func(node *Node) {
 			node.client.HandleConnection()
 
 			n.Mutex.Lock()
 			for _, c := range n.Network.Nodes {
 				if c.ID == node.ID {
+					utils.GetLogger().Printf("Node: %v, setting client to nil: %v", c.ID, c.client)
 					c.client = nil
 				}
 			}
@@ -148,11 +162,14 @@ func (n *Cloud) AcceptListener() {
 }
 
 func (c *Cloud) connectToNode(n *Node) error {
+	utils.GetLogger().Printf("Cloud: %v, connecting to node: %v", c, n)
 	n.mutex.RLock()
 	defer n.mutex.RUnlock()
 	if n.IP != "" && n.ID != c.MyNode.ID && n.client == nil {
+		utils.GetLogger().Printf("Connecting to a non-me node with nil client: %v.", n)
 		var err error
 		n.client, err = comm.NewClientDial(n.IP)
+		utils.GetLogger().Printf("Node with added client: %v.", n)
 		if err != nil {
 			return err
 		}
@@ -164,23 +181,28 @@ func (c *Cloud) connectToNode(n *Node) error {
 }
 
 func (c *Cloud) OnlineNodesNum() int {
+	utils.GetLogger().Println("Getting the number of nodes online.")
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
 	i := 0
 	for _, n := range c.Network.Nodes {
 		if n.client != nil || n.ID == c.MyNode.ID {
+			utils.GetLogger().Printf("Node with non-nil client or a me-node: %v.", n)
 			i++
 		}
 	}
+	utils.GetLogger().Printf("Number of online nodes counted: %v.", i)
 	return i
 }
 
 func (n *Node) Ping() (string, error) {
+	utils.GetLogger().Println("Pinging node.")
 	ping, err := n.client.SendMessage("ping", "ping")
 	return ping[0].(string), err
 }
 
 func (r request) PingRequest(ping string) string {
+	utils.GetLogger().Printf("Handling ping request with string: %v.", ping)
 	if ping == "ping" {
 		return "pong"
 	}
@@ -188,5 +210,6 @@ func (r request) PingRequest(ping string) string {
 }
 
 func (n *Node) Online() bool {
+	utils.GetLogger().Println("Checking if node is online.")
 	return n.client != nil
 }

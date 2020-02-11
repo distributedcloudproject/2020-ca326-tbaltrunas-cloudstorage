@@ -52,7 +52,6 @@ func main() {
 			return f
 		}
 	}
-	utils.GetLogger().Printf("saveFunc: %v.", saveFunc)
 
 	c := &network.Cloud{
 		Network: network.Network{
@@ -119,7 +118,7 @@ func main() {
 		}(c)
 	}
 
-	utils.GetLogger().Printf("Initialising listening on port: %v.", *portPtr)
+	utils.GetLogger().Println("Initialising listening.")
 	err := c.Listen(*portPtr)
 	if err != nil {
 		fmt.Println(err)
