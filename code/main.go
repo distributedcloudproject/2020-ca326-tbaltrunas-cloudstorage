@@ -2,6 +2,7 @@ package main
 
 import (
 	"cloud/network"
+	"cloud/utils"
 	"flag"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 
 func main() {
+	utils.GetLogger().Println("Begin main program.")
 	networkPtr := flag.String("network", "new", "Bootstrap IP of a node in an existing network or 'new' to create new network.")
 	networkNamePtr := flag.String("network-name", "New Network", "The name of the network, if creating a new one")
 	saveFilePtr := flag.String("save-file", "Save File", "File to save network state and resume network state from.")
@@ -40,14 +42,17 @@ func main() {
 		IP:   *ipPtr + ":" + strconv.Itoa(*portPtr),
 		Name: *namePtr,
 	}
+	utils.GetLogger().Printf("My node: %v.", me)
 
 	var saveFunc func() io.Writer
 	if *saveFilePtr != "" {
+		utils.GetLogger().Println("saveFilePtr is not empty. Creating saveFunc")
 		saveFunc = func() io.Writer {
 			f, _ := os.Create(*saveFilePtr)
 			return f
 		}
 	}
+	utils.GetLogger().Printf("saveFunc: %v.", saveFunc)
 
 	c := &network.Cloud{
 		Network: network.Network{
@@ -57,8 +62,10 @@ func main() {
 		MyNode:   me,
 		SaveFunc: saveFunc,
 	}
+	utils.GetLogger().Printf("Cloud: %v.", c)
 
 	if *saveFilePtr != "" {
+		utils.GetLogger().Println("saveFilePtr is not empty. Loading from save file.")
 		r, err := os.Open(*saveFilePtr)
 		if err == nil {
 			err := c.LoadNetwork(r)
@@ -68,9 +75,11 @@ func main() {
 				return
 			}
 		}
+		utils.GetLogger().Printf("Loaded cloud: %v.", c)
 	}
 
 	if *networkPtr != "new" {
+		utils.GetLogger().Println("Boostrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
 		n, err := network.BootstrapToNetwork(ip, me)
@@ -80,9 +89,11 @@ func main() {
 			return
 		}
 		c = n
+		utils.GetLogger().Printf("Bootstrapped cloud: %v.", c)
 	}
 
 	if *fancyDisplayPtr {
+		utils.GetLogger().Println("Initialising fancy display.")
 		go func(c *network.Cloud) {
 			for {
 				time.Sleep(time.Second * 1)
@@ -108,6 +119,7 @@ func main() {
 		}(c)
 	}
 
+	utils.GetLogger().Printf("Initialising listening on port: %v.", *portPtr)
 	err := c.Listen(*portPtr)
 	if err != nil {
 		fmt.Println(err)
