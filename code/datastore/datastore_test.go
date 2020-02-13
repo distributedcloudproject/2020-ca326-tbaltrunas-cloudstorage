@@ -13,7 +13,6 @@ func TestFileChunks(t *testing.T) {
 	if err != nil { t.Error(err) }
 	defer os.Remove(tmpfile.Name())
 	defer tmpfile.Close()
-
 	path := tmpfile.Name()
 	t.Logf("Temporary filepath: %s", path)
 
@@ -25,10 +24,10 @@ func TestFileChunks(t *testing.T) {
 	if err != nil { t.Error(err) }
 	t.Logf("File contents: %s", string(fileContentsRead))
 
-	NumberOfChunks := 2
-	t.Logf("Operating with chunk number: %d", NumberOfChunks)
+	NumChunks := 2
+	t.Logf("Operating with chunk number: %d", NumChunks)
 
-	file, err := NewFile(path, NumberOfChunks)
+	file, err := NewFileNumChunks(path, NumChunks)
 	if err != nil { t.Error(err) }
 	t.Logf("File: %v", file)
 
@@ -62,8 +61,7 @@ func TestFileChunks(t *testing.T) {
 	}
 }
 
-func TestFileSave(t *testing.T) {
-	// get a file
+func TestNewFile(t *testing.T) {
 	tmpfile, err := ioutil.TempFile("", "cloud_test_file_*")
 	if err != nil { t.Error(err) }
 	defer os.Remove(tmpfile.Name())
@@ -72,27 +70,77 @@ func TestFileSave(t *testing.T) {
 	path := tmpfile.Name()
 	t.Logf("Temporary filepath: %s", path)
 
+	fileContents := "hellothere"  // 10 bytes
+	_, err = tmpfile.Write([]byte(fileContents))
+	if err != nil { t.Error(err) }
+
+		file1, err := NewFileNumChunks(path, 2)  // 2 chunks of 5 bytes each
+	if err != nil { t.Error(err) }
+	t.Logf("File from NumChunks (File 1): %v.", file1)
+
+	file2, err := NewFileChunkSize(path, 5)  // 5 bytes giving 2 chunks
+	if err != nil { t.Error(err) }
+	t.Logf("File from ChunkSize (File 2): %v.", file2)
+
+	t.Logf("File 1 number of chunks: %d.", file1.Chunks.NumChunks)
+	t.Logf("File 2 number of chunks: %d.", file2.Chunks.NumChunks)
+	if file1.Chunks.NumChunks != file2.Chunks.NumChunks {
+		t.Error("NumChunks does not match.")
+	}
+
+	t.Logf("File 1 chunk size: %d.", file1.Chunks.ChunkSize)
+	t.Logf("File 2 chunk size: %d.", file2.Chunks.ChunkSize)
+	if file1.Chunks.ChunkSize != file2.Chunks.ChunkSize {
+		t.Error("ChunkSize does not match.") 
+	}
+}
+
+func TestChunkSaving(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "cloud_test_file_*")
+	if err != nil { t.Error(err) }
+	defer os.Remove(tmpfile.Name())
+	defer tmpfile.Close()
+	path := tmpfile.Name()
+	t.Logf("Temporary filepath: %s", path)
+	fileContents := "hellothere"  // 10 bytes
+	fileContentsBytes := []byte(fileContents)
+	t.Logf("Writing contents to temporary file: %s", fileContents)
+	_, err = tmpfile.Write(fileContentsBytes)
+	if err != nil { t.Error(err) }
+
+	tmpfileSave, err := ioutil.TempFile("", "cloud_test_file_*")
+	if err != nil { t.Error(err) }
+	defer os.Remove(tmpfileSave.Name())
+	defer tmpfileSave.Close()
+	pathSave := tmpfileSave.Name()
+	t.Logf("Temporary save filepath: %s", pathSave)
+
 	// get a chunk from the file
-	chunkNumber := 2
-	file, err := NewFile(path, chunkNumber)
+	numChunks := 2
+	file, err := NewFileNumChunks(path, numChunks)
 	if err != nil { t.Error(err) }
 	t.Logf("File: %v", file)
+	chunkNum := 0
+	chunk, _, err := file.GetChunk(chunkNum)
+	// TODO: do something with the number of bytes read, i.e. store it as a field.
+	if err != nil { t.Error(err) }
+	t.Logf("Chunk: %v. (string: %s).", chunk, string(chunk))
 
 	// save the chunk
-	n := 0
-	chunkPath := "/tmp/cloud_test_chunk_save"
-
-	err = file.SaveChunk(n, chunkPath)
+	t.Log("Saving chunk.")
+	_, err = file.SaveChunk(tmpfileSave, chunk)
 	if err != nil { t.Error(err) }
 
-	// retrieve and compare the chunk
-	chunk, _, err := file.GetChunk(n)
+	// load the chunk
+	t.Log("Loading chunk.")
+	_, err = tmpfileSave.Seek(0, 0) // reset offset to 0 (since we did a write which moved the pointer)
 	if err != nil { t.Error(err) }
-	readChunk, err := file.LoadChunk(chunkPath)
+	readChunk, _, err := file.LoadChunk(tmpfileSave)
 	if err != nil { t.Error(err) }
 
-	t.Logf("Actual chunk: %v", chunk)
-	t.Logf("Read chunk: %v", readChunk)
+	// compare read and original chunks
+	t.Logf("Original chunk: %v (string: %s).", chunk, string(chunk))
+	t.Logf("Read chunk: %v (string: %s).", readChunk, string(readChunk))
 	if bytes.Compare(chunk, readChunk) != 0 {
 		t.Errorf("Actual and read chunks differ.")
 	}

@@ -14,7 +14,7 @@ func SampleDataStoreFile() File {
 	h.Write([]byte("test data"))
 	chunkID := FileChunkIDType(string(h.Sum(make([]byte, 0))))
 	fileChunks := FileChunks{
-		NumberOfChunks: 1,
+		NumChunks: 1,
 		ChunkSize: 9,
 		Chunks: []FileChunk{FileChunk{chunkID, 0}},
 	}
