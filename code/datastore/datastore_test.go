@@ -122,6 +122,7 @@ func TestChunkSaving(t *testing.T) {
 	t.Logf("File: %v", file)
 	chunkNum := 0
 	chunk, _, err := file.GetChunk(chunkNum)
+	// TODO: do something with the number of bytes read, i.e. store it as a field.
 	if err != nil { t.Error(err) }
 	t.Logf("Chunk: %v. (string: %s).", chunk, string(chunk))
 
