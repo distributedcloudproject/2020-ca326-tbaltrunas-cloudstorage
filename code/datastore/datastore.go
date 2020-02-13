@@ -28,7 +28,7 @@ type File struct {
 }
 
 type FileChunks struct {
-	NumberOfChunks int  // Number of chunks that this file is split into.
+	NumChunks int  // Number of chunks that this file is split into.
 
 	ChunkSize 	int  // The maximum size of each chunk.
 
@@ -52,30 +52,46 @@ type DataStore struct {
 	Files [] File
 }
 
-// NewFile creates a new File structure from the given filepath and number of chunks.
-// If the filepath is invalid, an error is returned.
-// This function also splits the file into chunks based on the required number of chunks.
-func NewFile(path string, NumberOfChunks int) (*File, error) {
+// newFile provides post-initialisation for a File struct.
+func newFile(path string, fileSize int, numChunks int, chunkSize int) (*File, error) {
 	file := new(File)
 	file.Path = path
-
-	size, err := getFileSize(path)
-	if err != nil {
-		return nil, err
-	}
-	file.Size = FileSizeType(size)
-
-	file.Chunks.NumberOfChunks = NumberOfChunks
-	chunkSize, err := computeChunkSize(int(file.Size), file.Chunks.NumberOfChunks)
-	if err != nil {
-		return nil, err
-	}
+	file.Size = FileSizeType(fileSize)
+	file.Chunks.NumChunks = numChunks
 	file.Chunks.ChunkSize = chunkSize
-	err = file.generateChunks()
+
+	err := file.generateChunks()
 	if err != nil {
 		return nil, err
 	}
+	return file, nil
+}
 
+// NewFileNumChunks creates a new File and computes how to split it using the number of chunks desired.
+// The number of chunks represents how many pieces the file will be split into.
+func NewFileNumChunks(path string, numChunks int) (*File, error) {
+	fileSize, err := getFileSize(path)
+	if err != nil { return nil, err }
+
+	chunkSize, err := computeChunkSize(fileSize, numChunks)
+	if err != nil { return nil, err }
+
+	file, err := newFile(path, fileSize, numChunks, chunkSize)
+	if err != nil { return nil, err }
+	return file, nil
+}
+
+// NewFileChunkSize creates a new File and computes how to split it using the provided chunk size.
+// Chunk size is the number of bytes that each chunk should be at maximum.
+func NewFileChunkSize(path string, chunkSize int) (*File, error) {
+	fileSize, err := getFileSize(path)
+	if err != nil { return nil, err }
+
+	numChunks, err := computeNumChunks(fileSize, chunkSize)
+	if err != nil { return nil, err }
+
+	file, err := newFile(path, fileSize, numChunks, chunkSize)
+	if err != nil { return nil, err }
 	return file, nil
 }
 
@@ -99,24 +115,42 @@ func getFileSize(path string) (int, error) {
 
 // computeChunkSize finds the size of each chunk's buffer.
 // Chunk size is derived from the given file size and the number of chunks required.
-// Returns error if parameters are invalid.
-func computeChunkSize(fileSize int, NumberOfChunks int) (int, error) {
+func computeChunkSize(fileSize int, numChunks int) (int, error) {
+	_, ok := interface{}(fileSize).(int)  // check that type is an int
+	if !(0 <= fileSize && ok) {
+		return 0, errors.New("File size must be a non-negative integer.")
+	}
+	_, ok = interface{}(numChunks).(int)
+	if !(0 < numChunks && ok) {
+		return 0, errors.New("Chunk number must be a positive integer.")
+	}
+	// numChunks*chunkSize ~= fileSize
+	// chunkSize ~= fileSize/numChunks
+	chunkSize := int(math.Ceil(float64(fileSize) / float64(numChunks)))
+	return chunkSize, nil
+}
+
+// computeNumChunks finds the number of chunks that a file will be split into.
+// The number of chunks is derived using the maximum amount of bytes that should be in each chunk.
+func computeNumChunks(fileSize int, chunkSize int) (int, error) {
 	_, ok := interface{}(fileSize).(int)
 	if !(0 <= fileSize && ok) {
 		return 0, errors.New("File size must be a non-negative integer.")
 	}
-	_, ok = interface{}(NumberOfChunks).(int)
-	if !(0 < NumberOfChunks && ok) {
+	_, ok = interface{}(chunkSize).(int)
+	if !(0 < chunkSize && ok) {
 		return 0, errors.New("Chunk number must be a positive integer.")
 	}
-	chunkSize := int(math.Ceil(float64(fileSize) / float64(NumberOfChunks)))
-	return chunkSize, nil
+	// numChunks*chunkSize ~= fileSize
+	// numChunks ~= fileSize/chunkSize
+	numChunks := int(math.Ceil(float64(fileSize) / float64(chunkSize)))
+	return numChunks, nil
 }
 
 // generateChunks computes and stores the ID (hash) of each chunk in the file.
 func (file *File) generateChunks() error {
-	file.Chunks.Chunks = make([]FileChunk, file.Chunks.NumberOfChunks)
-	for n := 0; n < file.Chunks.NumberOfChunks; n++ {
+	file.Chunks.Chunks = make([]FileChunk, file.Chunks.NumChunks)
+	for n := 0; n < file.Chunks.NumChunks; n++ {
 		chunkID, err := file.GetChunkID(n)
 		if err != nil { return err }
 		file.Chunks.Chunks[n] = FileChunk{
