@@ -192,32 +192,18 @@ func (file *File) GetChunkID(n int) (FileChunkIDType, error) {
 	return chunkID, nil
 }
 
-// SaveChunk persistently stores the nth chunk at the given filepath.
-// An error is returned if the storage operation fails.
-func (file *File) SaveChunk(n int, path string) error {
-	// TODO: do something with bytesRead, i.e. only send what was read.
-	chunk, _, err := file.GetChunk(n)
-	if err != nil { return err }
-
-	f, err := os.Create(path)
-	if err != nil { return err }
-	defer f.Close()
-
-	_, err = f.Write(chunk)
-	if err != nil { return err }
-
-	return nil
+// SaveBytes writes a bytes buffer through a writer.
+// It returns the number of bytes actually written.
+func (file *File) SaveChunk(w io.Writer, buffer []byte) (int, error) {
+	n, err := w.Write(buffer)
+	return n, err
 }
 
-// LoadChunk retrieves the chunk as bytes from the given filepath.
-func (file *File) LoadChunk(path string) ([]byte, error) {
-	chunk := make([]byte, file.Chunks.ChunkSize)
-	
-	f, err := os.Open(path)
-	if err != nil { return nil, err }
-	defer f.Close()
-
-	_, err = f.Read(chunk)
-	if err != nil { return nil, err }
-	return chunk, nil
+// LoadBytes reads n bytes from a reader.
+// It returns a buffer of the bytes read and the number of actual bytes read.
+func (file *File) LoadChunk(r io.Reader) ([]byte, int, error) {
+	buffer := make([]byte, file.Chunks.ChunkSize)
+	numRead, err := r.Read(buffer)
+	if err != nil { return nil, numRead, err }
+	return buffer, numRead, nil
 }

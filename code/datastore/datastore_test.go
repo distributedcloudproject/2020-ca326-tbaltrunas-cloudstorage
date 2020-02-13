@@ -95,41 +95,51 @@ func TestNewFile(t *testing.T) {
 	}
 }
 
-func TestFileSave(t *testing.T) {
-	// get a file
+func TestChunkSaving(t *testing.T) {
 	tmpfile, err := ioutil.TempFile("", "cloud_test_file_*")
 	if err != nil { t.Error(err) }
 	defer os.Remove(tmpfile.Name())
 	defer tmpfile.Close()
-
 	path := tmpfile.Name()
 	t.Logf("Temporary filepath: %s", path)
-
 	fileContents := "hellothere"  // 10 bytes
-	_, err = tmpfile.Write([]byte(fileContents))
+	fileContentsBytes := []byte(fileContents)
+	t.Logf("Writing contents to temporary file: %s", fileContents)
+	_, err = tmpfile.Write(fileContentsBytes)
 	if err != nil { t.Error(err) }
+
+	tmpfileSave, err := ioutil.TempFile("", "cloud_test_file_*")
+	if err != nil { t.Error(err) }
+	defer os.Remove(tmpfileSave.Name())
+	defer tmpfileSave.Close()
+	pathSave := tmpfileSave.Name()
+	t.Logf("Temporary save filepath: %s", pathSave)
 
 	// get a chunk from the file
-	chunkNumber := 2
-	file, err := NewFileNumChunks(path, chunkNumber)
+	numChunks := 2
+	file, err := NewFileNumChunks(path, numChunks)
 	if err != nil { t.Error(err) }
 	t.Logf("File: %v", file)
+	chunkNum := 0
+	chunk, _, err := file.GetChunk(chunkNum)
+	if err != nil { t.Error(err) }
+	t.Logf("Chunk: %v. (string: %s).", chunk, string(chunk))
 
 	// save the chunk
-	n := 0
-	chunkPath := "/tmp/cloud_test_chunk_save"
-
-	err = file.SaveChunk(n, chunkPath)
+	t.Log("Saving chunk.")
+	_, err = file.SaveChunk(tmpfileSave, chunk)
 	if err != nil { t.Error(err) }
 
-	// retrieve and compare the chunk
-	chunk, _, err := file.GetChunk(n)
+	// load the chunk
+	t.Log("Loading chunk.")
+	_, err = tmpfileSave.Seek(0, 0) // reset offset to 0 (since we did a write which moved the pointer)
 	if err != nil { t.Error(err) }
-	readChunk, err := file.LoadChunk(chunkPath)
+	readChunk, _, err := file.LoadChunk(tmpfileSave)
 	if err != nil { t.Error(err) }
 
-	t.Logf("Actual chunk: %v", chunk)
-	t.Logf("Read chunk: %v", readChunk)
+	// compare read and original chunks
+	t.Logf("Original chunk: %v (string: %s).", chunk, string(chunk))
+	t.Logf("Read chunk: %v (string: %s).", readChunk, string(readChunk))
 	if bytes.Compare(chunk, readChunk) != 0 {
 		t.Errorf("Actual and read chunks differ.")
 	}
