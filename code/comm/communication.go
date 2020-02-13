@@ -2,6 +2,9 @@ package comm
 
 import (
 	"bytes"
+	cipher2 "crypto/cipher"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/binary"
 	"encoding/gob"
 	"errors"
@@ -56,26 +59,25 @@ type client struct {
 	requests map[string]interface{}
 	requestsHandlers []RequestHandler
 	requestsMutex sync.RWMutex
-}
 
-// NewClient creates a new client with an existing network connection.
-func NewClient(conn net.Conn) Client {
-	client := &client{}
+	// Our private key, used for decryption.
+	privateKey *rsa.PrivateKey
 
-	client.conn = conn
-	client.messages = make(map[uint32]*message)
-	client.requests = make(map[string]interface{})
+	// Their public key, used for encryption.
+	publicKey *rsa.PublicKey
 
-	return client
+	// Master key used for symmetric encryption/decryption.
+	masterKey []byte
+	cipher cipher2.AEAD
 }
 
 // NewClientDial creates a new client by dialing the ip and creating a new socket connection.
-func NewClientDial(address string) (Client, error) {
+func NewClientDial(address string, key *rsa.PrivateKey) (Client, error) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
-	return NewClient(conn), nil
+	return NewClient(conn, key)
 }
 
 func (c *client) Address() string {
@@ -111,11 +113,11 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 	binary.LittleEndian.PutUint32(buffer[1:5], id)
 
 	// Add the message/function name to the buffer, finished by the \000.
-	buffer = append(buffer, []byte(msg)...)
-	buffer = append(buffer, '\000')
+	b := bytes.Buffer{}
+	b.Write([]byte(msg))
+	b.WriteRune('\000')
 
 	// Encode our data that we want to send using gob.
-	b := bytes.Buffer{}
 	e := gob.NewEncoder(&b)
 	for i := range data {
 		err := e.Encode(&data[i])
@@ -123,8 +125,15 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 			return nil, err
 		}
 	}
-	// Copy over the encoded bytes buffer into our buffer variable.
-	buffer = append(buffer, b.Bytes()...)
+
+	// Encrypt the data using symmetric key.
+	nonce := make([]byte, c.cipher.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	encryptedBuffer := c.cipher.Seal(nonce, nonce, b.Bytes(), nil)
+	buffer = append(buffer, encryptedBuffer...)
 
 	// Put the buffer length into [5:9] bytes. -9 because the message length should not include the headers(message ID
 	// and message length), which the buffer contains.
@@ -193,15 +202,26 @@ func (c *client) HandleConnection() error {
 		messageID := binary.LittleEndian.Uint32(headerBuffer[1:5])
 		messageLength := int(binary.LittleEndian.Uint32(headerBuffer[5:9]))
 
-		buffer := make([]byte, messageLength)
+		encryptedBuffer := make([]byte, messageLength)
 		totalRead := 0
 
 		for totalRead < messageLength {
-			read, err := c.conn.Read(buffer[totalRead:])
+			read, err := c.conn.Read(encryptedBuffer[totalRead:])
 			if err != nil {
 				return err
 			}
 			totalRead += read
+		}
+
+		nonceSize := c.cipher.NonceSize()
+		if len(encryptedBuffer) < nonceSize {
+			return errors.New("ciphertext too short")
+		}
+
+		nonce, encryptedBuffer := encryptedBuffer[:nonceSize], encryptedBuffer[nonceSize:]
+		buffer, err := c.cipher.Open(nil, nonce, encryptedBuffer, nil)
+		if err != nil {
+			return err
 		}
 
 		// Once the data is retrieved, process it in another thread so that we can continue receiving data.
@@ -278,11 +298,19 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 		}
 	}
 
-	buffer := make([]byte, 9+b.Len())
+	// Encrypt the data using symmetric key.
+	nonce := make([]byte, c.cipher.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return err
+	}
+
+	encryptedBuffer := c.cipher.Seal(nonce, nonce, b.Bytes(), nil)
+
+	buffer := make([]byte, 9+len(encryptedBuffer))
 	buffer[0] = 1 // This is a response.
 	binary.LittleEndian.PutUint32(buffer[1:5], messageID)
-	binary.LittleEndian.PutUint32(buffer[5:9], uint32(b.Len()))
-	copy(buffer[9:], b.Bytes())
+	binary.LittleEndian.PutUint32(buffer[5:9], uint32(len(encryptedBuffer)))
+	copy(buffer[9:], encryptedBuffer)
 
 	written := 0
 	c.writeMutex.Lock()

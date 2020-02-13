@@ -2,6 +2,11 @@ package network
 
 import (
 	"cloud/comm"
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
@@ -19,6 +24,9 @@ type Node struct {
 	// Display name of the node.
 	Name string
 
+	// Public key of the node.
+	PublicKey crypto.PublicKey
+
 
 	// client is the communication socket between us and the node.
 	client comm.Client
@@ -30,6 +38,13 @@ type Node struct {
 type Network struct {
 	Name string
 	Nodes []*Node
+
+	// Require authentication for the network.
+	RequireAuth bool
+
+	// List of node IDs that are permitted to enter the Network. If `RequireAuth` is set, the IDs are enforced to be
+	// generated based on the public key.
+	AllowedIDs []string
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
@@ -38,6 +53,7 @@ type Cloud struct {
 
 	PendingNodes []*Node
 	MyNode *Node
+	PrivateKey *rsa.PrivateKey
 
 	Listener net.Listener
 	Mutex sync.RWMutex
@@ -51,9 +67,9 @@ type request struct {
 	node *Node
 }
 
-func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
+func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error) {
 	// Establish connection with the target.
-	client, err := comm.NewClientDial(ip)
+	client, err := comm.NewClientDial(ip, key)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +80,7 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 		client: client,
 	}
 
-	cloud := &Cloud{MyNode: me}
+	cloud := &Cloud{MyNode: me, PrivateKey: key}
 	node.client.AddRequestHandler(createAuthRequestHandler(node, cloud))
 	go node.client.HandleConnection()
 
@@ -101,13 +117,14 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	return cloud, nil
 }
 
-func SetupNetwork(me *Node, networkName string) *Cloud {
+func SetupNetwork(me *Node, networkName string, key *rsa.PrivateKey) *Cloud {
 	cloud := &Cloud{
 		Network: Network{
 			Name: "My new network",
 			Nodes: []*Node{me},
 		},
 		MyNode: me,
+		PrivateKey: key,
 	}
 	return cloud
 }
@@ -129,9 +146,14 @@ func (n *Cloud) AcceptListener() {
 			continue
 		}
 
+		client, err := comm.NewServerClient(conn, n.PrivateKey)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 		node := &Node{
 			IP: conn.RemoteAddr().String(),
-			client: comm.NewClient(conn),
+			client: client,
 		}
 		node.client.AddRequestHandler(createAuthRequestHandler(node, n))
 		n.PendingNodes = append(n.PendingNodes, node)
@@ -163,4 +185,13 @@ func (r request) PingRequest(ping string) string {
 
 func (n *Node) Online() bool {
 	return n.client != nil
+}
+
+func PublicKeyToID(key *rsa.PublicKey) (string, error) {
+	pub, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return "", err
+	}
+	sha := sha256.Sum256(pub)
+	return hex.EncodeToString(sha[:]), nil
 }

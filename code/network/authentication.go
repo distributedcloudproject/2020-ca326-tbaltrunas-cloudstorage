@@ -1,6 +1,7 @@
 package network
 
 import (
+	"crypto/rsa"
 	"encoding/gob"
 	"strings"
 )
@@ -13,6 +14,19 @@ type AuthRequest struct {
 	ID string
 	IP string
 	Name string
+
+	PublicKey rsa.PublicKey
+	SignThisHash []byte
+}
+
+type AuthResponse struct {
+	PublicKey rsa.PublicKey
+	SignedHash []byte
+	SignThisHash []byte
+}
+
+type AuthRequestFinal struct {
+	SignedHash []byte
 }
 
 func init() {

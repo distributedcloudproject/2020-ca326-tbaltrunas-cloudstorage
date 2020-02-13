@@ -1,6 +1,8 @@
 package network
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"net"
 	"strconv"
 	"testing"
@@ -13,15 +15,23 @@ func TestNetworkPing(t *testing.T) {
 		Name: "test",
 	}
 
-	cloud := SetupNetwork(me, "My new network")
+	key, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cloud := SetupNetwork(me, "My new network", key)
 	cloud.Listen(0)
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
 
+	key2, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
 	n2, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
 		ID: "2",
 		Name: "test2",
-	})
+	}, key2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -47,16 +57,24 @@ func TestNetworkBootstrap(t *testing.T) {
 		Name: "test",
 	}
 
-	cloud := SetupNetwork(me, "My new network")
+	key, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cloud := SetupNetwork(me, "My new network", key)
 	cloud.Listen(0)
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
 
 	for i := 0; i < 4; i++ {
+		key2, err := generateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
 		n, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
 			ID: "id" + strconv.Itoa(i),
 			Name: "Node " + strconv.Itoa(i+1),
-		})
+		}, key2)
 		if err != nil {
 			t.Error(err)
 		}
@@ -80,7 +98,11 @@ func TestNetworkAddNode(t *testing.T) {
 		Name: "test",
 	}
 
-	cloud := SetupNetwork(me, "My new network")
+	key, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cloud := SetupNetwork(me, "My new network", key)
 	cloud.Listen(0)
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
@@ -92,11 +114,16 @@ func TestNetworkAddNode(t *testing.T) {
 			t.Error(err)
 		}
 
+		key2, err := generateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		n, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
 			ID: "id" + strconv.Itoa(i),
 			Name: "Node " + strconv.Itoa(i+1),
 			IP: listener.Addr().String(),
-		})
+		}, key2)
 		if err != nil {
 			t.Error(err)
 		}
@@ -112,4 +139,12 @@ func TestNetworkAddNode(t *testing.T) {
 			t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 5)
 		}
 	}
+}
+
+func generateKey() (*rsa.PrivateKey, error) {
+	pri, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+	return pri, nil
 }

@@ -9,7 +9,7 @@ func (c *Cloud) connectToNode(n *Node) error {
 	defer n.mutex.Unlock()
 	if n.IP != "" && n.ID != c.MyNode.ID && n.client == nil {
 		var err error
-		n.client, err = comm.NewClientDial(n.IP)
+		n.client, err = comm.NewClientDial(n.IP, c.PrivateKey)
 		if err != nil {
 			return err
 		}

@@ -2,9 +2,14 @@ package main
 
 import (
 	"cloud/network"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -13,15 +18,34 @@ import (
 )
 
 
+func readKey(file string) (*rsa.PrivateKey, error) {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	bb, _ := pem.Decode(b)
+	if bb.Type != "RSA PRIVATE KEY" {
+		return nil, errors.New("invalid type " + bb.Type + " want: RSA PRIVATE KEY")
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(bb.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
 func main() {
 	networkPtr := flag.String("network", "new", "Bootstrap IP of a node in an existing network or 'new' to create new network.")
-	networkNamePtr := flag.String("network-name", "New Network", "The name of the network, if creating a new one")
+	networkNamePtr := flag.String("network-name", "New Network", "The name of the network, if creating a new one.")
+	networkSecurePtr := flag.Bool("secure", true, "Enable authentication for the network.")
 	saveFilePtr := flag.String("save-file", "Save File", "File to save network state and resume network state from.")
 
 	namePtr := flag.String("name", "", "Name of the node. Use for easy identification.")
-	idPtr := flag.String("id", "Node ID", "Temporary")
-	ipPtr := flag.String("ip", "", "Remote IP to override source IP address when connecting to local nodes")
-	portPtr := flag.Int("port", 9000, "Port to listen on")
+	privateKeyPtr := flag.String("key", "", "Path to private key.")
+	ipPtr := flag.String("ip", "", "Remote IP to override source IP address when connecting to local nodes.")
+	portPtr := flag.Int("port", 9000, "Port to listen on.")
 
 	fancyDisplayPtr := flag.Bool("fancy-display", false, "Display node information in a fancy-way.")
 
@@ -31,14 +55,30 @@ func main() {
 	fmt.Println("Name:", *namePtr)
 	fmt.Println("IP: ", *ipPtr+":"+strconv.Itoa(*portPtr))
 	fmt.Println("Save File:", *saveFilePtr)
+	fmt.Println("Secure:", *networkSecurePtr)
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
 
+	// Read the key.
+	key, err := readKey(*privateKeyPtr)
+	if err != nil {
+		fmt.Println("Error while parsing key:", err)
+		return
+	}
+	id, err := network.PublicKeyToID(&key.PublicKey)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("ID:", id)
+
+
 	me := &network.Node{
-		ID:   *idPtr,
+		ID:   id,
 		IP:   *ipPtr + ":" + strconv.Itoa(*portPtr),
 		Name: *namePtr,
+		PublicKey: key.PublicKey,
 	}
 
 	var saveFunc func() io.Writer
@@ -53,6 +93,8 @@ func main() {
 		Network: network.Network{
 			Name:  *networkNamePtr,
 			Nodes: []*network.Node{me},
+
+			RequireAuth: *networkSecurePtr,
 		},
 		MyNode:   me,
 		SaveFunc: saveFunc,
@@ -108,7 +150,7 @@ func main() {
 		}(c)
 	}
 
-	err := c.Listen(*portPtr)
+	err = c.Listen(*portPtr)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -116,6 +158,3 @@ func main() {
 	c.AcceptListener()
 }
 
-func ExploreNode(ip string) {
-	//
-}
