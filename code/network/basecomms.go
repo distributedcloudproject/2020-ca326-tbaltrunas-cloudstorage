@@ -13,6 +13,7 @@ const (
 func init() {
 	gob.Register(Network{})
 	gob.Register(Node{})
+	gob.Register(DataStore{})
 }
 
 func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
