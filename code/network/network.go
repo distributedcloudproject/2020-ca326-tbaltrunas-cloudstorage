@@ -52,11 +52,13 @@ type request struct {
 }
 
 func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
+	// Establish connection with the target.
 	client, err := comm.NewClientDial(ip)
 	if err != nil {
 		return nil, err
 	}
 
+	// Create a temporary node to represent the bootstrap node.
 	node := &Node{
 		IP: ip,
 		client: client,
@@ -145,34 +147,6 @@ func (n *Cloud) AcceptListener() {
 			n.Mutex.Unlock()
 		}(node)
 	}
-}
-
-func (c *Cloud) connectToNode(n *Node) error {
-	n.mutex.RLock()
-	defer n.mutex.RUnlock()
-	if n.IP != "" && n.ID != c.MyNode.ID && n.client == nil {
-		var err error
-		n.client, err = comm.NewClientDial(n.IP)
-		if err != nil {
-			return err
-		}
-		go n.client.HandleConnection()
-		_ = n.Authenticate(c.MyNode)
-		n.client.AddRequestHandler(createRequestHandler(n, c))
-	}
-	return nil
-}
-
-func (c *Cloud) OnlineNodesNum() int {
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
-	i := 0
-	for _, n := range c.Network.Nodes {
-		if n.client != nil || n.ID == c.MyNode.ID {
-			i++
-		}
-	}
-	return i
 }
 
 func (n *Node) Ping() (string, error) {
