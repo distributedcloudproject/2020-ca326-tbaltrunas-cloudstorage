@@ -89,11 +89,11 @@ func main() {
 
 	if *filePtr != "" {
 		r, err := os.Open(*filePtr)
+		defer r.Close()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		// TODO: AddFile as a method/handler of Network
 		file, err := datastore.NewFile(r, *filePtr, 5)
 		if err != nil {
 			fmt.Println(err)

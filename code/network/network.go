@@ -79,6 +79,8 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	}
 	node.client.AddRequestHandler(createRequestHandler(node, cloud))
 
+	node.client.AddRequestHandler(createDataStoreRequestHandler(node, cloud))
+
 	// Update our info on the node.
 	nodeInfo, err := node.NodeInfo()
 	if err != nil {
