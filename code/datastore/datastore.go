@@ -6,12 +6,12 @@ import (
 	"errors"
 )
 
-type FileSizeType int
+type FileSize int
 
-// FileChunkIDType is a hash as a string of bytes.
-type FileChunkIDType string
+// ChunkID is a hash as a string of bytes.
+type ChunkID string
 
-type FileContentsType [] byte
+type ChunkContents []byte
 
 type ChunkNodeType network.Node
 
@@ -21,34 +21,34 @@ type FileIOReader io.ReaderAt
 type File struct {
 	Path 		string  // Path of the user's file.
 	
-	Size 		FileSizeType  // File size.
+	Size 		FileSize  // File size.
 	
-	Chunks 		FileChunks  // List of the file's chunk ID's.
+	Chunks 		Chunks  // List of the file's chunk ID's.
 
 	reader		FileIOReader  // Reader used to access the file contents.
 }
 
-type FileChunks struct {
+type Chunks struct {
 	NumChunks int  // Number of chunks that this file is split into.
 
 	ChunkSize 	int  // The maximum size of each chunk.
 
-	Chunks []FileChunk  // List of chunks belonging to the file.
+	Chunks []Chunk  // List of chunks belonging to the file.
 }
 
-// FileChunk represents a "chunk" of a file, a sequential part of a file.
+// Chunk represents a "chunk" of a file, a sequential part of a file.
 // Each chunk has an ID and a sequence number.
-type FileChunk struct {
-	ID 				FileChunkIDType  // Unique ID of the chunk (hash value of the contents).
+type Chunk struct {
+	ID 				ChunkID  // Unique ID of the chunk (hash value of the contents).
 
 	SequenceNumber 	int // Chunk sequence used to place the chunk in the correct position in the file.
 
 	ContentSize       int // Number of bytes of actual content.
 }
 
-// FileChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
+// ChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
 // The data structure keeps track of which nodes contain which chunks.
-type FileChunkLocations map[FileChunkIDType][]ChunkNodeType
+type ChunkLocations map[ChunkID][]ChunkNodeType
 
 // DataStore is a data structure that keeps track of user files stored on the cloud.
 type DataStore struct {
@@ -67,7 +67,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 
 	// generate each chunk
 	file := new(File)
-	chunks := make([]FileChunk, 0)
+	chunks := make([]Chunk, 0)
 	i := 0
 	var offset int64
 	buffer := make([]byte, chunkSize)
@@ -86,7 +86,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 			return nil, err
 		}
 		chunkID := ComputeChunkID(buffer)
-		chunk := FileChunk{
+		chunk := Chunk{
 			ID: chunkID,
 			SequenceNumber: i,
 			ContentSize: numRead,
@@ -104,7 +104,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 
 	file.reader = reader
 	file.Path = path
-	file.Size = FileSizeType(fileSize)
+	file.Size = FileSize(fileSize)
 	file.Chunks.NumChunks = numChunks
 	file.Chunks.ChunkSize = chunkSize
 	file.Chunks.Chunks = chunks
@@ -123,16 +123,16 @@ func (file *File) GetChunk(n int) ([]byte, int, error) {
 }
 
 // ComputeChunkID calculates the ID (hash) of a buffer of bytes (a chunk).
-func ComputeChunkID(buffer []byte) FileChunkIDType {
+func ComputeChunkID(buffer []byte) ChunkID {
 	chunkHash := HashBytes(buffer)
-	return FileChunkIDType(chunkHash)
+	return ChunkID(chunkHash)
 }
 
 // ComputeFileSize calculates the combined size of all chunks (the expected "file size").
-func (chunks *FileChunks) ComputeFileSize() FileSizeType {
+func (chunks *Chunks) ComputeFileSize() FileSize {
 	fileSize := 0
 	for _, chunk := range chunks.Chunks {
 		fileSize += chunk.ContentSize
 	}
-	return FileSizeType(fileSize)
+	return FileSize(fileSize)
 }
