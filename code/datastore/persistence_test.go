@@ -1,5 +1,7 @@
 package datastore
 
+// TODO: move this to a separate utils package and test without datastore dependencies.
+
 // import (
 // 	"cloud/network"
 // 	"testing"

@@ -23,13 +23,13 @@ func TestFileChunks(t *testing.T) {
 	if err != nil { t.Error(err) }
 	t.Logf("File contents: %s", string(fileContentsRead))
 
-	NumChunks := 2
-	t.Logf("Operating with chunk number: %d", NumChunks)
+	chunkSize := 5
+	t.Logf("Operating with chunk size: %d", chunkSize)
 
 	r, err := os.Open(path)
 	if err != nil { t.Error(err) }
 	defer r.Close()
-	file, err := NewFileNumChunks(r, path, NumChunks)
+	file, err := NewFile(r, path, chunkSize)
 	if err != nil { t.Error(err) }
 	t.Logf("File: %v", file)
 
@@ -40,7 +40,7 @@ func TestFileChunks(t *testing.T) {
 	if err != nil { t.Error(err) }
 	t.Logf("Bytes read: %d", bytesRead)
 	t.Logf("Contents read: %v (string: %v)", contents0, string(contents0))
-	chunkID, err := file.GetChunkID(n)
+	chunkID := ComputeChunkID(contents0)
 	if err != nil { t.Error(err) }
 	t.Logf("ChunkID: %s", chunkID)
 
@@ -50,7 +50,7 @@ func TestFileChunks(t *testing.T) {
 	if err != nil { t.Error(err) }
 	t.Logf("Bytes read: %d", bytesRead)
 	t.Logf("Contents read: %v (string: %v)", contents1, string(contents1))
-	chunkID, err = file.GetChunkID(n)
+	chunkID = ComputeChunkID(contents1)
 	if err != nil { t.Error(err) }
 	t.Logf("ChunkID: %s", chunkID)
 
@@ -60,42 +60,5 @@ func TestFileChunks(t *testing.T) {
 	t.Logf("Read contents: %s", retrievedContents)
 	if retrievedContents != fileContents {
 		t.Errorf("Actual and read contents differ.")
-	}
-}
-
-func TestNewFile(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "cloud_test_file_*")
-	if err != nil { t.Error(err) }
-	defer os.Remove(tmpfile.Name())
-	defer tmpfile.Close()
-
-	path := tmpfile.Name()
-	t.Logf("Temporary filepath: %s", path)
-
-	fileContents := "hellothere"  // 10 bytes
-	_, err = tmpfile.Write([]byte(fileContents))
-	if err != nil { t.Error(err) }
-
-	r, err := os.Open(path)
-	if err != nil { t.Error(err) }
-	defer r.Close()
-	file1, err := NewFileNumChunks(r, path, 2)  // 2 chunks of 5 bytes each
-	if err != nil { t.Error(err) }
-	t.Logf("File from NumChunks (File 1): %v.", file1)
-
-	file2, err := NewFileChunkSize(r, path, 5)  // 5 bytes giving 2 chunks
-	if err != nil { t.Error(err) }
-	t.Logf("File from ChunkSize (File 2): %v.", file2)
-
-	t.Logf("File 1 number of chunks: %d.", file1.Chunks.NumChunks)
-	t.Logf("File 2 number of chunks: %d.", file2.Chunks.NumChunks)
-	if file1.Chunks.NumChunks != file2.Chunks.NumChunks {
-		t.Error("NumChunks does not match.")
-	}
-
-	t.Logf("File 1 chunk size: %d.", file1.Chunks.ChunkSize)
-	t.Logf("File 2 chunk size: %d.", file2.Chunks.ChunkSize)
-	if file1.Chunks.ChunkSize != file2.Chunks.ChunkSize {
-		t.Error("ChunkSize does not match.") 
 	}
 }
