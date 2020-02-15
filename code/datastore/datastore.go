@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"cloud/network"
-	"os"
 	"io"
 	"errors"
 )
@@ -115,26 +114,21 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 // GetChunk reads the nth chunk in the file.
 // Returns the contents as bytes, the amount of actual bytes read, and error if any.
 func (file *File) GetChunk(n int) ([]byte, int, error) {
-	f, err := os.Open(file.Path)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer f.Close()
-
-	buffer := make([]byte, file.Chunks.ChunkSize)
 	offset := int64(n * file.Chunks.ChunkSize)
-	bytesRead, err := f.ReadAt(buffer, offset)
-	if err != io.EOF && err != nil {
-		return nil, 0, err
-	}
-	return buffer, bytesRead, nil
+	buffer := make([]byte, file.Chunks.ChunkSize)
+	numRead, err := file.reader.ReadAt(buffer, offset)
+	if err != io.EOF && err != nil { return nil, numRead, err }
+	return buffer, numRead, nil
+	// TODO: might want to do something with numRead, i.e. update chunk with new ContentSize and ID.
 }
 
-func ComputeChunkID(buffer []byte) (FileChunkIDType) {
+// ComputeChunkID calculates the ID (hash) of a buffer of bytes (a chunk).
+func ComputeChunkID(buffer []byte) FileChunkIDType {
 	chunkHash := HashBytes(buffer)
 	return FileChunkIDType(chunkHash)
 }
 
+// ComputeFileSize calculates the combined size of all chunks (the expected "file size").
 func (chunks *FileChunks) ComputeFileSize() FileSizeType {
 	fileSize := 0
 	for _, chunk := range chunks.Chunks {
