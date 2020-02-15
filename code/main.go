@@ -131,7 +131,36 @@ func main() {
 		err = c.MyNode.AddFile(file)
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
+
+		i := 0
+		chunk, _, err := file.GetChunk(i)
+		chunkID := file.Chunks.Chunks[i].ID
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = c.MyNode.SaveChunk(chunkID, chunk)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		// for i := range c.Network.Nodes {
+		// 	chunk, _, err := file.GetChunk(i)
+		// 	chunkID := file.Chunks.Chunks[i].ID
+		// 	if err != nil {
+		// 		fmt.Println(err)
+		// 		return
+		// 	}
+		// 	fmt.Println(c.Network.Nodes[i])
+		// 	err = c.Network.Nodes[i].SaveChunk(chunkID, chunk)
+		// 	if err != nil {
+		// 		fmt.Println(err)
+		// 		return
+		// 	}
+		// 	fmt.Println("sent to: ", i)
+		// }
 	}
 
 	err := c.Listen(*portPtr)

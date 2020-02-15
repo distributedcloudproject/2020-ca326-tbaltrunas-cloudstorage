@@ -23,16 +23,18 @@ func (r request) OnAddFileRequest(file *datastore.File) {
 	r.cloud.Network.DataStore = append(r.cloud.Network.DataStore, file)
 }
 
-// func (n *Node) SaveChunk(chunk *datastore.Chunk, contents []byte, node *Node) error {
-// 	_, err := SendMessage(SaveChunkMsg, chunk, contents, node)
-// 	return err
-// }
+func (n *Node) SaveChunk(chunkID datastore.ChunkID, contents []byte) error {
+	_, err := n.client.SendMessage(SaveChunkMsg, chunkID, contents)
+	return err
+}
 
-// func (r request) OnSaveChunkRequest(chunk *datastore.Chunk, contents []byte) {
+func (r request) OnSaveChunkRequest(chunkID datastore.ChunkID, contents []byte) {
+	// verify chunk ID
 
-// }
+	// persistently store chunk
 
-// LoadChunk(chunkID, node)
+	// update chunk data structure
+}
 
 func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
 	r := request{
@@ -43,7 +45,7 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 	return func(message string) interface{} {
 		switch message {
 		case AddFileMsg: return r.OnAddFileRequest
-		// case SaveChunkMsg: return r.OnSaveChunkRequest
+		case SaveChunkMsg: return r.OnSaveChunkRequest
 		}
 		return nil
 	}

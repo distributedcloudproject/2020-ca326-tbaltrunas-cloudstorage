@@ -26,11 +26,11 @@ type File struct {
 }
 
 type Chunks struct {
-	NumChunks int  // Number of chunks that this file is split into.
+	NumChunks 	int  // Number of chunks that this file is split into.
 
 	ChunkSize 	int  // The maximum size of each chunk.
 
-	Chunks []Chunk  // List of chunks belonging to the file.
+	Chunks 		[]Chunk  // List of chunks belonging to the file.
 }
 
 // Chunk represents a "chunk" of a file, a sequential part of a file.
@@ -38,9 +38,9 @@ type Chunks struct {
 type Chunk struct {
 	ID 				ChunkID  // Unique ID of the chunk (hash value of the contents).
 
-	SequenceNumber 	int // Chunk sequence used to place the chunk in the correct position in the file.
+	SequenceNumber	int // Chunk sequence used to place the chunk in the correct position in the file.
 
-	ContentSize       int // Number of bytes of actual content.
+	ContentSize		int // Number of bytes of actual content.
 }
 
 // NewFile creates a new File and computes its chunks using the provided chunk size.
