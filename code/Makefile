@@ -29,7 +29,9 @@ run: re
 
 
 test: make
-	# run with ARGS="-v" flag for verbose mode
+	# run with ARGS="args" for extra test arguments
+	# "-v" for verbose mode
+	# "-run TestFunctionName" to only run the test function TestFunctionName
 	@go test ./... $(ARGS)
 
 
