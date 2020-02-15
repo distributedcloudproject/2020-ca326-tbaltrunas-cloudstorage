@@ -39,12 +39,15 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) {
 		ar.IP = ip[0] + ar.IP
 	}
 
+	// Update our information on the node.
 	r.node.ID = ar.ID
 	r.node.IP = ar.IP
 	r.node.Name = ar.Name
 
+	// Add any request handlers - node is now part of the network.
 	r.node.client.AddRequestHandler(createRequestHandler(r.node, r.cloud))
 
+	// Remove the node from the pending nodes list.
 	r.cloud.Mutex.Lock()
 	for i := 0; i < len(r.cloud.PendingNodes); i++ {
 		if r.cloud.PendingNodes[i] == r.node {
@@ -54,12 +57,15 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) {
 	}
 	r.cloud.Mutex.Unlock()
 
-	r.OnAddNodeRequest(*r.node)
+	// Tell all of the other nodes to add the node.
 	for i := 0; i < len(r.cloud.Network.Nodes); i++ {
 		if r.cloud.Network.Nodes[i].client != nil {
 			go r.cloud.Network.Nodes[i].AddNode(*r.node)
 		}
 	}
+
+	// Add the node to our list.
+	r.cloud.addNode(r.node)
 }
 
 func createAuthRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
