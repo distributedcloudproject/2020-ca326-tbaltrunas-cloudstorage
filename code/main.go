@@ -87,24 +87,6 @@ func main() {
 		c = n
 	}
 
-	if *filePtr != "" {
-		r, err := os.Open(*filePtr)
-		defer r.Close()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		file, err := datastore.NewFile(r, *filePtr, 5)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		fmt.Println(file)
-		fmt.Println(*file)
-		fmt.Println(&file)
-		c.MyNode.AddFile(file)
-	}
-
 	if *fancyDisplayPtr {
 		go func(c *network.Cloud) {
 			for {
@@ -145,7 +127,26 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	c.AcceptListener()
+	go c.AcceptListener()
+
+	time.Sleep(2000 * time.Millisecond)
+	if *filePtr != "" {
+		r, err := os.Open(*filePtr)
+		defer r.Close()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		file, err := datastore.NewFile(r, *filePtr, 5)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(file)
+		fmt.Println(*file)
+		fmt.Println(&file)
+		c.MyNode.AddFile(file)
+	}
 }
 
 func ExploreNode(ip string) {

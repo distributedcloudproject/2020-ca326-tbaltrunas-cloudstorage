@@ -8,6 +8,7 @@ import (
 
 const (
 	AddFileMsg = "AddFile"
+	SaveChunkMsg = "SaveChunk"
 )
 
 func init() {
@@ -27,7 +28,14 @@ func (r request) OnAddFileRequest(file *datastore.File) {
 	// c.Network.DataStore = append(c.Network.DataStore, file)
 }
 
-// SaveChunk(chunk, node)
+// func (n *Node) SaveChunk(chunk *datastore.Chunk, contents []byte, node *Node) error {
+// 	_, err := SendMessage(SaveChunkMsg, chunk, contents, node)
+// 	return err
+// }
+
+// func (r request) OnSaveChunkRequest(chunk *datastore.Chunk, contents []byte) {
+
+// }
 
 // LoadChunk(chunkID, node)
 
@@ -40,6 +48,7 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 	return func(message string) interface{} {
 		switch message {
 		case AddFileMsg: return r.OnAddFileRequest
+		// case SaveChunkMsg: return r.OnSaveChunkRequest
 		}
 		return nil
 	}
