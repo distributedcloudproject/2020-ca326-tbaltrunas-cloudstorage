@@ -97,14 +97,14 @@ func TestChunkSaving(t *testing.T) {
 
 	// save the chunk
 	t.Log("Saving chunk.")
-	_, err = file.SaveChunk(tmpfileSave, chunk)
+	err = file.SaveChunk(tmpfileSave, chunk)
 	if err != nil { t.Error(err) }
 
 	// load the chunk
 	t.Log("Loading chunk.")
 	_, err = tmpfileSave.Seek(0, 0) // reset offset to 0 (since we did a write which moved the pointer)
 	if err != nil { t.Error(err) }
-	readChunk, _, err := file.LoadChunk(tmpfileSave)
+	readChunk, err := file.LoadChunk(tmpfileSave)
 	if err != nil { t.Error(err) }
 
 	// compare read and original chunks
