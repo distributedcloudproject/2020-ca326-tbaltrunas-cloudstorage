@@ -32,7 +32,7 @@ type Network struct {
 	Nodes []*Node
 
 	// DataStore keeps track of all the user files stored on the cloud.
-	DataStore []datastore.File
+	DataStore []*datastore.File
 
 	// FileChunkLocations is maps chunk ID's to the Nodes containing that chunk.
 	// This way we can keep track of which nodes contain which chunks.

@@ -2,7 +2,7 @@ package main
 
 import (
 	"cloud/network"
-	// "cloud/datastore"
+	"cloud/datastore"
 	"flag"
 	"fmt"
 	"io"
@@ -27,12 +27,15 @@ func main() {
 	fancyDisplayPtr := flag.Bool("fancy-display", false, "Display node information in a fancy-way.")
 	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
 
+	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
+
 	flag.Parse()
 
 	fmt.Println("Network:", *networkPtr)
 	fmt.Println("Name:", *namePtr)
 	fmt.Println("IP: ", *ipPtr+":"+strconv.Itoa(*portPtr))
 	fmt.Println("Save File:", *saveFilePtr)
+	fmt.Println("Test file to back up to the cloud: ", *filePtr)
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
@@ -83,13 +86,19 @@ func main() {
 		}
 		c = n
 	}
-	if *networkPtr == "new" {
-		// file, err := datastore.NewFile("/tmp/cloud_test_file", 3)
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
-		// c.Network.DataStore.Files = append(c.Network.DataStore.Files, *file)
+
+	if *filePtr != "" {
+		r, err := os.Open(*filePtr)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		file, err := datastore.NewFile(r, *filePtr, 5)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		c.Network.DataStore = append(c.Network.DataStore, file)
 	}
 
 	if *fancyDisplayPtr {
