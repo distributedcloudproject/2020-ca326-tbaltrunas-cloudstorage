@@ -26,7 +26,10 @@ func TestFileChunks(t *testing.T) {
 	NumChunks := 2
 	t.Logf("Operating with chunk number: %d", NumChunks)
 
-	file, err := NewFileNumChunks(path, NumChunks)
+	r, err := os.Open(path)
+	if err != nil { t.Error(err) }
+	defer r.Close()
+	file, err := NewFileNumChunks(r, path, NumChunks)
 	if err != nil { t.Error(err) }
 	t.Logf("File: %v", file)
 
@@ -73,11 +76,14 @@ func TestNewFile(t *testing.T) {
 	_, err = tmpfile.Write([]byte(fileContents))
 	if err != nil { t.Error(err) }
 
-	file1, err := NewFileNumChunks(path, 2)  // 2 chunks of 5 bytes each
+	r, err := os.Open(path)
+	if err != nil { t.Error(err) }
+	defer r.Close()
+	file1, err := NewFileNumChunks(r, path, 2)  // 2 chunks of 5 bytes each
 	if err != nil { t.Error(err) }
 	t.Logf("File from NumChunks (File 1): %v.", file1)
 
-	file2, err := NewFileChunkSize(path, 5)  // 5 bytes giving 2 chunks
+	file2, err := NewFileChunkSize(r, path, 5)  // 5 bytes giving 2 chunks
 	if err != nil { t.Error(err) }
 	t.Logf("File from ChunkSize (File 2): %v.", file2)
 
