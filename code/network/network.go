@@ -120,6 +120,7 @@ func SetupNetwork(me *Node, networkName string) *Cloud {
 	}
 	me.client = comm.NewLocalClient()
 	me.client.AddRequestHandler(createRequestHandler(me, cloud))
+	me.client.AddRequestHandler(createDataStoreRequestHandler(me, cloud))
 	return cloud
 }
 

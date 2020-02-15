@@ -116,14 +116,6 @@ func main() {
 		}(c)
 	}
 
-	err := c.Listen(*portPtr)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	go c.AcceptListener()
-
-	time.Sleep(2000 * time.Millisecond)
 	if *filePtr != "" {
 		r, err := os.Open(*filePtr)
 		defer r.Close()
@@ -136,11 +128,18 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println(file)
-		fmt.Println(*file)
-		fmt.Println(&file)
-		c.MyNode.AddFile(file)
+		err = c.MyNode.AddFile(file)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
+
+	err := c.Listen(*portPtr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	c.AcceptListener()
 }
 
 func ExploreNode(ip string) {
