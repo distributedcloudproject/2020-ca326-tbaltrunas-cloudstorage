@@ -10,10 +10,6 @@ import (
 	"sync"
 )
 
-// FileChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
-// The data structure keeps track of which nodes contain which chunks.
-type FileChunkLocations map[datastore.ChunkID][]Node
-
 type Node struct {
 	ID string
 
@@ -35,9 +31,12 @@ type Network struct {
 	Name string
 	Nodes []*Node
 
-	// Data Store data structures of the node.
-	ChunkLocations FileChunkLocations
-	DataStore datastore.DataStore
+	// DataStore keeps track of all the user files stored on the cloud.
+	DataStore []datastore.File
+
+	// FileChunkLocations is maps chunk ID's to the Nodes containing that chunk.
+	// This way we can keep track of which nodes contain which chunks.
+	FileChunkLocations map[datastore.ChunkID][]Node
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.

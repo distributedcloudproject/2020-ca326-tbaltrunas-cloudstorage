@@ -43,11 +43,6 @@ type Chunk struct {
 	ContentSize       int // Number of bytes of actual content.
 }
 
-// DataStore is a data structure that keeps track of user files stored on the cloud.
-type DataStore struct {
-	Files [] File
-}
-
 // NewFile creates a new File and computes its chunks using the provided chunk size.
 // reader is an IO reader that provides access to the underlying file contents.
 // path is the expected filepath of the file, used for directory tree purposes.
