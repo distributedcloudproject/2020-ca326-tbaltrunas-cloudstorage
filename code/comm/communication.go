@@ -38,6 +38,7 @@ type Client interface {
 	SendMessage(msg string, data ...interface{}) ([]interface{}, error)
 	HandleConnection() error
 	Close() error
+	PublicKey() *rsa.PublicKey
 }
 
 type client struct {
@@ -98,6 +99,10 @@ func (c *client) AddRequestHandler(handler RequestHandler) {
 	c.requestsMutex.Lock()
 	defer c.requestsMutex.Unlock()
 	c.requestsHandlers = append(c.requestsHandlers, handler)
+}
+
+func (c *client) PublicKey() *rsa.PublicKey {
+	return c.publicKey
 }
 
 // SendMessage sends a request with the msg and the data passed. Returns a list of arguments that were returned.

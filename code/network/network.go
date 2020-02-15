@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -39,12 +40,14 @@ type Network struct {
 	Name string
 	Nodes []*Node
 
-	// Require authentication for the network.
+	// Require authentication for the network. Authentication verifies that Node ID belongs to the public key.
 	RequireAuth bool
 
-	// List of node IDs that are permitted to enter the Network. If `RequireAuth` is set, the IDs are enforced to be
-	// generated based on the public key.
-	AllowedIDs []string
+	// Enable whitelist for the network. If enabled, Node ID has to be whitelisted before joining the network.
+	Whitelist bool
+
+	// List of node IDs that are permitted to enter the network.
+	WhitelistIDs []string
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
@@ -84,9 +87,12 @@ func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error
 	node.client.AddRequestHandler(createAuthRequestHandler(node, cloud))
 	go node.client.HandleConnection()
 
-	err = node.Authenticate(me)
+	success, err := node.Authenticate(me)
 	if err != nil {
 		return nil, err
+	}
+	if !success {
+		return nil, errors.New("server refused to authenticate")
 	}
 	node.client.AddRequestHandler(createRequestHandler(node, cloud))
 

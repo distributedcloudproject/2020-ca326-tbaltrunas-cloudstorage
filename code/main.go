@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"cloud/network"
 	"crypto/rsa"
 	"crypto/x509"
@@ -14,6 +15,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,8 @@ func main() {
 	networkNamePtr := flag.String("network-name", "New Network", "The name of the network, if creating a new one.")
 	networkSecurePtr := flag.Bool("secure", true, "Enable authentication for the network.")
 	saveFilePtr := flag.String("save-file", "Save File", "File to save network state and resume network state from.")
+	networkWhitelistPtr := flag.Bool("whitelist", true, "Enable whitelist for cloud. Node IDs will need to be whitelisted before joining the network.")
+	networkWhitelistFilePtr := flag.String("whitelist-file", "", "Load node IDs from file into the whitelist. 1 per line.")
 
 	namePtr := flag.String("name", "", "Name of the node. Use for easy identification.")
 	privateKeyPtr := flag.String("key", "", "Path to private key.")
@@ -53,9 +57,10 @@ func main() {
 
 	fmt.Println("Network:", *networkPtr)
 	fmt.Println("Name:", *namePtr)
-	fmt.Println("IP: ", *ipPtr+":"+strconv.Itoa(*portPtr))
+	fmt.Println("IP:", *ipPtr+":"+strconv.Itoa(*portPtr))
 	fmt.Println("Save File:", *saveFilePtr)
 	fmt.Println("Secure:", *networkSecurePtr)
+	fmt.Println("Whitelist:", *networkWhitelistPtr)
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
@@ -95,9 +100,26 @@ func main() {
 			Nodes: []*network.Node{me},
 
 			RequireAuth: *networkSecurePtr,
+			Whitelist: *networkWhitelistPtr,
 		},
 		MyNode:   me,
+		PrivateKey: key,
 		SaveFunc: saveFunc,
+	}
+
+	if *networkWhitelistFilePtr != "" {
+		r, err := os.Open(*networkWhitelistFilePtr)
+		if err == nil {
+			reader := bufio.NewReader(r)
+			for {
+				line, err := reader.ReadString('\n')
+				c.AddToWhitelist(strings.TrimSpace(line))
+				if err != nil {
+					break
+				}
+			}
+			r.Close()
+		}
 	}
 
 	if *saveFilePtr != "" {
@@ -115,7 +137,7 @@ func main() {
 	if *networkPtr != "new" {
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
-		n, err := network.BootstrapToNetwork(ip, me)
+		n, err := network.BootstrapToNetwork(ip, me, key)
 		n.SaveFunc = saveFunc
 		if err != nil {
 			fmt.Println(err)

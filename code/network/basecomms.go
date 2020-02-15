@@ -8,6 +8,7 @@ const (
 	NetworkInfoMsg = "NetworkInfo"
 	NodeInfoMsg = "NodeInfo"
 	AddNodeMsg = "AddNode"
+	AddToWhitelist = "AddToWhitelist"
 )
 
 func init() {
@@ -27,6 +28,7 @@ func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
 		case NetworkInfoMsg: return r.OnNetworkInfoRequest
 		case NodeInfoMsg: return r.OnNodeInfoRequest
 		case AddNodeMsg: return r.OnAddNodeRequest
+		case AddToWhitelist: return r.OnAddToWhitelist
 		}
 		return nil
 	}
@@ -61,4 +63,13 @@ func (n *Node) AddNode(node Node) error {
 
 func (r request) OnAddNodeRequest(node Node) {
 	r.cloud.addNode(&node)
+}
+
+func (n *Node) AddToWhitelist(ID string) error {
+	_, err := n.client.SendMessage(AddToWhitelist, ID)
+	return err
+}
+
+func (r request) OnAddToWhitelist(ID string) {
+	r.cloud.addToWhitelist(ID)
 }

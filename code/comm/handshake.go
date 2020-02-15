@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/hex"
@@ -169,6 +170,16 @@ func readConn(conn net.Conn) ([]byte, error) {
 		read += uint32(n)
 	}
 	return b, nil
+}
+
+func publicKeyToID(key *rsa.PublicKey) (string) {
+	pub, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		fmt.Println(err)
+		return "ERR"
+	}
+	sha := sha256.Sum256(pub)
+	return hex.EncodeToString(sha[:])
 }
 
 func sendPublicKey(conn net.Conn, key *rsa.PublicKey) error {
