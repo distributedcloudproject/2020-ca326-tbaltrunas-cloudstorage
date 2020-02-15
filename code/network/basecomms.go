@@ -60,19 +60,5 @@ func (n *Node) AddNode(node Node) error {
 }
 
 func (r request) OnAddNodeRequest(node Node) {
-	r.cloud.Mutex.Lock()
-	defer r.cloud.Mutex.Unlock()
-
-	for _, n := range r.cloud.Network.Nodes {
-		if n.ID == node.ID {
-			if n.client == nil {
-				n.IP = node.IP
-				n.Name = node.Name
-				n.client = node.client
-			}
-			return
-		}
-	}
-	r.cloud.Network.Nodes = append(r.cloud.Network.Nodes, &node)
-	r.cloud.Save()
+	r.cloud.addNode(&node)
 }
