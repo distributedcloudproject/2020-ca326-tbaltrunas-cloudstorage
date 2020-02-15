@@ -93,6 +93,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
+		// TODO: AddFile as a method/handler of Network
 		file, err := datastore.NewFile(r, *filePtr, 5)
 		if err != nil {
 			fmt.Println(err)
