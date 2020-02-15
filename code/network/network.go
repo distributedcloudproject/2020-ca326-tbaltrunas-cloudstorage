@@ -12,7 +12,7 @@ import (
 
 // FileChunkLocations is a data structure that maps from a chunk ID to the Nodes containing that chunk.
 // The data structure keeps track of which nodes contain which chunks.
-type FileChunkLocations map[datastore.FileChunkIDType][]Node
+type FileChunkLocations map[datastore.ChunkID][]Node
 
 type Node struct {
 	ID string

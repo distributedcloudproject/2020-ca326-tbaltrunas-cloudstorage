@@ -2,7 +2,7 @@ package main
 
 import (
 	"cloud/network"
-	"cloud/datastore"
+	// "cloud/datastore"
 	"flag"
 	"fmt"
 	"io"
@@ -84,12 +84,12 @@ func main() {
 		c = n
 	}
 	if *networkPtr == "new" {
-		file, err := datastore.NewFile("/tmp/cloud_test_file", 3)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		c.Network.DataStore.Files = append(c.Network.DataStore.Files, *file)
+		// file, err := datastore.NewFile("/tmp/cloud_test_file", 3)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
+		// c.Network.DataStore.Files = append(c.Network.DataStore.Files, *file)
 	}
 
 	if *fancyDisplayPtr {
