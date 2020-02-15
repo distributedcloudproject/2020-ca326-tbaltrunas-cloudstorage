@@ -112,13 +112,14 @@ func main() {
 				}
 				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", c.Network.Name, len(c.Network.Nodes), c.OnlineNodesNum())
 				if *verbosePtr {
-					fmt.Printf("Network: %v\n", c.Network)
+					fmt.Printf("DataStore: %v | FileChunkLocations: %v\n", 
+							   c.Network.DataStore, c.Network.FileChunkLocations)
 				}
 				fmt.Printf("Name, ID, Online[, Node]:\n")
 				for _, n := range c.Network.Nodes {
 					row := fmt.Sprintf("|%-20v|%-20v|%-8v|", n.Name, n.ID, n.Online())
 					if *verbosePtr {
-						row = fmt.Sprintf("%s\t%v|", row, n)
+						row += fmt.Sprintf("\t%v|", n)
 					}
 					fmt.Printf("%v\n", row)
 				}
