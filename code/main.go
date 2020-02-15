@@ -49,14 +49,8 @@ func main() {
 		}
 	}
 
-	c := &network.Cloud{
-		Network: network.Network{
-			Name:  *networkNamePtr,
-			Nodes: []*network.Node{me},
-		},
-		MyNode:   me,
-		SaveFunc: saveFunc,
-	}
+	c := network.SetupNetwork(me, *networkNamePtr)
+	c.SaveFunc = saveFunc
 
 	if *saveFilePtr != "" {
 		r, err := os.Open(*saveFilePtr)
