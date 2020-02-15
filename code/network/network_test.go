@@ -113,3 +113,23 @@ func TestNetworkAddNode(t *testing.T) {
 		}
 	}
 }
+
+func TestNetworkLocalNode(t *testing.T) {
+	me := &Node{
+		ID: "1",
+		Name: "test",
+	}
+
+	cloud := SetupNetwork(me, "My new network")
+	cloud.Listen(0)
+	go cloud.AcceptListener()
+	me.IP = cloud.Listener.Addr().String()
+
+	msg, err := me.Ping()
+	if err != nil {
+		t.Fatal("Failed to ping:", err)
+	}
+	if msg != "pong" {
+		t.Fatal("me.Ping() want pong; got", msg)
+	}
+}
