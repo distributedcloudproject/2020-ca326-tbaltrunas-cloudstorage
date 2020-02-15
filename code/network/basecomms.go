@@ -1,18 +1,22 @@
 package network
 
 import (
+	"cloud/datastore"
 	"encoding/gob"
+	"fmt"
 )
 
 const (
 	NetworkInfoMsg = "NetworkInfo"
 	NodeInfoMsg = "NodeInfo"
 	AddNodeMsg = "AddNode"
+	AddFileMsg = "AddFile"
 )
 
 func init() {
 	gob.Register(Network{})
 	gob.Register(Node{})
+	gob.Register(datastore.File{})
 }
 
 func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
@@ -27,6 +31,7 @@ func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
 		case NetworkInfoMsg: return r.OnNetworkInfoRequest
 		case NodeInfoMsg: return r.OnNodeInfoRequest
 		case AddNodeMsg: return r.OnAddNodeRequest
+		case AddFileMsg: return r.OnAddFileRequest
 		}
 		return nil
 	}
@@ -75,4 +80,17 @@ func (r request) OnAddNodeRequest(node Node) {
 	}
 	r.cloud.Network.Nodes = append(r.cloud.Network.Nodes, &node)
 	r.cloud.Save()
+}
+
+func (n *Node) AddFile(file *datastore.File) error {
+	fmt.Println(file)
+	fmt.Println("start")
+	_, err := n.client.SendMessage(AddFileMsg, file)
+	fmt.Println("finish")
+	return err
+}
+
+func (r request) OnAddFileRequest(file *datastore.File) {
+	fmt.Println(file)
+	// c.Network.DataStore = append(c.Network.DataStore, file)
 }

@@ -99,7 +99,10 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		c.Network.DataStore = append(c.Network.DataStore, file)
+		fmt.Println(file)
+		fmt.Println(*file)
+		fmt.Println(&file)
+		c.MyNode.AddFile(file)
 	}
 
 	if *fancyDisplayPtr {
