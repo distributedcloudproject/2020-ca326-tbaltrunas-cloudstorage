@@ -42,8 +42,8 @@ func main() {
 	fmt.Println("Name:", *namePtr)
 	fmt.Println("IP: ", *ipPtr+":"+strconv.Itoa(*portPtr))
 	fmt.Println("Save File:", *saveFilePtr)
-	fmt.Println("Test file to back up to the cloud: ", *filePtr)
-	fmt.Println("Directory for user file storage: ", *fileStorageDirPtr)
+	fmt.Println("Test file to back up to the cloud:", *filePtr)
+	fmt.Println("Directory for user file storage:", *fileStorageDirPtr)
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
@@ -173,11 +173,21 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		err = c.MyNode.AddFile(file)
-		if err != nil {
-			fmt.Println(err)
-			return
+
+		for i := range c.Network.Nodes {
+			fmt.Println(c.Network.Nodes[i])
+			err = c.Network.Nodes[i].AddFile(file)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		}
+
+		// err = c.MyNode.AddFile(file)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
 
 		// i := 0
 		// err = c.MyNode.SaveChunk(file, i)
@@ -186,14 +196,14 @@ func main() {
 		// 	return
 		// }
 
-		for i := range c.Network.Nodes {
-			fmt.Println(c.Network.Nodes[i])
-			err = c.Network.Nodes[i].SaveChunk(file, i)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}
+		// for i := range c.Network.Nodes {
+		// 	fmt.Println(c.Network.Nodes[i])
+		// 	err = c.Network.Nodes[i].SaveChunk(file, i)
+		// 	if err != nil {
+		// 		fmt.Println(err)
+		// 		return
+		// 	}
+		// }
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")

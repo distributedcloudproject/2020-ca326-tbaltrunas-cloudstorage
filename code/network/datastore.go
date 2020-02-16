@@ -1,12 +1,12 @@
 package network
 
 import (
+	"cloud/utils"
 	"cloud/datastore"
 	"encoding/gob"
 	"os"
 	"strconv"
 	"path/filepath"
-	"fmt"
 )
  	
 const (
@@ -26,13 +26,13 @@ func init() {
 }
 
 func (n *Node) AddFile(file *datastore.File) error {
-	fmt.Printf("Sending AddFile request for file: %v.\n", file)
+	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v.", file)
 	_, err := n.client.SendMessage(AddFileMsg, file)
 	return err
 }
 
 func (r request) OnAddFileRequest(file *datastore.File) {
-	fmt.Printf("Received AddFile request for file: %v.\n", file)
+	utils.GetLogger().Printf("[INFO] Received AddFile request for file: %v.", file)
 	r.cloud.Mutex.Lock()
 	defer r.cloud.Mutex.Unlock()
 	r.cloud.Network.DataStore.Files = append(r.cloud.Network.DataStore.Files, file)
@@ -96,10 +96,12 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 }
 
 func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
+	utils.GetLogger().Printf("[INFO] Creating a datastore request handler for node: %v, and cloud: %v.", node, cloud)
 	r := request{
 		cloud: cloud,
 		node: node,
 	}
+	utils.GetLogger().Printf("[DEBUG] Initialised request with fields: %v.", r)
 
 	return func(message string) interface{} {
 		switch message {
@@ -108,15 +110,4 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 		}
 		return nil
 	}
-}
-
-func (ds *DataStore) GetFileByChunkID(chunkID datastore.ChunkID) *datastore.File {
-	for _, file := range ds.Files {
-		for _, chunk := range file.Chunks.Chunks {
-			if chunk.ID == chunkID {
-				return file
-			}
-		}
-	}
-	return nil
 }
