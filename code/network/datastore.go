@@ -27,6 +27,7 @@ func init() {
 
 func (n *Node) AddFile(file *datastore.File) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v.", file)
+	utils.GetLogger().Printf("[DEBUG] client is: %v.", n.client)
 	_, err := n.client.SendMessage(AddFileMsg, file)
 	return err
 }
