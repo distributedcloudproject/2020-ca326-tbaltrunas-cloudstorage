@@ -27,6 +27,9 @@ func main() {
 
 	fancyDisplayPtr := flag.Bool("fancy-display", false, "Display node information in a fancy-way.")
 
+	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
+	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
+
 	flag.Parse()
 
 	fmt.Println("Network:", *networkPtr)
@@ -35,6 +38,26 @@ func main() {
 	fmt.Println("Save File:", *saveFilePtr)
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
+	}
+
+	fmt.Println("Log directory:", *logDirPtr)
+	fmt.Println("Log level:", *logLevelPtr)
+
+	if *logDirPtr != "" {
+		err := os.MkdirAll(*logDirPtr, os.ModeDir)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		t := time.Now()
+		logFile := fmt.Sprintf("%v/%v.log", *logDirPtr, t.Format(time.RFC1123Z))
+		f, err := os.Create(logFile)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer f.Close()
+		utils.NewLogger(f, *logLevelPtr)
 	}
 
 	me := &network.Node{
