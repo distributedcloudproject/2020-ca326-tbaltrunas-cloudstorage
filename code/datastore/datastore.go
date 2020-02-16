@@ -4,6 +4,7 @@ import (
 	"cloud/network"
 	"io"
 	"errors"
+	"fmt"
 )
 
 type FileSize int
@@ -135,4 +136,29 @@ func (chunks *Chunks) ComputeFileSize() FileSize {
 		fileSize += chunk.ContentSize
 	}
 	return FileSize(fileSize)
+}
+
+// SaveChunk writes a bytes buffer through a writer, until the buffer is fully written.
+func (file *File) SaveChunk(w io.Writer, buffer []byte) error {
+	written := 0
+	for written < len(buffer) {
+		n, err := w.Write(buffer[written:])
+		written += n
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// LoadChunk reads a chunk from a reader.
+func (file *File) LoadChunk(r io.Reader) ([]byte, error) {
+	buffer := make([]byte, file.Chunks.ChunkSize)
+	numRead, err := r.Read(buffer)
+	if numRead != file.Chunks.ChunkSize {
+		return nil, errors.New(fmt.Sprintf("Chunk requires %d bytes. Read %d bytes", file.Chunks.ChunkSize, numRead))
+	} else if err != io.EOF && err != nil {
+		return nil, err 
+	}
+	return buffer, nil
 }
