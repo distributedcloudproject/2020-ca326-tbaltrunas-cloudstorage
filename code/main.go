@@ -2,6 +2,7 @@ package main
 
 import (
 	"cloud/network"
+	"cloud/utils"
 	"flag"
 	"fmt"
 	"io"
@@ -25,6 +26,9 @@ func main() {
 
 	fancyDisplayPtr := flag.Bool("fancy-display", false, "Display node information in a fancy-way.")
 
+	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
+	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
+
 	flag.Parse()
 
 	fmt.Println("Network:", *networkPtr)
@@ -35,14 +39,43 @@ func main() {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
 
+	fmt.Println("Log directory:", *logDirPtr)
+	fmt.Println("Log level:", *logLevelPtr)
+
+	if *logDirPtr != "" {
+		err := os.MkdirAll(*logDirPtr, os.ModeDir)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		t := time.Now()
+		logFile := fmt.Sprintf("%v/%v.log", *logDirPtr, t.Format(time.RFC1123Z))
+		f, err := os.Create(logFile)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer f.Close()
+
+		if *logLevelPtr != "" {
+			utils.NewLoggerFromWriterLevel(f, *logLevelPtr)
+		} else {
+			utils.NewLoggerFromWriter(f)
+		}
+	} else if *logLevelPtr != "" {
+		utils.NewLoggerFromLevel(*logLevelPtr)
+	}
+
 	me := &network.Node{
 		ID:   *idPtr,
 		IP:   *ipPtr + ":" + strconv.Itoa(*portPtr),
 		Name: *namePtr,
 	}
+	utils.GetLogger().Printf("[INFO] My node: %v.", me)
 
 	var saveFunc func() io.Writer
 	if *saveFilePtr != "" {
+		utils.GetLogger().Println("[DEBUG] saveFilePtr is not empty. Creating saveFunc")
 		saveFunc = func() io.Writer {
 			f, _ := os.Create(*saveFilePtr)
 			return f
@@ -51,8 +84,10 @@ func main() {
 
 	c := network.SetupNetwork(me, *networkNamePtr)
 	c.SaveFunc = saveFunc
+	utils.GetLogger().Printf("[INFO] Cloud: %v.", c)
 
 	if *saveFilePtr != "" {
+		utils.GetLogger().Println("[INFO] saveFilePtr is not empty. Loading from save file.")
 		r, err := os.Open(*saveFilePtr)
 		if err == nil {
 			err := c.LoadNetwork(r)
@@ -62,9 +97,11 @@ func main() {
 				return
 			}
 		}
+		utils.GetLogger().Printf("[INFO] Loaded cloud: %v.", c)
 	}
 
 	if *networkPtr != "new" {
+		utils.GetLogger().Println("[INFO] Boostrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
 		n, err := network.BootstrapToNetwork(ip, me)
@@ -74,9 +111,11 @@ func main() {
 			return
 		}
 		c = n
+		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
 
 	if *fancyDisplayPtr {
+		utils.GetLogger().Println("[INFO] Initialising fancy display.")
 		go func(c *network.Cloud) {
 			for {
 				time.Sleep(time.Second * 1)
@@ -102,6 +141,7 @@ func main() {
 		}(c)
 	}
 
+	utils.GetLogger().Println("[INFO] Initialising listening.")
 	err := c.Listen(*portPtr)
 	if err != nil {
 		fmt.Println(err)
