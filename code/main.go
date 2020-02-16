@@ -122,6 +122,7 @@ func main() {
 	}
 
 	if *filePtr != "" && *fileStorageDirPtr != "" {
+		fmt.Println("Storing user file: ", *filePtr)
 		r, err := os.Open(*filePtr)
 		defer r.Close()
 		if err != nil {
@@ -138,27 +139,22 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		i := 0
-		err = c.MyNode.SaveChunk(file, i)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		// for i := range c.Network.Nodes {
-		// 	chunk, _, err := file.GetChunk(i)
-		// 	chunkID := file.Chunks.Chunks[i].ID
-		// 	if err != nil {
-		// 		fmt.Println(err)
-		// 		return
-		// 	}
-		// 	fmt.Println(c.Network.Nodes[i])
-		// 	err = c.Network.Nodes[i].SaveChunk(chunkID, chunk)
-		// 	if err != nil {
-		// 		fmt.Println(err)
-		// 		return
-		// 	}
-		// 	fmt.Println("sent to: ", i)
+
+		// i := 0
+		// err = c.MyNode.SaveChunk(file, i)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
 		// }
+
+		for i := range c.Network.Nodes {
+			fmt.Println(c.Network.Nodes[i])
+			err = c.Network.Nodes[i].SaveChunk(file, i)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
 	}
 
 	err := c.Listen(*portPtr)

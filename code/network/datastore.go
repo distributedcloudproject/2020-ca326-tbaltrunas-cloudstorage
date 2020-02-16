@@ -6,8 +6,9 @@ import (
 	"os"
 	"strconv"
 	"path/filepath"
+	"fmt"
 )
-
+ 	
 const (
 	AddFileMsg = "AddFile"
 	SaveChunkMsg = "SaveChunk"
@@ -21,17 +22,22 @@ type SaveChunkRequest struct {
 
 func init() {
 	gob.Register(datastore.File{})
+	gob.Register(SaveChunkRequest{})
 }
 
 func (n *Node) AddFile(file *datastore.File) error {
+	fmt.Printf("Sending AddFile request for file: %v.\n", file)
 	_, err := n.client.SendMessage(AddFileMsg, file)
 	return err
 }
 
 func (r request) OnAddFileRequest(file *datastore.File) {
+	fmt.Printf("Received AddFile request for file: %v.\n", file)
+	r.cloud.Mutex.Lock()
+	defer r.cloud.Mutex.Unlock()
 	r.cloud.Network.DataStore.Files = append(r.cloud.Network.DataStore.Files, file)
+	r.cloud.Save()
 }
-
 
 func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 	chunk, _, err := file.GetChunk(chunkNum)
