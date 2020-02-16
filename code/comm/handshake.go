@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"cloud/utils"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -95,6 +96,7 @@ func NewServerClient(conn net.Conn, key *rsa.PrivateKey) (Client, error) {
 }
 
 func newClient(conn net.Conn, key *rsa.PrivateKey) (*client, error) {
+	utils.GetLogger().Printf("[DEBUG] Creating new client from connection: %v.", conn)
 	client := &client{}
 
 	client.conn = conn

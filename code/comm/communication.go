@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"cloud/utils"
 	"bytes"
 	cipher2 "crypto/cipher"
 	"crypto/rand"
@@ -72,8 +73,10 @@ type client struct {
 	cipher cipher2.AEAD
 }
 
+
 // NewClientDial creates a new client by dialing the ip and creating a new socket connection.
 func NewClientDial(address string, key *rsa.PrivateKey) (Client, error) {
+	utils.GetLogger().Printf("[DEBUG] Creating a new client from a dial to address: %v.", address)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
@@ -92,12 +95,14 @@ func (c *client) Close() error {
 func (c *client) RegisterRequest(message string, f interface{}) {
 	c.requestsMutex.Lock()
 	defer c.requestsMutex.Unlock()
+	utils.GetLogger().Printf("[DEBUG] Registering request for message: %v, with interface: %v.", message, f)
 	c.requests[message] = f
 }
 
 func (c *client) AddRequestHandler(handler RequestHandler) {
 	c.requestsMutex.Lock()
 	defer c.requestsMutex.Unlock()
+	utils.GetLogger().Printf("[DEBUG] Adding request handler: %v.", handler)
 	c.requestsHandlers = append(c.requestsHandlers, handler)
 }
 
@@ -107,7 +112,9 @@ func (c *client) PublicKey() *rsa.PublicKey {
 
 // SendMessage sends a request with the msg and the data passed. Returns a list of arguments that were returned.
 func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, error) {
+	utils.GetLogger().Printf("[DEBUG] Sending message: %v.", msg)
 	id := atomic.AddUint32(&c.msgID, 1)
+	utils.GetLogger().Printf("[DEBUG] Computed message ID: %v.", id)
 
 	// The headers take up 9 bytes.
 	// | Is a response (1) | Message ID (4) | Message Length (4) |
@@ -143,18 +150,22 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 	// Put the buffer length into [5:9] bytes. -9 because the message length should not include the headers(message ID
 	// and message length), which the buffer contains.
 	binary.LittleEndian.PutUint32(buffer[5:9], uint32(len(buffer)-9))
+	utils.GetLogger().Printf("[DEBUG] Prepared message buffer (isResponse, ID, dataLength): %v.", buffer[:9])
 
 	// Place our message into the map, so that it can be used when receiving responses.
 	m := &message{
 		wg: sync.WaitGroup{},
 	}
+	utils.GetLogger().Printf("[DEBUG] Created message: %v.", m)
 	c.messagesMutex.Lock()
 	c.messages[id] = m
+	utils.GetLogger().Printf("[DEBUG] Added message to map: %v.", c.messages)
 	c.messagesMutex.Unlock()
 
 	m.wg.Add(1)
 
 	// Write the buffer to the socket connection.
+	utils.GetLogger().Println("[DEBUG] Writing buffer to socket.")
 	written := 0
 	c.writeMutex.Lock()
 	for written < len(buffer) {
@@ -165,9 +176,12 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 		written += n
 	}
 	c.writeMutex.Unlock()
+	utils.GetLogger().Println("[DEBUG] Finished writing buffer to socket.")
 
 	// Waitgroup will be released when there's a response to the request.
+	utils.GetLogger().Println("[DEBUG] Blocking until receive response to request.")
 	m.wg.Wait()
+	utils.GetLogger().Println("[DEBUG] Received response to request.")
 
 	// Decode the response from gob into interface{} values. The interface{} then can be casted onto their original
 	// type.
@@ -181,6 +195,7 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 			vars = append(vars, a)
 		}
 	}
+	utils.GetLogger().Println("[DEBUG] Extracted variables from message.")
 
 	if err != io.EOF {
 		return nil, err
@@ -190,8 +205,10 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 }
 
 func (c *client) HandleConnection() error {
+	utils.GetLogger().Println("[INFO] Starting handling connection loop.")
 	for {
 		headerBuffer := make([]byte, 9)
+		utils.GetLogger().Println("[DEBUG] Reading header from socket.")
 		_, err := c.conn.Read(headerBuffer)
 		if err != nil {
 			if err == io.EOF || !err.(net.Error).Temporary() {
@@ -199,6 +216,7 @@ func (c *client) HandleConnection() error {
 			}
 			continue
 		}
+		utils.GetLogger().Printf("[DEBUG] Read header into buffer: %v.", headerBuffer)
 
 		response := false
 		if headerBuffer[0] == 1 {
@@ -206,10 +224,13 @@ func (c *client) HandleConnection() error {
 		}
 		messageID := binary.LittleEndian.Uint32(headerBuffer[1:5])
 		messageLength := int(binary.LittleEndian.Uint32(headerBuffer[5:9]))
+		utils.GetLogger().Printf("[DEBUG] Extracted from header isResponse: %v, messageID: %v, messageLength: %v.", 
+								 response, messageID, messageLength)
 
 		encryptedBuffer := make([]byte, messageLength)
 		totalRead := 0
 
+		utils.GetLogger().Println("[DEBUG] Reading contents from socket.")
 		for totalRead < messageLength {
 			read, err := c.conn.Read(encryptedBuffer[totalRead:])
 			if err != nil {
@@ -217,6 +238,7 @@ func (c *client) HandleConnection() error {
 			}
 			totalRead += read
 		}
+		utils.GetLogger().Println("[DEBUG] Finished reading contents into buffer.")
 
 		nonceSize := c.cipher.NonceSize()
 		if len(encryptedBuffer) < nonceSize {
@@ -230,6 +252,7 @@ func (c *client) HandleConnection() error {
 		}
 
 		// Once the data is retrieved, process it in another thread so that we can continue receiving data.
+		utils.GetLogger().Println("[DEBUG] Passing data processing to another thread.")
 		go func() {
 			err := c.processRequest(response, messageID, buffer)
 			if err != nil {
@@ -240,18 +263,24 @@ func (c *client) HandleConnection() error {
 }
 
 func (c *client) processRequest(response bool, messageID uint32, data []byte) error {
+	utils.GetLogger().Printf("[DEBUG] Processing request isResponse: %v, messageID: %v.", response, messageID)
 	if response {
+		utils.GetLogger().Println("[DEBUG] Processing a request of response type.")
 		c.messagesMutex.Lock()
+		utils.GetLogger().Printf("[DEBUG] Removing message from messages map: %v.", c.messages)
 		message, ok := c.messages[messageID]
 		if ok {
 			delete(c.messages, messageID)
 			message.value = data
 			message.wg.Done()
 		}
+		utils.GetLogger().Printf("[DEBUG] Updated message map: %v.", c.messages)
 		c.messagesMutex.Unlock()
 
 		return nil
 	}
+
+	utils.GetLogger().Println("[DEBUG] Processing request of non-response type.")
 	// Extract the function name from the request.
 	index := bytes.IndexByte(data, '\000')
 	if index == -1 {
@@ -259,8 +288,10 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 		return errors.New("request incorrectly formed - could not extract function name")
 	}
 	funcName := string(data[:index])
+	utils.GetLogger().Printf("[DEBUG] Extracted function name: %v.", funcName)
 	c.requestsMutex.RLock()
 	request, ok := c.requests[funcName]
+	utils.GetLogger().Printf("[DEBUG] Got request handler for function: %v.", request)
 	if !ok {
 		for i := 0; i < len(c.requestsHandlers); i++ {
 			request = c.requestsHandlers[i](funcName)
@@ -277,6 +308,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	}
 
 	// Decode the buffer into variables.
+	utils.GetLogger().Println("[DEBUG] Extracting variables from data.")
 	d := gob.NewDecoder(bytes.NewBuffer(data[index+1:]))
 	vars := make([]reflect.Value, 0)
 	var err error
@@ -290,9 +322,12 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	if err != io.EOF {
 		return err
 	}
+	utils.GetLogger().Println("[DEBUG] Finished extracting variables.")
 	returnVars := reflect.ValueOf(request).Call(vars)
+	utils.GetLogger().Printf("[DEBUG] Return values of request handler with vars: %v.", returnVars)
 
 	// Encode the return variables and send them as reply.
+	utils.GetLogger().Println("[DEBUG] Encoding returned values.")
 	b := bytes.Buffer{}
 	e := gob.NewEncoder(&b)
 	for i := range returnVars {
@@ -302,6 +337,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 			return err
 		}
 	}
+	utils.GetLogger().Println("[DEBUG] Finished encoding return values.")
 
 	// Encrypt the data using symmetric key.
 	nonce := make([]byte, c.cipher.NonceSize())
@@ -316,9 +352,11 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	binary.LittleEndian.PutUint32(buffer[1:5], messageID)
 	binary.LittleEndian.PutUint32(buffer[5:9], uint32(len(encryptedBuffer)))
 	copy(buffer[9:], encryptedBuffer)
+	utils.GetLogger().Printf("[DEBUG] Created a response buffer (isResponse, messageID, length): %v.", buffer[:9])
 
 	written := 0
 	c.writeMutex.Lock()
+	utils.GetLogger().Println("[DEBUG] Writing response to socket.")
 	for written < len(buffer) {
 		n, err := c.conn.Write(buffer[written:])
 		if err != nil {
@@ -326,6 +364,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 		}
 		written += n
 	}
+	utils.GetLogger().Println("[DEBUG] Finished writing response to socket.")
 	c.writeMutex.Unlock()
 	return nil
 }
