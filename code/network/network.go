@@ -53,12 +53,14 @@ type request struct {
 }
 
 func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
+	// Establish connection with the target.
 	utils.GetLogger().Printf("[INFO] Bootstrapping with ip: %v, and node: %v.", ip, me)
 	client, err := comm.NewClientDial(ip)
 	if err != nil {
 		return nil, err
 	}
 
+	// Create a temporary node to represent the bootstrap node.
 	node := &Node{
 		IP: ip,
 		client: client,
@@ -114,6 +116,8 @@ func SetupNetwork(me *Node, networkName string) *Cloud {
 		},
 		MyNode: me,
 	}
+	me.client = comm.NewLocalClient()
+	me.client.AddRequestHandler(createRequestHandler(me, cloud))
 	return cloud
 }
 
@@ -161,43 +165,12 @@ func (n *Cloud) AcceptListener() {
 	}
 }
 
-func (c *Cloud) connectToNode(n *Node) error {
-	utils.GetLogger().Printf("[INFO] Cloud: %v, connecting to node: %v", c, n)
-	n.mutex.RLock()
-	defer n.mutex.RUnlock()
-	if n.IP != "" && n.ID != c.MyNode.ID && n.client == nil {
-		utils.GetLogger().Printf("[DEBUG] Connecting to a non-me node with nil client: %v.", n)
-		var err error
-		n.client, err = comm.NewClientDial(n.IP)
-		utils.GetLogger().Printf("[DEBUG] Node with added client: %v.", n)
-		if err != nil {
-			return err
-		}
-		go n.client.HandleConnection()
-		_ = n.Authenticate(c.MyNode)
-		n.client.AddRequestHandler(createRequestHandler(n, c))
-	}
-	return nil
-}
-
-func (c *Cloud) OnlineNodesNum() int {
-	utils.GetLogger().Println("[DEBUG] Getting the number of nodes online.")
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
-	i := 0
-	for _, n := range c.Network.Nodes {
-		if n.client != nil || n.ID == c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Node with non-nil client or a me-node: %v.", n)
-			i++
-		}
-	}
-	utils.GetLogger().Printf("[DEBUG] Number of online nodes counted: %v.", i)
-	return i
-}
-
 func (n *Node) Ping() (string, error) {
 	utils.GetLogger().Println("[INFO] Pinging node.")
 	ping, err := n.client.SendMessage("ping", "ping")
+	if err != nil {
+		return "", err
+	}
 	return ping[0].(string), err
 }
 

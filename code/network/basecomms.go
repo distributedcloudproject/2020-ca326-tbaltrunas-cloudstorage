@@ -70,22 +70,6 @@ func (n *Node) AddNode(node Node) error {
 
 func (r request) OnAddNodeRequest(node Node) {
 	utils.GetLogger().Printf("[INFO] Handling AddNodeRequest with parameter node: %v.", node)
-	r.cloud.Mutex.Lock()
-	defer r.cloud.Mutex.Unlock()
-
-	for _, n := range r.cloud.Network.Nodes {
-		if n.ID == node.ID {
-			if n.client == nil {
-				utils.GetLogger().Printf("[DEBUG] Found matching node with nil client: %v.", n)
-				n.IP = node.IP
-				n.Name = node.Name
-				n.client = node.client
-				utils.GetLogger().Printf("[DEBUG] Updated matching nil client node: %v.", n)	
-			}
-			return
-		}
-	}
-	r.cloud.Network.Nodes = append(r.cloud.Network.Nodes, &node)
+	r.cloud.addNode(&node)
 	utils.GetLogger().Printf("[DEBUG] Added node to list of nodes: %v.", r.cloud.Network.Nodes)
-	r.cloud.Save()
 }
