@@ -15,7 +15,6 @@ import (
 
 
 func main() {
-	utils.GetLogger().Println("Begin main program.")
 	networkPtr := flag.String("network", "new", "Bootstrap IP of a node in an existing network or 'new' to create new network.")
 	networkNamePtr := flag.String("network-name", "New Network", "The name of the network, if creating a new one")
 	saveFilePtr := flag.String("save-file", "Save File", "File to save network state and resume network state from.")
@@ -57,7 +56,14 @@ func main() {
 			return
 		}
 		defer f.Close()
-		utils.NewLogger(f, *logLevelPtr)
+
+		if *logLevelPtr != "" {
+			utils.NewLoggerFromWriterLevel(f, *logLevelPtr)
+		} else {
+			utils.NewLoggerFromWriter(f)
+		}
+	} else if *logLevelPtr != "" {
+		utils.NewLoggerFromLevel(*logLevelPtr)
 	}
 
 	me := &network.Node{
