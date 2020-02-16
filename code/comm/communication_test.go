@@ -8,8 +8,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"math/big"
 	"net"
 	"strconv"
@@ -77,7 +77,7 @@ func acceptListener(listener net.Listener, key *rsa.PrivateKey) error {
 func generateCert() ([]byte, []byte, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "generating key P256")
+		return nil, nil, errors.New(fmt.Sprintf("%v: generating key P256", err))
 	}
 	notBefore := time.Now()
 	notAfter := notBefore.Add(time.Hour * 24 * 365)
@@ -103,11 +103,11 @@ func generateCert() ([]byte, []byte, error) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating certificate")
+		return nil, nil, errors.New(fmt.Sprintf("%v: creating certificate", err))
 	}
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "marshaling private key")
+		return nil, nil,  errors.New(fmt.Sprintf("%v: marshaling private key", err))
 	}
 
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}),
