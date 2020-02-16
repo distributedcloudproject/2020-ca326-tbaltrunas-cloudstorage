@@ -97,7 +97,7 @@ func TestChunkSaving(t *testing.T) {
 
 	// save the chunk
 	t.Log("Saving chunk.")
-	err = file.SaveChunk(tmpfileSave, chunk)
+	err = SaveChunk(tmpfileSave, chunk)
 	if err != nil { t.Error(err) }
 
 	// load the chunk

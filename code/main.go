@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+	"path/filepath"
 )
 
 
@@ -28,6 +29,8 @@ func main() {
 	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
 
 	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
+	fileStorageDirPtr := flag.String("file-storage-dir", filepath.Join("data", "user", "files"), 
+									 "Directory where cloud files should be stored on the node.")
 
 	flag.Parse()
 
@@ -36,6 +39,7 @@ func main() {
 	fmt.Println("IP: ", *ipPtr+":"+strconv.Itoa(*portPtr))
 	fmt.Println("Save File:", *saveFilePtr)
 	fmt.Println("Test file to back up to the cloud: ", *filePtr)
+	fmt.Println("Directory for user file storage: ", *fileStorageDirPtr)
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
@@ -44,6 +48,7 @@ func main() {
 		ID:   *idPtr,
 		IP:   *ipPtr + ":" + strconv.Itoa(*portPtr),
 		Name: *namePtr,
+		FileStorageDir: *fileStorageDirPtr,
 	}
 
 	var saveFunc func() io.Writer
@@ -116,7 +121,7 @@ func main() {
 		}(c)
 	}
 
-	if *filePtr != "" {
+	if *filePtr != "" && *fileStorageDirPtr != "" {
 		r, err := os.Open(*filePtr)
 		defer r.Close()
 		if err != nil {
@@ -133,15 +138,8 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-
 		i := 0
-		chunk, _, err := file.GetChunk(i)
-		chunkID := file.Chunks.Chunks[i].ID
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		err = c.MyNode.SaveChunk(chunkID, chunk)
+		err = c.MyNode.SaveChunk(file, i)
 		if err != nil {
 			fmt.Println(err)
 			return

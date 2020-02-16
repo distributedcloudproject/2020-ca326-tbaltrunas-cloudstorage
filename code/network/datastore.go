@@ -4,12 +4,20 @@ import (
 	"cloud/datastore"
 	"encoding/gob"
 	"os"
+	"strconv"
+	"path/filepath"
 )
 
 const (
 	AddFileMsg = "AddFile"
 	SaveChunkMsg = "SaveChunk"
 )
+
+type SaveChunkRequest struct {
+	Path 		string			  // filepath corresponding to the chunk
+	Chunk 		datastore.Chunk  // chunk metadata
+	Contents 	[]byte           // chunk bytes
+}
 
 func init() {
 	gob.Register(datastore.File{})
@@ -24,38 +32,60 @@ func (r request) OnAddFileRequest(file *datastore.File) {
 	r.cloud.Network.DataStore.Files = append(r.cloud.Network.DataStore.Files, file)
 }
 
-func (n *Node) SaveChunk(chunkID datastore.ChunkID, contents []byte) error {
-	_, err := n.client.SendMessage(SaveChunkMsg, chunkID, contents)
+
+func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
+	chunk, _, err := file.GetChunk(chunkNum)
+	if err != nil {
+		return err 
+	}
+	_, err = n.client.SendMessage(SaveChunkMsg, SaveChunkRequest{
+		Path: 		file.Path,
+		Chunk: 		file.Chunks.Chunks[chunkNum],
+		Contents: 	chunk,
+	})
 	return err
 }
 
-func (r request) OnSaveChunkRequest(chunkID datastore.ChunkID, contents []byte) error {
-	// verify chunk ID
+func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
+	// extract contents
+	path := sr.Path
+	chunk := sr.Chunk
+	contents := sr.Contents
 
-	// get file belonging to chunk
-	// TODO: pass file, or the path where the chunk should be stored?
-	file := r.cloud.Network.DataStore.GetFileByChunkID(chunkID)
+	// verify chunk ID
+	chunkID := chunk.ID
 
 	// persistently store chunk
 	r.cloud.Mutex.RLock()
 	defer r.cloud.Mutex.RUnlock()
+	
 	// TODO: decide path of the chunk
-	w, err := os.Create("/tmp/cloud_chunk_saved")
-	if err != nil { return err }
-	err = file.SaveChunk(w, contents)
-	if err != nil { return err }
+	chunkPath := filepath.Join(r.cloud.MyNode.FileStorageDir, filepath.Dir(path), 
+								filepath.Base(path) + "-" + strconv.Itoa(chunk.SequenceNumber))
+	err := os.MkdirAll(filepath.Dir(chunkPath), os.ModeDir)
+	if err != nil {
+		return err
+	}
+	w, err := os.Create(chunkPath)
+	if err != nil {
+		return err 
+	}
+	defer w.Close()
 
-	// TODO: mutex
+	err = datastore.SaveChunk(w, contents)
+	if err != nil { 
+		return err
+	}
 
 	// update chunk data structure
 	nodeID := r.cloud.MyNode.ID
-	nodesWithChunk, ok := r.cloud.Network.FileChunkLocations[chunkID]
+	chunkLocations, ok := r.cloud.Network.FileChunkLocations[chunkID]
 	if !ok {
-		nodesWithChunk = []string{nodeID}
+		chunkLocations = []string{nodeID}
 	} else {
-		nodesWithChunk = append(nodesWithChunk, nodeID)
+		chunkLocations = append(chunkLocations, nodeID)
 	}
-	r.cloud.Network.FileChunkLocations[chunkID] = nodesWithChunk
+	r.cloud.Network.FileChunkLocations[chunkID] = chunkLocations
 	return nil
 }
 

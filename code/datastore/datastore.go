@@ -127,7 +127,7 @@ func (chunks *Chunks) ComputeFileSize() FileSize {
 }
 
 // SaveChunk writes a bytes buffer through a writer, until the buffer is fully written.
-func (file *File) SaveChunk(w io.Writer, buffer []byte) error {
+func SaveChunk(w io.Writer, buffer []byte) error {
 	written := 0
 	for written < len(buffer) {
 		n, err := w.Write(buffer[written:])

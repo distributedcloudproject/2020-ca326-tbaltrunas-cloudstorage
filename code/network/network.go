@@ -20,6 +20,9 @@ type Node struct {
 	// Display name of the node.
 	Name string
 
+	// FileStorageDir is a file path to a directory where user files should be stored on this node.
+	FileStorageDir string
+
 	// client is the communication socket between us and the node.
 	client comm.Client
 
