@@ -13,7 +13,7 @@ var (
 	fileDir string = "logs"
 	LogLevels = []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"}
     defaultWriter = os.Stderr
-	defaultLevel = "DEBUG"
+	defaultLevel = "WARN"
 	prefix = ""
 	flags = log.Ldate | log.Ltime | log.Lshortfile
 )
@@ -22,6 +22,15 @@ func init() {
 	lvl, ok := os.LookupEnv("CLOUD_DEFAULT_LOG_LEVEL")
 	if ok {
 		defaultLevel = lvl
+	}
+	logFile, ok := os.LookupEnv("CLOUD_DEFAULT_LOG_FILE")
+	if ok {
+		logWriter, err := os.Create(logFile)
+		if err != nil {
+			GetLogger().Printf("[ERROR] %v.", err)
+			return
+		}
+		defaultWriter = logWriter
 	}
 }
 
