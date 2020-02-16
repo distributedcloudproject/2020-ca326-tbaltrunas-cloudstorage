@@ -38,14 +38,24 @@ func TestComm(t *testing.T) {
 		t.Fatal(err)
 	}
 	cl, err := NewClientDial(listener.Addr().String(), key2)
+	go cl.HandleConnection()
 	if err != nil {
 		t.Fatal(err)
 	}
-	cl.SendMessage("ping", "Hello")
+	m, err := cl.SendMessage("ping", "ping")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m[0].(string) != "pong" {
+		t.Fatal("got", m, "wanted pong")
+	}
 }
 
-func Testt(msg string) {
-	fmt.Println("msg:", msg)
+func Testt(msg string) string {
+	if msg == "ping" {
+		return "pong"
+	}
+	return ""
 }
 
 func listen(port int) (net.Listener, error) {
