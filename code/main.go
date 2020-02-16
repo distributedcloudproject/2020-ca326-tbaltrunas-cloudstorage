@@ -42,7 +42,7 @@ func main() {
 	networkPtr := flag.String("network", "new", "Bootstrap IP of a node in an existing network or 'new' to create new network.")
 	networkNamePtr := flag.String("network-name", "New Network", "The name of the network, if creating a new one.")
 	networkSecurePtr := flag.Bool("secure", true, "Enable authentication for the network.")
-	saveFilePtr := flag.String("save-file", "Save File", "File to save network state and resume network state from.")
+	saveFilePtr := flag.String("save-file", "", "File to save network state and resume network state from.")
 	networkWhitelistPtr := flag.Bool("whitelist", true, "Enable whitelist for cloud. Node IDs will need to be whitelisted before joining the network.")
 	networkWhitelistFilePtr := flag.String("whitelist-file", "", "Load node IDs from file into the whitelist. 1 per line.")
 
@@ -130,11 +130,11 @@ func main() {
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
 		n, err := network.BootstrapToNetwork(ip, me, key)
-		n.SaveFunc = saveFunc
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+		n.SaveFunc = saveFunc
 		c = n
 	}
 

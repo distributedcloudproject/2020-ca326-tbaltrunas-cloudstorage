@@ -1,6 +1,7 @@
 package network
 
 import (
+	"crypto/rsa"
 	"encoding/gob"
 )
 
@@ -14,6 +15,7 @@ const (
 func init() {
 	gob.Register(Network{})
 	gob.Register(Node{})
+	gob.Register(rsa.PublicKey{})
 }
 
 func createRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {

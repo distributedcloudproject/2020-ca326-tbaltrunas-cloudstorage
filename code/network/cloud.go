@@ -25,8 +25,8 @@ func (c *Cloud) connectToNode(n *Node) error {
 }
 
 func (c *Cloud) addNode(node *Node) {
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
+	c.NodeMutex.Lock()
+	defer c.NodeMutex.Unlock()
 
 	for _, n := range c.Network.Nodes {
 		if n.ID == node.ID {
@@ -43,8 +43,8 @@ func (c *Cloud) addNode(node *Node) {
 }
 
 func (c *Cloud) OnlineNodesNum() int {
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
+	c.NodeMutex.RLock()
+	defer c.NodeMutex.RUnlock()
 	i := 0
 	for _, n := range c.Network.Nodes {
 		if n.client != nil || n.ID == c.MyNode.ID {
@@ -78,8 +78,8 @@ func (c *Cloud) AddToWhitelist(ID string) error {
 		return err
 	}
 
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
+	c.NodeMutex.RLock()
+	defer c.NodeMutex.RUnlock()
 	for _, n := range c.Network.Nodes {
 		if n.client != nil && n.ID != c.MyNode.ID {
 			n.AddToWhitelist(ID)

@@ -59,7 +59,12 @@ type Cloud struct {
 	PrivateKey *rsa.PrivateKey
 
 	Listener net.Listener
+
+	// NodeMutex is used only when accessing the Nodes in the network.
+	NodeMutex sync.RWMutex
+	// Mutex is used for any other variable.
 	Mutex sync.RWMutex
+
 	Port uint16
 
 	SaveFunc func() io.Writer
