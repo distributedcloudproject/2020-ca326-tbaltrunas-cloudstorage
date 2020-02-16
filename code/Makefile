@@ -9,7 +9,11 @@ PROJECT_BINARY=cloud
 LOGS_DIRNAME=logs
 
 
-make:
+deps:
+	go get github.com/hashicorp/logutils
+
+
+make: deps
 	go build $(PROJECT_NAME)
 
 
