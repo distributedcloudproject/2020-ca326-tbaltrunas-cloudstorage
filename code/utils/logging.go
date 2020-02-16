@@ -18,6 +18,13 @@ var (
 	flags = log.Ldate | log.Ltime | log.Lshortfile
 )
 
+func init() {
+	lvl, ok := os.LookupEnv("CLOUD_DEFAULT_LOG_LEVEL")
+	if ok {
+		defaultLevel = lvl
+	}
+}
+
 // GetLogger returns a global logger variable, or creates a new default logger.
 func GetLogger() *log.Logger {
 	if logger == nil {

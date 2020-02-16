@@ -40,6 +40,7 @@ test: make
 	# run with ARGS="args" for extra test arguments
 	# "-v" for verbose mode
 	# "-run TestFunctionName" to only run the test function TestFunctionName
+	# add environment variables in form "make test ... KEY1=VALUE1 KEY2=VALUE2 ..."
 	@go test ./... $(ARGS)
 
 
