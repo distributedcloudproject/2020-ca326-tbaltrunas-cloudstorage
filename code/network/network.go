@@ -132,6 +132,8 @@ func SetupNetwork(me *Node, networkName string, key *rsa.PrivateKey) *Cloud {
 		MyNode: me,
 		PrivateKey: key,
 	}
+	me.client = comm.NewLocalClient()
+	me.client.AddRequestHandler(createRequestHandler(me, cloud))
 	return cloud
 }
 
@@ -179,6 +181,9 @@ func (n *Cloud) AcceptListener() {
 
 func (n *Node) Ping() (string, error) {
 	ping, err := n.client.SendMessage("ping", "ping")
+	if err != nil {
+		return "", err
+	}
 	return ping[0].(string), err
 }
 

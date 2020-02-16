@@ -18,6 +18,8 @@ func (c *Cloud) connectToNode(n *Node) error {
 		go n.client.HandleConnection()
 		n.Authenticate(c.MyNode)
 		n.client.AddRequestHandler(createRequestHandler(n, c))
+	}else if n.ID == c.MyNode.ID && n.client == nil {
+		n.client = comm.NewLocalClient()
 	}
 	return nil
 }
@@ -79,7 +81,7 @@ func (c *Cloud) AddToWhitelist(ID string) error {
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
 	for _, n := range c.Network.Nodes {
-		if n.client != nil {
+		if n.client != nil && n.ID != c.MyNode.ID {
 			n.AddToWhitelist(ID)
 		}
 	}

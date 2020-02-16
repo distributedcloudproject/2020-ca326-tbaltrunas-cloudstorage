@@ -94,18 +94,10 @@ func main() {
 		}
 	}
 
-	c := &network.Cloud{
-		Network: network.Network{
-			Name:  *networkNamePtr,
-			Nodes: []*network.Node{me},
-
-			RequireAuth: *networkSecurePtr,
-			Whitelist: *networkWhitelistPtr,
-		},
-		MyNode:   me,
-		PrivateKey: key,
-		SaveFunc: saveFunc,
-	}
+	c := network.SetupNetwork(me, *networkNamePtr, key)
+	c.SaveFunc = saveFunc
+	c.Network.RequireAuth = *networkSecurePtr
+	c.Network.Whitelist = *networkWhitelistPtr
 
 	if *networkWhitelistFilePtr != "" {
 		r, err := os.Open(*networkWhitelistFilePtr)

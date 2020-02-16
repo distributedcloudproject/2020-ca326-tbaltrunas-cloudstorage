@@ -231,6 +231,36 @@ func TestNetworkWhitelist(t *testing.T) {
 	}
 }
 
+func TestNetworkLocalNode(t *testing.T) {
+	key, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nID, err := PublicKeyToID(&key.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	me := &Node{
+		ID: nID,
+		Name: "test",
+	}
+
+	cloud := SetupNetwork(me, "My new network", key)
+	cloud.Listen(0)
+	go cloud.AcceptListener()
+	me.IP = cloud.Listener.Addr().String()
+
+	msg, err := me.Ping()
+	if err != nil {
+		t.Fatal("Failed to ping:", err)
+	}
+	if msg != "pong" {
+		t.Fatal("me.Ping() want pong; got", msg)
+	}
+}
+
+
 func generateKey() (*rsa.PrivateKey, error) {
 	pri, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
