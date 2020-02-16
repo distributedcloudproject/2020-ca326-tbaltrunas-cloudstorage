@@ -143,11 +143,9 @@ func SaveChunk(w io.Writer, buffer []byte) error {
 func (file *File) LoadChunk(r io.Reader) ([]byte, error) {
 	buffer := make([]byte, file.Chunks.ChunkSize)
 	numRead, err := r.Read(buffer)
-	if err == io.EOF {
-		return make([]byte, 0), nil
-	} else if numRead != file.Chunks.ChunkSize {
+	if numRead != file.Chunks.ChunkSize {
 		return nil, errors.New(fmt.Sprintf("Chunk requires %d bytes. Read %d bytes", file.Chunks.ChunkSize, numRead))
-	} else if err != nil {
+	} else if err != io.EOF && err != nil {
 		return nil, err 
 	}
 	return buffer, nil
