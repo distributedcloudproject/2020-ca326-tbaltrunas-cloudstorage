@@ -137,8 +137,7 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 	// Put the buffer length into [5:9] bytes. -9 because the message length should not include the headers(message ID
 	// and message length), which the buffer contains.
 	binary.LittleEndian.PutUint32(buffer[5:9], uint32(len(buffer)-9))
-	utils.GetLogger().Printf("Prepared message buffer (isResponse, ID, dataLength, data (function name, arguments), \\000): %v.", 
-							  buffer)
+	utils.GetLogger().Printf("Prepared message buffer (isResponse, ID, dataLength): %v.", buffer[:9])
 
 	// Place our message into the map, so that it can be used when receiving responses.
 	m := &message{
@@ -183,7 +182,7 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 			vars = append(vars, a)
 		}
 	}
-	utils.GetLogger().Printf("Extracted variables from message: %v.", vars)
+	utils.GetLogger().Println("Extracted variables from message.")
 
 	if err != io.EOF {
 		return nil, err
@@ -226,7 +225,7 @@ func (c *client) HandleConnection() error {
 			}
 			totalRead += read
 		}
-		utils.GetLogger().Printf("Read contents into buffer: %v.", buffer)
+		utils.GetLogger().Println("Finished reading contents into buffer.")
 
 		// Once the data is retrieved, process it in another thread so that we can continue receiving data.
 		utils.GetLogger().Println("Passing data processing to another thread.")
@@ -240,7 +239,7 @@ func (c *client) HandleConnection() error {
 }
 
 func (c *client) processRequest(response bool, messageID uint32, data []byte) error {
-	utils.GetLogger().Printf("Processing request isResponse: %v, messageID: %v, data: %v.", response, messageID, data)
+	utils.GetLogger().Printf("Processing request isResponse: %v, messageID: %v.", response, messageID)
 	if response {
 		utils.GetLogger().Println("Processing a request of response type.")
 		c.messagesMutex.Lock()
@@ -299,7 +298,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	if err != io.EOF {
 		return err
 	}
-	utils.GetLogger().Printf("Decoded vars: %v.", vars)
+	utils.GetLogger().Println("Finished extracting variables.")
 	returnVars := reflect.ValueOf(request).Call(vars)
 	utils.GetLogger().Printf("Return values of request handler with vars: %v.", returnVars)
 
@@ -314,14 +313,14 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 			return err
 		}
 	}
-	utils.GetLogger().Printf("Encoded return values: %v.", b)
+	utils.GetLogger().Println("Finished encoding return values.")
 
 	buffer := make([]byte, 9+b.Len())
 	buffer[0] = 1 // This is a response.
 	binary.LittleEndian.PutUint32(buffer[1:5], messageID)
 	binary.LittleEndian.PutUint32(buffer[5:9], uint32(b.Len()))
 	copy(buffer[9:], b.Bytes())
-	utils.GetLogger().Printf("Created a response buffer (isResponse, messageID, length, data): %v.", buffer)
+	utils.GetLogger().Printf("Created a response buffer (isResponse, messageID, length): %v.", buffer[:9])
 
 	written := 0
 	c.writeMutex.Lock()
