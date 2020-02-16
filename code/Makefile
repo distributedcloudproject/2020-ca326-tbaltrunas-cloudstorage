@@ -6,10 +6,15 @@
 
 PROJECT_NAME=cloud
 PROJECT_BINARY=cloud
+LOGS_DIRNAME=logs
 
 
-make:
+make: deps
 	go build $(PROJECT_NAME)
+
+
+deps:
+	go get github.com/hashicorp/logutils
 
 
 clean:
@@ -18,6 +23,9 @@ clean:
 
 fclean: clean
 	go clean $(PROJECT_NAME)
+	rm -f "Save File"
+	rm -rf $(LOGS_DIRNAME)
+	rm -rf **/$(LOGS_DIRNAME)
 
 
 re: fclean make
