@@ -2,13 +2,13 @@ package network
 
 import (
 	"cloud/comm"
+	"cloud/utils"
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"errors"
-	"cloud/utils"
 	"fmt"
 	"io"
 	"net"
@@ -29,7 +29,6 @@ type Node struct {
 	// Public key of the node.
 	PublicKey crypto.PublicKey
 
-
 	// client is the communication socket between us and the node.
 	client comm.Client
 
@@ -38,7 +37,7 @@ type Node struct {
 
 // Network is the general info of the network. Each node would have the same presentation of Network.
 type Network struct {
-	Name string
+	Name  string
 	Nodes []*Node
 
 	// Require authentication for the network. Authentication verifies that Node ID belongs to the public key.
@@ -56,8 +55,8 @@ type Cloud struct {
 	Network Network
 
 	PendingNodes []*Node
-	MyNode *Node
-	PrivateKey *rsa.PrivateKey
+	MyNode       *Node
+	PrivateKey   *rsa.PrivateKey
 
 	Listener net.Listener
 
@@ -73,7 +72,7 @@ type Cloud struct {
 
 type request struct {
 	cloud *Cloud
-	node *Node
+	node  *Node
 }
 
 func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error) {
@@ -86,7 +85,7 @@ func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error
 
 	// Create a temporary node to represent the bootstrap node.
 	node := &Node{
-		IP: ip,
+		IP:     ip,
 		client: client,
 	}
 	utils.GetLogger().Printf("[DEBUG] Remote node: %v.", node)
@@ -138,10 +137,10 @@ func SetupNetwork(me *Node, networkName string, key *rsa.PrivateKey) *Cloud {
 	utils.GetLogger().Printf("[INFO] Setting up network with name: %v, and initial node: %v.", networkName, me)
 	cloud := &Cloud{
 		Network: Network{
-			Name: "My new network",
+			Name:  networkName,
 			Nodes: []*Node{me},
 		},
-		MyNode: me,
+		MyNode:     me,
 		PrivateKey: key,
 	}
 	me.client = comm.NewLocalClient()
@@ -176,7 +175,7 @@ func (n *Cloud) AcceptListener() {
 			continue
 		}
 		node := &Node{
-			IP: conn.RemoteAddr().String(),
+			IP:     conn.RemoteAddr().String(),
 			client: client,
 		}
 		utils.GetLogger().Printf("[INFO] Connected to a new node: %v", node)
