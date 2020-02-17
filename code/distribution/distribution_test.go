@@ -3,6 +3,7 @@ package distribution
 import (
 	"cloud/network"
 	"cloud/datastore"
+	"cloud/testutils"
 	"testing"
 	"reflect"
 	"os"
@@ -42,13 +43,22 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 // TODO: might want to test network representation (which should be the same), not the cloud representation.
 func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 	genericFileStorageDir := filepath.Join("data", "node") // TODO: tempdir
+
+	key, err := testutils.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nID, err := network.PublicKeyToID(&key.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	me := &network.Node{
-		ID: "node1",
+		ID: nID,
 		Name: "Node 1",
 		FileStorageDir: genericFileStorageDir + "1",
 	}
-
-	cloud := network.SetupNetwork(me, "My test network")
+	cloud := network.SetupNetwork(me, "My test network", key)
 	clouds := []*network.Cloud{cloud}
 	cloud.Listen(0)
 	go cloud.AcceptListener()
@@ -57,11 +67,21 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 	for i := 1; i < numNodes; i++ {
 		t.Log(i)
 		snum := strconv.Itoa(i+1)
+
+		key, err := testutils.GenerateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		nID, err := network.PublicKeyToID(&key.PublicKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		n, err := network.BootstrapToNetwork(cloud.Listener.Addr().String(), &network.Node{
-			ID: "node" + snum,
+			ID: nID,
 			Name: "Node " + snum,
 			FileStorageDir: genericFileStorageDir + snum,
-		})
+		}, key)
 		if err != nil {
 			t.Error(err)
 		}
