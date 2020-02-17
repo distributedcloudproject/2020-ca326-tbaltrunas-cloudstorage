@@ -41,15 +41,11 @@ func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 	utils.GetLogger().Printf("[INFO] Sending SaveChunk request for file: %v, chunk number: %d, on node: %v.", 
 							 file, chunkNum, n)
 	chunk, _, err := file.GetChunk(chunkNum)
-	if err != nil {
-		return err 
-	}
 	_, err = n.client.SendMessage(SaveChunkMsg, SaveChunkRequest{
 		Path: 		file.Path,
 		Chunk: 		file.Chunks.Chunks[chunkNum],
 		Contents: 	chunk,
 	})
-	utils.GetLogger().Printf("[INFO] %v.", err)
 	return err
 }
 
@@ -70,6 +66,10 @@ func (n *Node) updateFileChunkLocations(chunkLocations FileChunkLocations) error
 	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request for FileChunkLocations: %v, on node: %v.", 
 							 chunkLocations, n)
 	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, chunkLocations)
+	if err != nil {
+		// FIXME: a way to propagate errors returned from requests, i.e. take the place of communication.go errors
+		utils.GetLogger().Printf("[ERROR] %v.", err)
+	}
 	return err
 }
 
