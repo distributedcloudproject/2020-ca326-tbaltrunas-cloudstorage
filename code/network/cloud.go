@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"path/filepath"
-	"reflect"
 )
 
 func (c *Cloud) connectToNode(n *Node) error {
@@ -35,8 +34,8 @@ func (c *Cloud) connectToNode(n *Node) error {
 
 func (c *Cloud) addNode(node *Node) {
 	utils.GetLogger().Printf("[INFO] Adding node to cloud: %v.", node)
-	// c.Mutex.Lock()
-	// defer c.Mutex.Unlock()
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
 
 	for _, n := range c.Network.Nodes {
 		if n.ID == node.ID {
@@ -107,7 +106,7 @@ func (c *Cloud) addFile(file *datastore.File) error {
 
 func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) error {
 	// TODO: verify chunk ID
-	chunkID := chunk.ID
+	// chunkID := chunk.ID
 
 	// persistently store chunk
 	c.Mutex.Lock()
@@ -134,35 +133,38 @@ func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) e
 		return err
 	}
 	utils.GetLogger().Printf("[DEBUG] Finished saving chunk to writer: %v.", w)
-
-	// update chunk data structure
-	utils.GetLogger().Println("[DEBUG] Updating FileChunkLocations.")
-	nodeID := c.MyNode.ID
-	chunkLocations, ok := c.Network.FileChunkLocations[chunkID]
-	if !ok {
-		chunkLocations = []string{nodeID}
-	} else {
-		chunkLocations = append(chunkLocations, nodeID)
-	}
-	c.Network.FileChunkLocations[chunkID] = chunkLocations
-	utils.GetLogger().Println("[DEBUG] Finished updating FileChunkLocations.")
 	return nil
 }
 
-func (c *Cloud) updateFileChunkLocations(fileChunkLocations FileChunkLocations) {
-	utils.GetLogger().Printf("[DEBUG] Updating FileChunkLocations with: %v.", fileChunkLocations)
-	c.Mutex.RLock()
-	ok := reflect.DeepEqual(fileChunkLocations, c.Network.FileChunkLocations)
-	c.Mutex.RUnlock()
+func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) {
+	utils.GetLogger().Printf("[DEBUG] Updating FileChunkLocations with ChunkID: %v, NodeID: %v.", 
+							  chunkID, nodeID)
 
+	c.Mutex.Lock()
+
+	chunkNodes, ok := c.Network.FileChunkLocations[chunkID]
 	if ok {
-		// pre-emptive exit.
-		return
+		for _, nID := range chunkNodes {
+			if nID == nodeID {
+				// pre-emptive exit.
+
+				c.Mutex.Unlock()
+
+				return
+			}
+		}
 	}
 
-	// change own data structure
-	c.Mutex.Lock()
-	c.Network.FileChunkLocations = fileChunkLocations
+	// update our own chunk location data structure
+	utils.GetLogger().Println("[DEBUG] Updating FileChunkLocations.")
+	if !ok {
+		chunkNodes = []string{nodeID}
+	} else {
+		chunkNodes = append(chunkNodes, nodeID)
+	}
+	c.Network.FileChunkLocations[chunkID] = chunkNodes
+	utils.GetLogger().Println("[DEBUG] Finished updating FileChunkLocations.")
+
 	c.Mutex.Unlock()
 
 	// propagate change to other nodes
@@ -170,7 +172,7 @@ func (c *Cloud) updateFileChunkLocations(fileChunkLocations FileChunkLocations) 
 	for _, n := range c.Network.Nodes {
 		if n.client != nil && n.ID != c.MyNode.ID {
 			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in FileChunkLocations to: %v.", n)
-			n.updateFileChunkLocations(fileChunkLocations)
+			n.updateFileChunkLocations(chunkID, nodeID)
 		}
 	}
 	utils.GetLogger().Println("[DEBUG] Finished communicating changes in FileChunkLocations to other nodes.")
