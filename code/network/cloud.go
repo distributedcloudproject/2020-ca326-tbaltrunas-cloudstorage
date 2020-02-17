@@ -152,6 +152,8 @@ func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) e
 		if n.client != nil && n.ID != c.MyNode.ID {
 			utils.GetLogger().Printf("[DEBUG] Found non-self node with non-nil client: %v.", n)
 			err := n.updateFileChunkLocations(c.Network.FileChunkLocations)
+			// FIXME: this only works if current node is connected to all other nodes.
+			// Need a "recursive" approach, such as in AddFile.
 			if err != nil {
 				return err
 			}
@@ -159,4 +161,10 @@ func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) e
 	}
 	utils.GetLogger().Println("[DEBUG] Finished communicating changes in FileChunkLocations to other nodes.")
 	return nil
+}
+
+func (c *Cloud) updateFileChunkLocations(fileChunkLocations FileChunkLocations) {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	c.Network.FileChunkLocations = fileChunkLocations
 }

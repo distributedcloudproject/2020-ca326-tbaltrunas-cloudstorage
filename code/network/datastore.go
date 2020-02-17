@@ -21,6 +21,7 @@ type SaveChunkRequest struct {
 func init() {
 	gob.Register(&datastore.File{})
 	gob.Register(SaveChunkRequest{})
+	gob.Register(FileChunkLocations{})
 }
 
 func (n *Node) AddFile(file *datastore.File) error {
@@ -62,10 +63,12 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 
 // Private requests and handlers.
 
-func (n *Node) updateFileChunkLocations(chunkLocations FileChunkLocations) error {
+// TODO: instead of sending entire FileChunkLocations, only send the operation to be performed and a data item,
+// i.e. addToFileChunkLocations(chunkID, nodeID)
+func (n *Node) updateFileChunkLocations(fileChunkLocations FileChunkLocations) error {
 	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request for FileChunkLocations: %v, on node: %v.", 
-							 chunkLocations, n)
-	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, chunkLocations)
+							 fileChunkLocations, n)
+	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, fileChunkLocations)
 	if err != nil {
 		// FIXME: a way to propagate errors returned from requests, i.e. take the place of communication.go errors
 		utils.GetLogger().Printf("[ERROR] %v.", err)
@@ -73,12 +76,11 @@ func (n *Node) updateFileChunkLocations(chunkLocations FileChunkLocations) error
 	return err
 }
 
-func (r request) onUpdateFileChunkLocations(chunkLocations FileChunkLocations) error {
+func (r request) onUpdateFileChunkLocations(fileChunkLocations FileChunkLocations) {
 	utils.GetLogger().Printf("[INFO] Node: %v, received onUpdateFileChunkLocations request for FileChunkLocations: %v.", 
-							 r.cloud.MyNode.ID, chunkLocations)
-	return nil
+							 r.cloud.MyNode.ID, fileChunkLocations)
+	r.cloud.updateFileChunkLocations(fileChunkLocations)
 }
-
 
 func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
 	utils.GetLogger().Printf("[INFO] Creating a datastore request handler for node: %v, and cloud: %v.", node, cloud)

@@ -39,7 +39,7 @@ type Network struct {
 
 	// FileChunkLocations is maps chunk ID's to the Nodes (Node ID's) containing that chunk.
 	// This way we can keep track of which nodes contain which chunks.
-	FileChunkLocations FileChunkLocations
+	FileChunkLocations FileChunkLocations  // FIXME: Rename this to something shorter.
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
