@@ -146,6 +146,7 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 	if ok {
 		for _, nID := range chunkNodes {
 			if nID == nodeID {
+				// node already added
 				// pre-emptive exit.
 
 				c.Mutex.Unlock()
@@ -158,8 +159,10 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 	// update our own chunk location data structure
 	utils.GetLogger().Println("[DEBUG] Updating FileChunkLocations.")
 	if !ok {
+		// key not present
 		chunkNodes = []string{nodeID}
 	} else {
+		// key present and has other nodes
 		chunkNodes = append(chunkNodes, nodeID)
 	}
 	c.Network.FileChunkLocations[chunkID] = chunkNodes

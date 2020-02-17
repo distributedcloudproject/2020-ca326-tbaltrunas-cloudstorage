@@ -21,7 +21,7 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 	
 	path := tmpfile.Name()
 	t.Logf("Temporary filepath: %s", path)
-	fileContents := "hellothere"  // 10 bytes
+	fileContents := "hellothere i see you are a fan of byte sized text?"  // 50 bytes
 	fileContentsBytes := []byte(fileContents)
 	t.Logf("Writing contents to temporary file: %s", fileContents)
 	_, err = tmpfile.Write(fileContentsBytes)
@@ -38,6 +38,7 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 }
 
 // createTestClouds makes a single cloud network but returns all the nodes' representations of the cloud.
+// In a real life setting each cloud will run on a different machine.
 // TODO: might want to test network representation (which should be the same), not the cloud representation.
 func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 	genericFileStorageDir := filepath.Join("data", "node") // TODO: tempdir
@@ -114,14 +115,9 @@ func TestFileDistribution(t *testing.T) {
 		}
 	}
 
-	// i := 0
-	// t.Logf("Saving chunk number: %d.", i)
-	// err = n.SaveChunk(file, i)
-	// if err != nil {
-	// 	t.Error(err)
-	// }
 	cn := cloud.Network.Nodes
 	t.Log("Distributing chunks.")
+	// TODO: move to a function on its own
 	for i := 0; i < file.Chunks.NumChunks; i++ {
 		n := cn[i % len(cn)]
 		t.Logf("Distributing chunk: %d, on node: %v", i, n)
@@ -138,7 +134,6 @@ func TestFileDistribution(t *testing.T) {
 	for _, c := range clouds {
 		chunkLocationsOther := c.Network.FileChunkLocations
 		t.Logf("FileChunkLocations in another cloud representation: %v.", chunkLocationsOther)
-		// TODO: datastore comparison method
 		if !reflect.DeepEqual(chunkLocations, chunkLocationsOther) {
 			t.Error("FileChunkLocations not matching across cloud representations.")
 		}
