@@ -4,6 +4,12 @@ import (
 	"cloud/comm"
 	"cloud/datastore"
 	"cloud/utils"
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -21,6 +27,9 @@ type Node struct {
 	// Display name of the node.
 	Name string
 
+	// Public key of the node.
+	PublicKey crypto.PublicKey
+
 	// FileStorageDir is a file path to a directory where user files should be stored on this node.
 	FileStorageDir string
 
@@ -35,6 +44,15 @@ type Network struct {
 	Name  string
 	Nodes []*Node
 
+	// Require authentication for the network. Authentication verifies that Node ID belongs to the public key.
+	RequireAuth bool
+
+	// Enable whitelist for the network. If enabled, Node ID has to be whitelisted before joining the network.
+	Whitelist bool
+
+	// List of node IDs that are permitted to enter the network.
+	WhitelistIDs []string
+
 	DataStore DataStore
 
 	// FileChunkLocations is maps chunk ID's to the Nodes (Node ID's) containing that chunk.
@@ -48,10 +66,16 @@ type Cloud struct {
 
 	PendingNodes []*Node
 	MyNode       *Node
+	PrivateKey   *rsa.PrivateKey
 
 	Listener net.Listener
-	Mutex    sync.RWMutex
-	Port     uint16
+
+	// NodeMutex is used only when accessing the Nodes in the network.
+	NodeMutex sync.RWMutex
+	// Mutex is used for any other variable.
+	Mutex sync.RWMutex
+
+	Port uint16
 
 	SaveFunc func() io.Writer
 }
@@ -68,10 +92,10 @@ type request struct {
 	node  *Node
 }
 
-func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
+func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error) {
 	// Establish connection with the target.
 	utils.GetLogger().Printf("[INFO] Bootstrapping with ip: %v, and node: %v.", ip, me)
-	client, err := comm.NewClientDial(ip)
+	client, err := comm.NewClientDial(ip, key)
 	if err != nil {
 		return nil, err
 	}
@@ -83,14 +107,17 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	}
 	utils.GetLogger().Printf("[DEBUG] Remote node: %v.", node)
 
-	cloud := &Cloud{MyNode: me}
+	cloud := &Cloud{MyNode: me, PrivateKey: key}
 	utils.GetLogger().Printf("[DEBUG] Initial cloud: %v.", cloud)
 	node.client.AddRequestHandler(createAuthRequestHandler(node, cloud))
 	go node.client.HandleConnection()
 
-	err = node.Authenticate(me)
+	success, err := node.Authenticate(me)
 	if err != nil {
 		return nil, err
+	}
+	if !success {
+		return nil, errors.New("server refused to authenticate")
 	}
 	node.client.AddRequestHandler(createRequestHandler(node, cloud))
 
@@ -125,7 +152,7 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 	return cloud, nil
 }
 
-func SetupNetwork(me *Node, networkName string) *Cloud {
+func SetupNetwork(me *Node, networkName string, key *rsa.PrivateKey) *Cloud {
 	utils.GetLogger().Printf("[INFO] Setting up network with name: %v, and initial node: %v.", networkName, me)
 	cloud := &Cloud{
 		Network: Network{
@@ -133,7 +160,8 @@ func SetupNetwork(me *Node, networkName string) *Cloud {
 			Nodes: []*Node{me},
 			FileChunkLocations: make(map[datastore.ChunkID][]string),
 		},
-		MyNode: me,
+		MyNode:     me,
+		PrivateKey: key,
 	}
 	me.client = comm.NewLocalClient()
 	me.client.AddRequestHandler(createRequestHandler(me, cloud))
@@ -162,9 +190,14 @@ func (n *Cloud) AcceptListener() {
 		}
 		utils.GetLogger().Printf("[INFO] Accepted connection: %v", conn)
 
+		client, err := comm.NewServerClient(conn, n.PrivateKey)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 		node := &Node{
 			IP:     conn.RemoteAddr().String(),
-			client: comm.NewClient(conn),
+			client: client,
 		}
 		utils.GetLogger().Printf("[INFO] Connected to a new node: %v", node)
 		node.client.AddRequestHandler(createAuthRequestHandler(node, n))
@@ -205,4 +238,13 @@ func (r request) PingRequest(ping string) string {
 func (n *Node) Online() bool {
 	utils.GetLogger().Println("[DEBUG] Checking if node is online.")
 	return n.client != nil
+}
+
+func PublicKeyToID(key *rsa.PublicKey) (string, error) {
+	pub, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return "", err
+	}
+	sha := sha256.Sum256(pub)
+	return hex.EncodeToString(sha[:]), nil
 }

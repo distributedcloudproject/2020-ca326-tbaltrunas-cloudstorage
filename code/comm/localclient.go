@@ -2,6 +2,7 @@ package comm
 
 import (
 	"cloud/utils"
+	"crypto/rsa"
 	"errors"
 	"reflect"
 	"sync"
@@ -31,6 +32,10 @@ func NewLocalClient() Client {
 	return &localClient{
 		requests: make(map[string]interface{}),
 	}
+}
+
+func (c *localClient) PublicKey() *rsa.PublicKey {
+	return nil
 }
 
 func (c *localClient) Address() string {
