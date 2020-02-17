@@ -4,6 +4,7 @@ import (
 	"cloud/network"
 	"cloud/datastore"
 	"testing"
+	"reflect"
 	"os"
 	"io/ioutil"
 	"strconv"
@@ -36,7 +37,9 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 	return file, tmpfile
 }
 
-func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
+// createTestClouds makes a single cloud network but returns all the nodes' representations of the cloud.
+// TODO: might want to test network representation (which should be the same), not the cloud representation.
+func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 	genericFileStorageDir := filepath.Join("data", "node") // TODO: tempdir
 	me := &network.Node{
 		ID: "node1",
@@ -45,10 +48,10 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 	}
 
 	cloud := network.SetupNetwork(me, "My test network")
+	clouds := []*network.Cloud{cloud}
 	cloud.Listen(0)
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
-	t.Logf("MyNode on cloud: %v.", cloud.MyNode)
 
 	for i := 1; i < numNodes; i++ {
 		t.Log(i)
@@ -61,6 +64,7 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 		if err != nil {
 			t.Error(err)
 		}
+		clouds = append(clouds, n)
 
 		err = n.Listen(0)
 		if err != nil {
@@ -69,19 +73,21 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 		go n.AcceptListener()
 	}
 	time.Sleep(time.Millisecond * 100)
+	return clouds
+}
 
+func TestFileDistribution(t *testing.T) {
+	numNodes := 2
+	clouds := createTestClouds(t, numNodes)
+	t.Logf("Test clouds: %v.", clouds)
+	cloud := clouds[0]
+	t.Logf("Main cloud: %v.", cloud)
+	t.Logf("MyNode on cloud: %v.", cloud.MyNode)
 	t.Logf("Cloud with other nodes: %v.", cloud)
 	t.Logf("Network: %v.", cloud.Network)
 	for i := range cloud.Network.Nodes {
 		t.Logf("Node %d: %v.", i, cloud.Network.Nodes[i])
 	}
-	return cloud
-}
-
-func TestFileDistribution(t *testing.T) {
-	numNodes := 2
-	cloud := createTestCloud(t, numNodes)
-	t.Log(cloud)
 
 	file, f := getTestFile(t)
 	defer os.Remove(f.Name())
@@ -97,7 +103,16 @@ func TestFileDistribution(t *testing.T) {
 	}
 	t.Logf("Network with added file: %v.", cloud.Network)
 	t.Logf("Updated datastore: %v.", cloud.Network.DataStore)
-	// TODO: check that all clouds have same datastore, with 1 file
+	// Check that all clouds have same DataStore
+	ds := cloud.Network.DataStore
+	for _, c := range clouds {
+		dsOther := c.Network.DataStore
+		t.Logf("DataStore in another cloud representation: %v.", dsOther)
+		// TODO: datastore comparison method
+		if !reflect.DeepEqual(ds.Files[0].Chunks, dsOther.Files[0].Chunks) {
+			t.Error("DataStores not matching across cloud representations.")
+		}
+	}
 
 	i := 0
 	t.Logf("Saving chunk number: %d.", i)
@@ -107,4 +122,14 @@ func TestFileDistribution(t *testing.T) {
 	}
 	t.Logf("Network with saved chunk: %v.", cloud.Network)
 	t.Logf("Updated chunk-node locations: %v.", cloud.Network.FileChunkLocations)
+	// Check that all clouds have same FileChunkLocations
+	chunkLocations := cloud.Network.FileChunkLocations
+	for _, c := range clouds {
+		chunkLocationsOther := c.Network.FileChunkLocations
+		t.Logf("FileChunkLocations in another cloud representation: %v.", chunkLocationsOther)
+		// TODO: datastore comparison method
+		if !reflect.DeepEqual(chunkLocations, chunkLocationsOther) {
+			t.Error("FileChunkLocations not matching across cloud representations.")
+		}
+	}
 }

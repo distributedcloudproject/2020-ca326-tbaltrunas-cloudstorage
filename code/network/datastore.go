@@ -63,6 +63,15 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	return err
 }
 
+func (n *Node) addToFileChunkLocations() {
+
+}
+
+func (r request) onAddToFileChunkLocations() {
+
+}
+
+
 func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
 	utils.GetLogger().Printf("[INFO] Creating a datastore request handler for node: %v, and cloud: %v.", node, cloud)
 	r := request{
