@@ -145,5 +145,18 @@ func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) e
 	}
 	c.Network.FileChunkLocations[chunkID] = chunkLocations
 	utils.GetLogger().Println("[DEBUG] Finished updating FileChunkLocations.")
+
+	// propagate change to other nodes
+	utils.GetLogger().Println("[DEBUG] Communicating change in FileChunkLocations to other nodes.")
+	for _, n := range c.Network.Nodes {
+		if n.client != nil && n.ID != c.MyNode.ID {
+			utils.GetLogger().Printf("[DEBUG] Found non-self node with non-nil client: %v.", n)
+			err := n.updateFileChunkLocations(c.Network.FileChunkLocations)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	utils.GetLogger().Println("[DEBUG] Finished communicating changes in FileChunkLocations to other nodes.")
 	return nil
 }

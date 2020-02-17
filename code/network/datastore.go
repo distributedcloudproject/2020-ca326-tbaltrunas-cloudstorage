@@ -9,6 +9,7 @@ import (
 const (
 	AddFileMsg = "AddFile"
 	SaveChunkMsg = "SaveChunk"
+	updateFileChunkLocationsMsg = "updateFileChunkLocations"
 )
 
 type SaveChunkRequest struct {
@@ -48,6 +49,7 @@ func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 		Chunk: 		file.Chunks.Chunks[chunkNum],
 		Contents: 	chunk,
 	})
+	utils.GetLogger().Printf("[INFO] %v.", err)
 	return err
 }
 
@@ -58,17 +60,23 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	chunk := sr.Chunk
 	contents := sr.Contents
 	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest with path: %v, chunk: %v.", path, chunk)
-
 	err := r.cloud.saveChunk(path, chunk, contents)
 	return err
 }
 
-func (n *Node) addToFileChunkLocations() {
+// Private requests and handlers.
 
+func (n *Node) updateFileChunkLocations(chunkLocations FileChunkLocations) error {
+	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request for FileChunkLocations: %v, on node: %v.", 
+							 chunkLocations, n)
+	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, chunkLocations)
+	return err
 }
 
-func (r request) onAddToFileChunkLocations() {
-
+func (r request) onUpdateFileChunkLocations(chunkLocations FileChunkLocations) error {
+	utils.GetLogger().Printf("[INFO] Node: %v, received onUpdateFileChunkLocations request for FileChunkLocations: %v.", 
+							 r.cloud.MyNode.ID, chunkLocations)
+	return nil
 }
 
 
@@ -84,6 +92,7 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 		switch message {
 		case AddFileMsg: return r.OnAddFileRequest
 		case SaveChunkMsg: return r.OnSaveChunkRequest
+	    case updateFileChunkLocationsMsg: return r.onUpdateFileChunkLocations
 		}
 		return nil
 	}

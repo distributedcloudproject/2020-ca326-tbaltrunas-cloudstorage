@@ -39,7 +39,7 @@ type Network struct {
 
 	// FileChunkLocations is maps chunk ID's to the Nodes (Node ID's) containing that chunk.
 	// This way we can keep track of which nodes contain which chunks.
-	FileChunkLocations map[datastore.ChunkID][]string
+	FileChunkLocations FileChunkLocations
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
@@ -60,6 +60,8 @@ type Cloud struct {
 type DataStore struct {
 	Files []*datastore.File
 }
+
+type FileChunkLocations map[datastore.ChunkID][]string
 
 type request struct {
 	cloud *Cloud
