@@ -2,6 +2,7 @@ package network
 
 import (
 	"cloud/comm"
+	"cloud/datastore"
 	"cloud/utils"
 )
 
@@ -63,3 +64,55 @@ func (c *Cloud) OnlineNodesNum() int {
 	utils.GetLogger().Printf("[DEBUG] Number of online nodes counted: %v.", i)
 	return i
 }
+
+func (c *Cloud) addFile(file *datastore.File) error {
+	utils.GetLogger().Printf("[INFO] Adding file to cloud: %v.", file)
+
+	c.Mutex.Lock()
+	// check if file is not already added
+	ok := c.Network.DataStore.Contains(file)
+	if ok {
+		// exit preemptively
+		// because if the node already has the file, then all other nodes should also have it
+		return nil
+	}
+	// add file
+	c.Network.DataStore.Add(file)
+	err := c.Save()
+	if err != nil {
+		return err
+	}
+	c.Mutex.Unlock()
+
+	// repeat command to all other nodes
+	utils.GetLogger().Printf("[DEBUG] Network has nodes: %v.", c.Network.Nodes)
+	for _, n := range c.Network.Nodes {
+		if n.client != nil && n.ID != c.MyNode.ID {
+			utils.GetLogger().Printf("[DEBUG] Found non-self node with non-nil client: %v.", n)
+			err := n.AddFile(file)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Contains returns whether the datastore contains the specified file.
+func (ds *DataStore) Contains(file *datastore.File) bool {
+	for _, f := range ds.Files {
+		// TODO: file ID
+		if file.Path == f.Path {
+			return true
+		}
+	}
+	return false
+}
+
+// Add appends a file to the datastore.
+func (ds *DataStore) Add(file *datastore.File) {
+	ds.Files = append(ds.Files, file)
+}
+
+// TODO: move DataStore to datastore package
+// Also DataStore is just a wrapper for a slice?

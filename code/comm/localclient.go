@@ -1,6 +1,7 @@
 package comm
 
 import (
+	"cloud/utils"
 	"errors"
 	"reflect"
 	"sync"
@@ -26,6 +27,7 @@ type localClient struct {
 }
 
 func NewLocalClient() Client {
+	utils.GetLogger().Println("[DEBUG] Creating a new local client.")
 	return &localClient{
 		requests: make(map[string]interface{}),
 	}

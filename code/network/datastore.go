@@ -27,17 +27,15 @@ func init() {
 
 func (n *Node) AddFile(file *datastore.File) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, n)
-	utils.GetLogger().Printf("[DEBUG] client is: %v.", n.client)
+	utils.GetLogger().Printf("[DEBUG] Node's client is: %v.", n.client)
 	_, err := n.client.SendMessage(AddFileMsg, file)
 	return err
 }
 
-func (r request) OnAddFileRequest(file *datastore.File) {
-	utils.GetLogger().Printf("[INFO] Received AddFile request for file: %v.", file)
-	r.cloud.Mutex.Lock()
-	defer r.cloud.Mutex.Unlock()
-	r.cloud.Network.DataStore.Files = append(r.cloud.Network.DataStore.Files, file)
-	r.cloud.Save()
+func (r request) OnAddFileRequest(file *datastore.File) error {
+	utils.GetLogger().Printf("[INFO] Node: %v, received AddFile request for file: %v.", r.cloud.MyNode.ID, file)
+	err := r.cloud.addFile(file)
+	return err
 }
 
 func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {

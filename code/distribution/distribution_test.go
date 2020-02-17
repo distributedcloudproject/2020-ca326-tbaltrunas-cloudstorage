@@ -45,8 +45,9 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 	cloud.Listen(0)
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
+	t.Logf("MyNode on cloud: %v.", cloud.MyNode)
 
-	for i := 0; i < numNodes; i++ {
+	for i := 1; i < numNodes; i++ {
 		t.Log(i)
 		n, err := network.BootstrapToNetwork(cloud.Listener.Addr().String(), &network.Node{
 			ID: "node" + strconv.Itoa(i+1),
@@ -63,7 +64,8 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 		go n.AcceptListener()
 	}
 	time.Sleep(time.Millisecond * 100)
-	t.Logf("Cloud: %v.", cloud)
+
+	t.Logf("Cloud with other nodes: %v.", cloud)
 	t.Logf("Network: %v.", cloud.Network)
 	for i := range cloud.Network.Nodes {
 		t.Logf("Node %d: %v.", i, cloud.Network.Nodes[i])
@@ -81,16 +83,12 @@ func TestFileDistribution(t *testing.T) {
 	defer f.Close()
 	t.Logf("File: %v", file)
 
-	for i := range cloud.Network.Nodes {
-		if i == 0 {
-			continue
-		}
-		n := cloud.Network.Nodes[i]
-		t.Logf("Node %d: %v.", i, n)
-		err := n.AddFile(file)
-		if err != nil {
-			t.Error(err)
-		}
+	n := cloud.Network.Nodes[0]
+	t.Logf("Node: %v.", n)
+	err := n.AddFile(file)
+	if err != nil {
+		t.Error(err)
 	}
 	t.Logf("Network with added file: %v.", cloud.Network)
+	t.Logf("Updated datastore: %v.", cloud.Network.DataStore)
 }
