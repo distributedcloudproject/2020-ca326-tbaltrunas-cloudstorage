@@ -3,6 +3,7 @@ package network
 import (
 	"cloud/utils"
 	"encoding/gob"
+	"fmt"
 	"strings"
 )
 
@@ -14,23 +15,25 @@ type AuthRequest struct {
 	ID string
 	IP string
 	Name string
+
 }
 
 func init() {
 	gob.Register(AuthRequest{})
 }
 
-func (n *Node) Authenticate(node *Node) error {
+
+func (n *Node) Authenticate(node *Node) (bool, error) {
 	utils.GetLogger().Printf("[INFO] Sending Authenticate request with parameter node: %v.", node)
-	_, err := n.client.SendMessage(AuthMsg, AuthRequest{
+	success, err := n.client.SendMessage(AuthMsg, AuthRequest{
 		ID: node.ID,
 		IP: node.IP,
 		Name: node.Name,
 	})
-	return err
+	return success[0].(bool), err
 }
 
-func (r request) OnAuthenticateRequest(ar AuthRequest) {
+func (r request) OnAuthenticateRequest(ar AuthRequest) bool {
 	utils.GetLogger().Printf("[INFO] Handling Authenticate request with AuthRequest struct parameter: %v.", ar)
 	r.node.mutex.Lock()
 	defer r.node.mutex.Unlock()
@@ -48,6 +51,24 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) {
 	r.node.IP = ar.IP
 	r.node.Name = ar.Name
 	utils.GetLogger().Printf("[DEBUG] Updated context request node: %v.", r)
+
+	// Verify the ID belongs to the public key.
+	id, err := PublicKeyToID(r.node.client.PublicKey())
+	if err != nil {
+		return false
+	}
+	if id != r.node.ID {
+		fmt.Println("BAD KEY", id, r.node.ID)
+		return false
+	}
+
+	// If whitelist is enabled, verify that the node is allowed to access it.
+	if r.cloud.Network.Whitelist {
+		if !r.cloud.IsWhitelisted(id) {
+			// LOG: fmt.Println("Unauthorized access", id)
+			return false
+		}
+	}
 
 	// Add any request handlers - node is now part of the network.
 	r.node.client.AddRequestHandler(createRequestHandler(r.node, r.cloud))
@@ -75,6 +96,8 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) {
 
 	// Add the node to our list.
 	r.cloud.addNode(r.node)
+
+	return true
 }
 
 func createAuthRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
