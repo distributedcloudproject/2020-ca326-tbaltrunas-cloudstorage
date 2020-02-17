@@ -77,7 +77,7 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 }
 
 func TestFileDistribution(t *testing.T) {
-	numNodes := 2
+	numNodes := 3
 	clouds := createTestClouds(t, numNodes)
 	t.Logf("Test clouds: %v.", clouds)
 	cloud := clouds[0]
@@ -114,12 +114,23 @@ func TestFileDistribution(t *testing.T) {
 		}
 	}
 
-	i := 0
-	t.Logf("Saving chunk number: %d.", i)
-	err = n.SaveChunk(file, i)
-	if err != nil {
-		t.Error(err)
+	// i := 0
+	// t.Logf("Saving chunk number: %d.", i)
+	// err = n.SaveChunk(file, i)
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+	cn := cloud.Network.Nodes
+	t.Log("Distributing chunks.")
+	for i := 0; i < file.Chunks.NumChunks; i++ {
+		n := cn[i % len(cn)]
+		t.Logf("Distributing chunk: %d, on node: %v", i, n)
+		err = n.SaveChunk(file, i)
+		if err != nil {
+			t.Error(err)
+		}
 	}
+
 	t.Logf("Network with saved chunk: %v.", cloud.Network)
 	t.Logf("Updated chunk-node locations: %v.", cloud.Network.FileChunkLocations)
 	// Check that all clouds have same FileChunkLocations

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"path/filepath"
+	"reflect"
 )
 
 func (c *Cloud) connectToNode(n *Node) error {
@@ -145,26 +146,32 @@ func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) e
 	}
 	c.Network.FileChunkLocations[chunkID] = chunkLocations
 	utils.GetLogger().Println("[DEBUG] Finished updating FileChunkLocations.")
+	return nil
+}
+
+func (c *Cloud) updateFileChunkLocations(fileChunkLocations FileChunkLocations) {
+	utils.GetLogger().Printf("[DEBUG] Updating FileChunkLocations with: %v.", fileChunkLocations)
+	c.Mutex.RLock()
+	ok := reflect.DeepEqual(fileChunkLocations, c.Network.FileChunkLocations)
+	c.Mutex.RUnlock()
+
+	if ok {
+		// pre-emptive exit.
+		return
+	}
+
+	// change own data structure
+	c.Mutex.Lock()
+	c.Network.FileChunkLocations = fileChunkLocations
+	c.Mutex.Unlock()
 
 	// propagate change to other nodes
 	utils.GetLogger().Println("[DEBUG] Communicating change in FileChunkLocations to other nodes.")
 	for _, n := range c.Network.Nodes {
 		if n.client != nil && n.ID != c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Found non-self node with non-nil client: %v.", n)
-			err := n.updateFileChunkLocations(c.Network.FileChunkLocations)
-			// FIXME: this only works if current node is connected to all other nodes.
-			// Need a "recursive" approach, such as in AddFile.
-			if err != nil {
-				return err
-			}
+			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in FileChunkLocations to: %v.", n)
+			n.updateFileChunkLocations(fileChunkLocations)
 		}
 	}
 	utils.GetLogger().Println("[DEBUG] Finished communicating changes in FileChunkLocations to other nodes.")
-	return nil
-}
-
-func (c *Cloud) updateFileChunkLocations(fileChunkLocations FileChunkLocations) {
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
-	c.Network.FileChunkLocations = fileChunkLocations
 }

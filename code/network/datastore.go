@@ -58,6 +58,10 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	contents := sr.Contents
 	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest with path: %v, chunk: %v.", path, chunk)
 	err := r.cloud.saveChunk(path, chunk, contents)
+	if err != nil {
+		return err
+	}
+	err = r.node.updateFileChunkLocations(r.cloud.Network.FileChunkLocations)
 	return err
 }
 
@@ -65,6 +69,7 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 
 // TODO: instead of sending entire FileChunkLocations, only send the operation to be performed and a data item,
 // i.e. addToFileChunkLocations(chunkID, nodeID)
+// additionlly last call overrides all things
 func (n *Node) updateFileChunkLocations(fileChunkLocations FileChunkLocations) error {
 	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request for FileChunkLocations: %v, on node: %v.", 
 							 fileChunkLocations, n)
