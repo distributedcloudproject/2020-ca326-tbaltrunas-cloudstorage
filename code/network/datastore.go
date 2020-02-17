@@ -4,9 +4,6 @@ import (
 	"cloud/utils"
 	"cloud/datastore"
 	"encoding/gob"
-	"os"
-	"strconv"
-	"path/filepath"
 )
  	
 const (
@@ -62,47 +59,8 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	contents := sr.Contents
 	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest with path: %v, chunk: %v.", path, chunk)
 
-	// verify chunk ID
-	chunkID := chunk.ID
-
-	// persistently store chunk
-	r.cloud.Mutex.Lock()
-	defer r.cloud.Mutex.Unlock()
-	
-	chunkPath := filepath.Join(r.cloud.MyNode.FileStorageDir, filepath.Dir(path), 
-								filepath.Base(path) + "-" + strconv.Itoa(chunk.SequenceNumber))
-	utils.GetLogger().Printf("[DEBUG] Computed path where to store chunk: %s.", chunkPath)
-	// TODO: maybe this should be done when setting up the node
-	err := os.MkdirAll(filepath.Dir(chunkPath), os.ModeDir)
-	if err != nil {
-		return err
-	}
-	utils.GetLogger().Println("[DEBUG] Created/verified existence of path directories.")
-	w, err := os.Create(chunkPath)
-	if err != nil {
-		return err 
-	}
-	defer w.Close()
-
-	utils.GetLogger().Printf("[DEBUG] Saving chunk to writer: %v.", w)
-	err = datastore.SaveChunk(w, contents)
-	if err != nil { 
-		return err
-	}
-	utils.GetLogger().Printf("[DEBUG] Finished saving chunk to writer: %v.", w)
-
-	// update chunk data structure
-	utils.GetLogger().Println("[DEBUG] Updating FileChunkLocations.")
-	nodeID := r.cloud.MyNode.ID
-	chunkLocations, ok := r.cloud.Network.FileChunkLocations[chunkID]
-	if !ok {
-		chunkLocations = []string{nodeID}
-	} else {
-		chunkLocations = append(chunkLocations, nodeID)
-	}
-	r.cloud.Network.FileChunkLocations[chunkID] = chunkLocations
-	utils.GetLogger().Println("[DEBUG] Finished updating FileChunkLocations.")
-	return nil
+	err := r.cloud.saveChunk(path, chunk, contents)
+	return err
 }
 
 func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
@@ -121,3 +79,22 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 		return nil
 	}
 }
+
+// Contains returns whether the datastore contains the specified file.
+func (ds *DataStore) Contains(file *datastore.File) bool {
+	for _, f := range ds.Files {
+		// TODO: file ID
+		if file.Path == f.Path {
+			return true
+		}
+	}
+	return false
+}
+
+// Add appends a file to the datastore.
+func (ds *DataStore) Add(file *datastore.File) {
+	ds.Files = append(ds.Files, file)
+}
+
+// TODO: move DataStore to datastore package
+// Also DataStore is just a wrapper for a slice?

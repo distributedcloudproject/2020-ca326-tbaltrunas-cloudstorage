@@ -4,6 +4,9 @@ import (
 	"cloud/comm"
 	"cloud/datastore"
 	"cloud/utils"
+	"os"
+	"strconv"
+	"path/filepath"
 )
 
 func (c *Cloud) connectToNode(n *Node) error {
@@ -101,21 +104,46 @@ func (c *Cloud) addFile(file *datastore.File) error {
 	return nil
 }
 
-// Contains returns whether the datastore contains the specified file.
-func (ds *DataStore) Contains(file *datastore.File) bool {
-	for _, f := range ds.Files {
-		// TODO: file ID
-		if file.Path == f.Path {
-			return true
-		}
+func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) error {
+	// TODO: verify chunk ID
+	chunkID := chunk.ID
+
+	// persistently store chunk
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	
+	chunkPath := filepath.Join(c.MyNode.FileStorageDir, filepath.Dir(path), 
+								filepath.Base(path) + "-" + strconv.Itoa(chunk.SequenceNumber))
+	utils.GetLogger().Printf("[DEBUG] Computed path where to store chunk: %s.", chunkPath)
+	// TODO: maybe this should be done when setting up the node
+	err := os.MkdirAll(filepath.Dir(chunkPath), os.ModeDir)
+	if err != nil {
+		return err
 	}
-	return false
-}
+	utils.GetLogger().Println("[DEBUG] Created/verified existence of path directories.")
+	w, err := os.Create(chunkPath)
+	if err != nil {
+		return err 
+	}
+	defer w.Close()
 
-// Add appends a file to the datastore.
-func (ds *DataStore) Add(file *datastore.File) {
-	ds.Files = append(ds.Files, file)
-}
+	utils.GetLogger().Printf("[DEBUG] Saving chunk to writer: %v.", w)
+	err = datastore.SaveChunk(w, contents)
+	if err != nil { 
+		return err
+	}
+	utils.GetLogger().Printf("[DEBUG] Finished saving chunk to writer: %v.", w)
 
-// TODO: move DataStore to datastore package
-// Also DataStore is just a wrapper for a slice?
+	// update chunk data structure
+	utils.GetLogger().Println("[DEBUG] Updating FileChunkLocations.")
+	nodeID := c.MyNode.ID
+	chunkLocations, ok := c.Network.FileChunkLocations[chunkID]
+	if !ok {
+		chunkLocations = []string{nodeID}
+	} else {
+		chunkLocations = append(chunkLocations, nodeID)
+	}
+	c.Network.FileChunkLocations[chunkID] = chunkLocations
+	utils.GetLogger().Println("[DEBUG] Finished updating FileChunkLocations.")
+	return nil
+}
