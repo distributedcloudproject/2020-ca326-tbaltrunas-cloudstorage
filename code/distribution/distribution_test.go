@@ -22,7 +22,7 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 	
 	path := tmpfile.Name()
 	t.Logf("Temporary filepath: %s", path)
-	fileContents := "hellothere i see you are a fan of byte sized text?"  // 50 bytes
+	fileContents := "hellothere i see you are a fan of bytes?"  // 40 bytes
 	fileContentsBytes := []byte(fileContents)
 	t.Logf("Writing contents to temporary file: %s", fileContents)
 	_, err = tmpfile.Write(fileContentsBytes)
@@ -30,7 +30,7 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 		t.Error(err)
 	}
 
-	chunkSize := 5
+	chunkSize := 10  // will give 4 chunks
 	file, err := datastore.NewFile(tmpfile, path, chunkSize)
 	if err != nil {
 		t.Error(err)
@@ -98,7 +98,7 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 }
 
 func TestFileDistribution(t *testing.T) {
-	numNodes := 3
+	numNodes := 4
 	clouds := createTestClouds(t, numNodes)
 	t.Logf("Test clouds: %v.", clouds)
 	cloud := clouds[0]
@@ -124,6 +124,12 @@ func TestFileDistribution(t *testing.T) {
 	}
 	t.Logf("Network with added file: %v.", cloud.Network)
 	t.Logf("Updated datastore: %v.", cloud.Network.DataStore)
+	// Check that we have a required DataStore
+	if !(len(cloud.Network.DataStore.Files) == 1 && 
+		 reflect.DeepEqual(cloud.Network.DataStore.Files[0].Chunks, file.Chunks)) {
+		 t.Error("DataStore does not have the expected contents (the required file).")
+	}
+
 	// Check that all clouds have same DataStore
 	ds := cloud.Network.DataStore
 	for _, c := range clouds {
@@ -139,6 +145,9 @@ func TestFileDistribution(t *testing.T) {
 	t.Log("Distributing chunks.")
 	// TODO: move to a function on its own
 	for i := 0; i < file.Chunks.NumChunks; i++ {
+		if i != 0 && i != 1 {
+			continue
+		}
 		n := cn[i % len(cn)]
 		t.Logf("Distributing chunk: %d, on node: %v", i, n)
 		err = n.SaveChunk(file, i)
@@ -149,6 +158,19 @@ func TestFileDistribution(t *testing.T) {
 
 	t.Logf("Network with saved chunk: %v.", cloud.Network)
 	t.Logf("Updated chunk-node locations: %v.", cloud.Network.FileChunkLocations)
+	// Check that we have a required FileChunkLocations.
+	chunks := file.Chunks.Chunks
+	expectedFileChunkLocations := network.FileChunkLocations{
+		chunks[0].ID: []string{cn[0].ID},
+		chunks[1].ID: []string{cn[1].ID},
+		chunks[2].ID: []string{cn[2].ID},
+		chunks[3].ID: []string{cn[3].ID},
+	}
+	t.Logf("Expected FileChunkLocations: %v.", expectedFileChunkLocations)
+	if !reflect.DeepEqual(cloud.Network.FileChunkLocations, expectedFileChunkLocations) {
+		t.Error("FileChunkLocations does not have the expected contents.")
+	}
+
 	// Check that all clouds have same FileChunkLocations
 	chunkLocations := cloud.Network.FileChunkLocations
 	for _, c := range clouds {

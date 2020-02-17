@@ -40,7 +40,7 @@ func (r request) OnAddFileRequest(file *datastore.File) error {
 
 func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 	utils.GetLogger().Printf("[INFO] Sending SaveChunk request for file: %v, chunk number: %d, on node: %v.", 
-							 file, chunkNum, n)
+							 file.Path, chunkNum, n.Name)
 	chunk, _, err := file.GetChunk(chunkNum)
 	_, err = n.client.SendMessage(SaveChunkMsg, SaveChunkRequest{
 		Path: 		file.Path,
@@ -51,7 +51,7 @@ func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 }
 
 func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
-	utils.GetLogger().Printf("[INFO] Node: %v, received SaveChunk request.", r.cloud.MyNode.ID)
+	utils.GetLogger().Printf("[INFO] Node: %v, received SaveChunk request.", r.cloud.MyNode.Name)
 	// extract contents
 	path := sr.Path
 	chunk := sr.Chunk
@@ -71,7 +71,7 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 // i.e. addToFileChunkLocations(chunkID, nodeID)
 // additionlly last call overrides all things
 func (n *Node) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) error {
-	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request for node: %v.", n)
+	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request for node: %v.", n.Name)
 	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, chunkID, nodeID)
 	if err != nil {
 		// FIXME: a way to propagate errors returned from requests, i.e. take the place of communication.go errors
@@ -81,7 +81,7 @@ func (n *Node) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string
 }
 
 func (r request) onUpdateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) {
-	utils.GetLogger().Printf("[INFO] Node: %v, received onUpdateFileChunkLocations request.", r.cloud.MyNode.ID)
+	utils.GetLogger().Printf("[INFO] Node: %v, received onUpdateFileChunkLocations request.", r.node.Name)
 	r.cloud.updateFileChunkLocations(chunkID, nodeID)
 }
 

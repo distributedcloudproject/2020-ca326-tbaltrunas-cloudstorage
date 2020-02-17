@@ -196,11 +196,12 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 
 	chunkNodes, ok := c.Network.FileChunkLocations[chunkID]
 	if ok {
+		utils.GetLogger().Printf("[DEBUG] Got list of nodes for key (%v): %v.", chunkID, chunkNodes)
 		for _, nID := range chunkNodes {
 			if nID == nodeID {
 				// node already added
 				// pre-emptive exit.
-
+				utils.GetLogger().Println("[DEBUG] FileChunkLocations already contains the needed key-value.")
 				c.Mutex.Unlock()
 
 				return
@@ -212,9 +213,11 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 	utils.GetLogger().Println("[DEBUG] Updating FileChunkLocations.")
 	if !ok {
 		// key not present
+		utils.GetLogger().Printf("[DEBUG] Creating a new list for the key: %v, in FileChunkLocations.", chunkID)
 		chunkNodes = []string{nodeID}
 	} else {
 		// key present and has other nodes
+		utils.GetLogger().Printf("[DEBUG] Appending to the list for the key: %v, in FileChunkLocations.", chunkID)
 		chunkNodes = append(chunkNodes, nodeID)
 	}
 	c.Network.FileChunkLocations[chunkID] = chunkNodes
@@ -226,7 +229,7 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 	utils.GetLogger().Println("[DEBUG] Communicating change in FileChunkLocations to other nodes.")
 	for _, n := range c.Network.Nodes {
 		if n.client != nil && n.ID != c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in FileChunkLocations to: %v.", n)
+			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in FileChunkLocations to: %v.", n.Name)
 			n.updateFileChunkLocations(chunkID, nodeID)
 		}
 	}
