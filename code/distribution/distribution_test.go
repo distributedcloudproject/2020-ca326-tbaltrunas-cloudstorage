@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"time"
+	"path/filepath"
 )
 
 // Returns a file with contents and a reader of that file (caller must perform clean up on it.)
@@ -36,9 +37,11 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 }
 
 func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
+	genericFileStorageDir := filepath.Join("data", "node") // TODO: tempdir
 	me := &network.Node{
 		ID: "node1",
 		Name: "Node 1",
+		FileStorageDir: genericFileStorageDir + "1",
 	}
 
 	cloud := network.SetupNetwork(me, "My test network")
@@ -49,9 +52,11 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 
 	for i := 1; i < numNodes; i++ {
 		t.Log(i)
+		snum := strconv.Itoa(i+1)
 		n, err := network.BootstrapToNetwork(cloud.Listener.Addr().String(), &network.Node{
-			ID: "node" + strconv.Itoa(i+1),
-			Name: "Node " + strconv.Itoa(i+1),
+			ID: "node" + snum,
+			Name: "Node " + snum,
+			FileStorageDir: genericFileStorageDir + snum,
 		})
 		if err != nil {
 			t.Error(err)
@@ -85,10 +90,21 @@ func TestFileDistribution(t *testing.T) {
 
 	n := cloud.Network.Nodes[0]
 	t.Logf("Node: %v.", n)
+
 	err := n.AddFile(file)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Logf("Network with added file: %v.", cloud.Network)
 	t.Logf("Updated datastore: %v.", cloud.Network.DataStore)
+	// TODO: check that all clouds have same datastore, with 1 file
+
+	i := 0
+	t.Logf("Saving chunk number: %d.", i)
+	err = n.SaveChunk(file, i)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("Network with saved chunk: %v.", cloud.Network)
+	t.Logf("Updated chunk-node locations: %v.", cloud.Network.FileChunkLocations)
 }

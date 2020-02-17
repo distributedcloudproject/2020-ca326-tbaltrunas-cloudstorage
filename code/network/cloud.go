@@ -31,8 +31,8 @@ func (c *Cloud) connectToNode(n *Node) error {
 
 func (c *Cloud) addNode(node *Node) {
 	utils.GetLogger().Printf("[INFO] Adding node to cloud: %v.", node)
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
+	// c.Mutex.Lock()
+	// defer c.Mutex.Unlock()
 
 	for _, n := range c.Network.Nodes {
 		if n.ID == node.ID {
@@ -68,7 +68,9 @@ func (c *Cloud) OnlineNodesNum() int {
 func (c *Cloud) addFile(file *datastore.File) error {
 	utils.GetLogger().Printf("[INFO] Adding file to cloud: %v.", file)
 
-	c.Mutex.Lock()
+	// FIXME: problem with mutexes
+	// c.Mutex.Lock()
+	// defer c.Mutex.Unlock()
 	// check if file is not already added
 	ok := c.Network.DataStore.Contains(file)
 	if ok {
@@ -82,7 +84,6 @@ func (c *Cloud) addFile(file *datastore.File) error {
 	if err != nil {
 		return err
 	}
-	c.Mutex.Unlock()
 
 	// repeat command to all other nodes
 	utils.GetLogger().Printf("[DEBUG] Network has nodes: %v.", c.Network.Nodes)
