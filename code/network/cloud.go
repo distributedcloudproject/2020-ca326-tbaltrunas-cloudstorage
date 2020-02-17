@@ -68,19 +68,21 @@ func (c *Cloud) OnlineNodesNum() int {
 func (c *Cloud) addFile(file *datastore.File) error {
 	utils.GetLogger().Printf("[INFO] Adding file to cloud: %v.", file)
 
-	// FIXME: problem with mutexes
-	// c.Mutex.Lock()
-	// defer c.Mutex.Unlock()
 	// check if file is not already added
+	c.Mutex.RLock()
 	ok := c.Network.DataStore.Contains(file)
+	c.Mutex.RUnlock()
 	if ok {
 		// exit preemptively
 		// because if the node already has the file, then all other nodes should also have it
 		return nil
 	}
+
 	// add file
+	c.Mutex.Lock()
 	c.Network.DataStore.Add(file)
 	err := c.Save()
+	c.Mutex.Unlock()
 	if err != nil {
 		return err
 	}

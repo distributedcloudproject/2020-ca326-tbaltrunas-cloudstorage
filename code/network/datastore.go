@@ -66,8 +66,8 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	chunkID := chunk.ID
 
 	// persistently store chunk
-	// r.cloud.Mutex.Lock()
-	// defer r.cloud.Mutex.Unlock()
+	r.cloud.Mutex.Lock()
+	defer r.cloud.Mutex.Unlock()
 	
 	chunkPath := filepath.Join(r.cloud.MyNode.FileStorageDir, filepath.Dir(path), 
 								filepath.Base(path) + "-" + strconv.Itoa(chunk.SequenceNumber))
