@@ -266,6 +266,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	funcName := string(data[:index])
 	utils.GetLogger().Printf("[DEBUG] Extracted function name: %v.", funcName)
 	c.requestsMutex.RLock()
+	utils.GetLogger().Printf("[DEBUG] Client's requests map: %v, request handlers: %v.", c.requests, c.requestsHandlers)
 	request, ok := c.requests[funcName]
 	utils.GetLogger().Printf("[DEBUG] Got request handler for function: %v.", request)
 	if !ok {

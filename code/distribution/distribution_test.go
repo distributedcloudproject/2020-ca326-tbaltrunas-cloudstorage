@@ -72,7 +72,7 @@ func createTestCloud(t *testing.T, numNodes int) *network.Cloud {
 }
 
 func TestFileDistribution(t *testing.T) {
-	numNodes := 3
+	numNodes := 2
 	cloud := createTestCloud(t, numNodes)
 	t.Log(cloud)
 
@@ -92,4 +92,5 @@ func TestFileDistribution(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	t.Logf("Network with added file: %v.", cloud.Network)
 }
