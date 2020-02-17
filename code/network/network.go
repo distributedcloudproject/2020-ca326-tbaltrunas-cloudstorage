@@ -29,7 +29,7 @@ type Node struct {
 
 // Network is the general info of the network. Each node would have the same presentation of Network.
 type Network struct {
-	Name string
+	Name  string
 	Nodes []*Node
 
 	// DataStore keeps track of all the user files stored on the cloud.
@@ -45,18 +45,18 @@ type Cloud struct {
 	Network Network
 
 	PendingNodes []*Node
-	MyNode *Node
+	MyNode       *Node
 
 	Listener net.Listener
-	Mutex sync.RWMutex
-	Port uint16
+	Mutex    sync.RWMutex
+	Port     uint16
 
 	SaveFunc func() io.Writer
 }
 
 type request struct {
 	cloud *Cloud
-	node *Node
+	node  *Node
 }
 
 func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
@@ -69,7 +69,7 @@ func BootstrapToNetwork(ip string, me *Node) (*Cloud, error) {
 
 	// Create a temporary node to represent the bootstrap node.
 	node := &Node{
-		IP: ip,
+		IP:     ip,
 		client: client,
 	}
 	utils.GetLogger().Printf("[DEBUG] Remote node: %v.", node)
@@ -118,7 +118,7 @@ func SetupNetwork(me *Node, networkName string) *Cloud {
 	utils.GetLogger().Printf("[INFO] Setting up network with name: %v, and initial node: %v.", networkName, me)
 	cloud := &Cloud{
 		Network: Network{
-			Name: "My new network",
+			Name:  networkName,
 			Nodes: []*Node{me},
 		},
 		MyNode: me,
@@ -150,7 +150,7 @@ func (n *Cloud) AcceptListener() {
 		utils.GetLogger().Printf("[INFO] Accepted connection: %v", conn)
 
 		node := &Node{
-			IP: conn.RemoteAddr().String(),
+			IP:     conn.RemoteAddr().String(),
 			client: comm.NewClient(conn),
 		}
 		utils.GetLogger().Printf("[INFO] Connected to a new node: %v", node)
