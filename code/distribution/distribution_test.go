@@ -5,12 +5,12 @@ import (
 	"cloud/datastore"
 	"cloud/testutils"
 	"testing"
+	"fmt"
 	"reflect"
 	"os"
 	"io/ioutil"
 	"strconv"
 	"time"
-	"path/filepath"
 )
 
 // Returns a file with contents and a reader of that file (caller must perform clean up on it.)
@@ -41,8 +41,17 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 // createTestClouds makes a single cloud network but returns all the nodes' representations of the cloud.
 // In a real life setting each cloud will run on a different machine.
 // TODO: might want to test network representation (which should be the same), not the cloud representation.
-func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
-	genericFileStorageDir := filepath.Join("data", "node") // TODO: tempdir
+// Also returns the storage directories.
+// The caller must call os.RemoveAll(dir) to remove a directory.
+func createTestClouds(t *testing.T, numNodes int) ([]*network.Cloud, []string) {
+	tmpStorageDirs := make([]string, 0)
+	for i := 0; i < numNodes; i++ {
+		dir, err := ioutil.TempDir("", fmt.Sprintf("cloud_test_data_node_%d_", i))
+		if err != nil {
+			t.Fatal(err)
+		}
+		tmpStorageDirs = append(tmpStorageDirs, dir)
+	}
 
 	key, err := testutils.GenerateKey()
 	if err != nil {
@@ -53,10 +62,11 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 		t.Fatal(err)
 	}
 
+	// Create the first node that will begin the network.
 	me := &network.Node{
 		ID: nID,
 		Name: "Node 1",
-		FileStorageDir: genericFileStorageDir + "1",
+		FileStorageDir: tmpStorageDirs[0],
 	}
 	cloud := network.SetupNetwork(me, "My test network", key)
 	clouds := []*network.Cloud{cloud}
@@ -64,6 +74,7 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
 
+	// Create the rest of the nodes.
 	for i := 1; i < numNodes; i++ {
 		t.Log(i)
 		snum := strconv.Itoa(i+1)
@@ -80,7 +91,7 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 		n, err := network.BootstrapToNetwork(cloud.Listener.Addr().String(), &network.Node{
 			ID: nID,
 			Name: "Node " + snum,
-			FileStorageDir: genericFileStorageDir + snum,
+			FileStorageDir: tmpStorageDirs[i],
 		}, key)
 		if err != nil {
 			t.Error(err)
@@ -94,13 +105,22 @@ func createTestClouds(t *testing.T, numNodes int) []*network.Cloud {
 		go n.AcceptListener()
 	}
 	time.Sleep(time.Millisecond * 100)
-	return clouds
+	return clouds, tmpStorageDirs
+}
+
+func removeDirs(dirs []string) {
+	for _, dir := range dirs {
+		os.RemoveAll(dir)
+	}
 }
 
 func TestFileDistribution(t *testing.T) {
 	numNodes := 4
-	clouds := createTestClouds(t, numNodes)
+	clouds, tmpStorageDirs := createTestClouds(t, numNodes)
+	defer removeDirs(tmpStorageDirs)
+
 	t.Logf("Test clouds: %v.", clouds)
+	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
 	cloud := clouds[0]
 	t.Logf("Main cloud: %v.", cloud)
 	t.Logf("MyNode on cloud: %v.", cloud.MyNode)
