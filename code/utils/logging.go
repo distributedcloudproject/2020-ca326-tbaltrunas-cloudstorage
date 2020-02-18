@@ -19,11 +19,11 @@ var (
 )
 
 func init() {
-	lvl, ok := os.LookupEnv("CLOUD_DEFAULT_LOG_LEVEL")
+	lvl, ok := os.LookupEnv("CLOUD_LOG_LEVEL")
 	if ok {
 		defaultLevel = lvl
 	}
-	logFile, ok := os.LookupEnv("CLOUD_DEFAULT_LOG_FILE")
+	logFile, ok := os.LookupEnv("CLOUD_LOG_FILE")
 	if ok {
 		logWriter, err := os.Create(logFile)
 		if err != nil {

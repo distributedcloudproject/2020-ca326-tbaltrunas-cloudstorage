@@ -231,7 +231,7 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 		if n.client != nil && n.ID != c.MyNode.ID {
 			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in FileChunkLocations to: %v.", 
 									  n)
-			n.updateFileChunkLocations(chunkID, nodeID)
+			n.UpdateFileChunkLocations(chunkID, nodeID)
 		}
 	}
 	utils.GetLogger().Println("[DEBUG] Finished communicating changes in FileChunkLocations to other nodes.")

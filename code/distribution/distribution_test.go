@@ -146,8 +146,9 @@ func TestFileDistribution(t *testing.T) {
 	// TODO: move to a function on its own
 	for i := 0; i < file.Chunks.NumChunks; i++ {
 		n := cn[i]
-		t.Logf("Distributing chunk: %d, on node: %v", i, n)
+		t.Logf("Distributing chunk: %d (ID: %v), on node: %v", i, file.Chunks.Chunks[i].ID, n)
 		err = n.SaveChunk(file, i)
+		err = n.UpdateFileChunkLocations(file.Chunks.Chunks[i].ID, n.ID)
 		if err != nil {
 			t.Error(err)
 		}
@@ -156,17 +157,17 @@ func TestFileDistribution(t *testing.T) {
 	t.Logf("Network with saved chunk: %v.", cloud.Network)
 	t.Logf("Updated chunk-node locations: %v.", cloud.Network.FileChunkLocations)
 	// Check that we have a required FileChunkLocations.
-	// chunks := file.Chunks.Chunks
-	// expectedFileChunkLocations := network.FileChunkLocations{
-	// 	chunks[0].ID: []string{cn[0].ID},
-	// 	chunks[1].ID: []string{cn[1].ID},
-	// 	chunks[2].ID: []string{cn[2].ID},
-	// 	chunks[3].ID: []string{cn[3].ID},
-	// }
-	// t.Logf("Expected FileChunkLocations: %v.", expectedFileChunkLocations)
-	// if !reflect.DeepEqual(cloud.Network.FileChunkLocations, expectedFileChunkLocations) {
-	// 	t.Error("FileChunkLocations does not have the expected contents.")
-	// }
+	chunks := file.Chunks.Chunks
+	expectedFileChunkLocations := network.FileChunkLocations{
+		chunks[0].ID: []string{cn[0].ID},
+		chunks[1].ID: []string{cn[1].ID},
+		chunks[2].ID: []string{cn[2].ID},
+		chunks[3].ID: []string{cn[3].ID},
+	}
+	t.Logf("Expected FileChunkLocations: %v.", expectedFileChunkLocations)
+	if !reflect.DeepEqual(cloud.Network.FileChunkLocations, expectedFileChunkLocations) {
+		t.Error("FileChunkLocations does not have the expected contents.")
+	}
 
 	// Check that all clouds have same FileChunkLocations
 	chunkLocations := cloud.Network.FileChunkLocations

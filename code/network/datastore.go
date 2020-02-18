@@ -61,7 +61,7 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	if err != nil {
 		return err
 	}
-	err = r.node.updateFileChunkLocations(chunk.ID, r.node.ID)
+	// err = r.node.updateFileChunkLocations(chunk.ID, r.node.ID)
 	return err
 }
 
@@ -70,7 +70,7 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 // TODO: instead of sending entire FileChunkLocations, only send the operation to be performed and a data item,
 // i.e. addToFileChunkLocations(chunkID, nodeID)
 // additionlly last call overrides all things
-func (n *Node) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) error {
+func (n *Node) UpdateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) error {
 	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request to node: %v.", n.Name)
 	utils.GetLogger().Printf("[DEBUG] Sending message to client: %v.", &n.client)
 	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, chunkID, nodeID)
