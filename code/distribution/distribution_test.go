@@ -148,7 +148,6 @@ func TestFileDistribution(t *testing.T) {
 		n := cn[i]
 		t.Logf("Distributing chunk: %d (ID: %v), on node: %v", i, file.Chunks.Chunks[i].ID, n)
 		err = n.SaveChunk(file, i)
-		err = n.UpdateFileChunkLocations(file.Chunks.Chunks[i].ID, n.ID)
 		if err != nil {
 			t.Error(err)
 		}
