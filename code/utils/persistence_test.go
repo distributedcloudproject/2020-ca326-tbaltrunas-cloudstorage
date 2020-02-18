@@ -1,4 +1,4 @@
-package datastore
+package utils
 
 // TODO: move this to a separate utils package and test without datastore dependencies.
 

@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"cloud/utils"
 	"io"
 	"errors"
 	"fmt"
@@ -92,7 +93,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 	}
 
 	// compute file hash
-	id := HashBytes(allContents)
+	id := utils.HashBytes(allContents)
 
 	// compute extra information
 	fileSize := file.Chunks.ComputeFileSize()
@@ -124,7 +125,7 @@ func (file *File) GetChunk(n int) ([]byte, int, error) {
 
 // ComputeChunkID calculates the ID (hash) of a buffer of bytes (a chunk).
 func ComputeChunkID(buffer []byte) ChunkID {
-	chunkHash := HashBytes(buffer)
+	chunkHash := utils.HashBytes(buffer)
 	return ChunkID(chunkHash)
 }
 
