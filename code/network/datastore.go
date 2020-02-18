@@ -4,6 +4,8 @@ import (
 	"cloud/utils"
 	"cloud/datastore"
 	"encoding/gob"
+	"path/filepath"
+	"strconv"
 )
  	
 const (
@@ -13,9 +15,14 @@ const (
 )
 
 type SaveChunkRequest struct {
-	Path 		string			  // filepath corresponding to the chunk
-	Chunk 		datastore.Chunk  // chunk metadata
-	Contents 	[]byte           // chunk bytes
+	// CloudPath is the filepath for the chunk on the cloud.
+	// The path should be rooted at "/" (without drive letter on Windows).
+	// The actual storage path will depedend on the node's configuration.
+	CloudPath 	string
+
+	Chunk 		datastore.Chunk  	  // chunk metadata
+
+	Contents 	[]byte           	  // chunk bytes
 }
 
 func init() {
@@ -41,11 +48,13 @@ func (r request) OnAddFileRequest(file *datastore.File) error {
 func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 	utils.GetLogger().Printf("[INFO] Sending SaveChunk request for file: %v, chunk number: %d, on node: %v.", 
 							 file.Path, chunkNum, n.Name)
-	chunk, _, err := file.GetChunk(chunkNum)
+	chunk := file.Chunks.Chunks[chunkNum]
+	contents, _, err := file.GetChunk(chunkNum)
+	cloudPath := filepath.Base(file.Path) + "-" + strconv.Itoa(chunk.SequenceNumber)
 	_, err = n.client.SendMessage(SaveChunkMsg, SaveChunkRequest{
-		Path: 		file.Path,
-		Chunk: 		file.Chunks.Chunks[chunkNum],
-		Contents: 	chunk,
+		CloudPath: 	cloudPath,
+		Chunk: 		chunk,
+		Contents: 	contents,
 	})
 	return err
 }
@@ -53,11 +62,11 @@ func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	utils.GetLogger().Printf("[INFO] Node: %v, received SaveChunk request.", r.cloud.MyNode.Name)
 	// extract contents
-	path := sr.Path
+	cloudPath := sr.CloudPath
 	chunk := sr.Chunk
 	contents := sr.Contents
-	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest with path: %v, chunk: %v.", path, chunk)
-	err := r.cloud.saveChunk(path, chunk, contents)
+	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest with path: %v, chunk: %v.", cloudPath, chunk)
+	err := r.cloud.saveChunk(cloudPath, chunk, contents)
 	if err != nil {
 		return err
 	}

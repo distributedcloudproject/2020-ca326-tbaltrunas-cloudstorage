@@ -6,7 +6,6 @@ import (
 	"cloud/utils"
 	"errors"
 	"os"
-	"strconv"
 	"path/filepath"
 )
 
@@ -156,7 +155,8 @@ func (c *Cloud) addFile(file *datastore.File) error {
 	return nil
 }
 
-func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) error {
+// saveChunk persistently stores a chunk given by its contents, as the given cloud path.
+func (c *Cloud) saveChunk(cloudPath string, chunk datastore.Chunk, contents []byte) error {
 	// TODO: verify chunk ID
 	// chunkID := chunk.ID
 
@@ -164,16 +164,15 @@ func (c *Cloud) saveChunk(path string, chunk datastore.Chunk, contents []byte) e
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	
-	chunkPath := filepath.Join(c.MyNode.FileStorageDir, filepath.Dir(path), 
-								filepath.Base(path) + "-" + strconv.Itoa(chunk.SequenceNumber))
-	utils.GetLogger().Printf("[DEBUG] Computed path where to store chunk: %s.", chunkPath)
+	localPath := filepath.Join(c.MyNode.FileStorageDir, cloudPath)
+	utils.GetLogger().Printf("[DEBUG] Computed path where to store chunk: %s.", localPath)
 	// TODO: maybe this should be done when setting up the node
-	err := os.MkdirAll(filepath.Dir(chunkPath), os.ModeDir)
+	err := os.MkdirAll(filepath.Dir(localPath), os.ModeDir)
 	if err != nil {
 		return err
 	}
 	utils.GetLogger().Println("[DEBUG] Created/verified existence of path directories.")
-	w, err := os.Create(chunkPath)
+	w, err := os.Create(localPath)
 	if err != nil {
 		return err 
 	}
