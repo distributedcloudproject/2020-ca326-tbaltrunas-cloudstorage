@@ -108,16 +108,10 @@ func createTestClouds(t *testing.T, numNodes int) ([]*network.Cloud, []string) {
 	return clouds, tmpStorageDirs
 }
 
-func removeDirs(dirs []string) {
-	for _, dir := range dirs {
-		os.RemoveAll(dir)
-	}
-}
-
 func TestFileDistribution(t *testing.T) {
 	numNodes := 4
 	clouds, tmpStorageDirs := createTestClouds(t, numNodes)
-	defer removeDirs(tmpStorageDirs)
+	defer RemoveDirs(tmpStorageDirs)
 
 	t.Logf("Test clouds: %v.", clouds)
 	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
