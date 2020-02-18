@@ -145,8 +145,7 @@ func TestFileDistribution(t *testing.T) {
 	t.Logf("Network with added file: %v.", cloud.Network)
 	t.Logf("Updated datastore: %v.", cloud.Network.DataStore)
 	// Check that we have a required DataStore
-	if !(len(cloud.Network.DataStore.Files) == 1 && 
-		 reflect.DeepEqual(cloud.Network.DataStore.Files[0].Chunks, file.Chunks)) {
+	if !(len(cloud.Network.DataStore.Files) == 1 && cloud.Network.DataStore.Files[0].ID == file.ID) {
 		 t.Error("DataStore does not have the expected contents (the required file).")
 	}
 
@@ -155,8 +154,11 @@ func TestFileDistribution(t *testing.T) {
 	for _, c := range clouds {
 		dsOther := c.Network.DataStore
 		t.Logf("DataStore in another cloud representation: %v.", dsOther)
-		// TODO: datastore comparison method
-		if !reflect.DeepEqual(ds.Files[0].Chunks, dsOther.Files[0].Chunks) {
+		if len(dsOther.Files) == 0 {
+			t.Error("DataStore is empty.")
+		}
+		t.Logf("File in another cloud representation: %v.", dsOther.Files[0])
+		if ds.Files[0].ID != dsOther.Files[0].ID {
 			t.Error("DataStores not matching across cloud representations.")
 		}
 	}
@@ -165,9 +167,8 @@ func TestFileDistribution(t *testing.T) {
 	t.Log("Distributing chunks.")
 	// TODO: move to a function on its own
 	for i := 0; i < file.Chunks.NumChunks; i++ {
-		n := cn[i]
-		t.Logf("Distributing chunk: %d (ID: %v), on node: %v", i, file.Chunks.Chunks[i].ID, n)
-		err = n.SaveChunk(file, i)
+		t.Logf("Distributing chunk: %d (ID: %v), on node: %v", i, file.Chunks.Chunks[i].ID, cn[i])
+		err = cn[i].SaveChunk(file, i)
 		if err != nil {
 			t.Error(err)
 		}

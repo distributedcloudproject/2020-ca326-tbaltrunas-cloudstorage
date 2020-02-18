@@ -8,6 +8,9 @@ import (
 
 type FileSize int
 
+// FileID is a hash as a string of bytes.
+type FileID string
+
 // ChunkID is a hash as a string of bytes.
 type ChunkID string
 
@@ -17,6 +20,8 @@ type FileIOReader io.ReaderAt
 
 // File represents a user's file stored on the cloud.
 type File struct {
+	ID          FileID  // ID of the file (hash of file contents).
+
 	Path 		string  // Path of the user's file.
 	
 	Size 		FileSize  // File size.
@@ -59,6 +64,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 	chunks := make([]Chunk, 0)
 	i := 0
 	var offset int64
+	allContents := make([]byte, 0)
 	buffer := make([]byte, chunkSize)
 	stop := false
 	for !stop {
@@ -80,9 +86,13 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 			SequenceNumber: i,
 			ContentSize: numRead,
 		}
+		allContents = append(allContents, buffer...)
 		chunks = append(chunks, chunk)
 		i++
 	}
+
+	// compute file hash
+	id := HashBytes(allContents)
 
 	// compute extra information
 	fileSize := file.Chunks.ComputeFileSize()
@@ -92,6 +102,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 	// numChunks ~= ceil(fileSize/chunkSize)
 
 	file.reader = reader
+	file.ID = FileID(id)
 	file.Path = path
 	file.Size = FileSize(fileSize)
 	file.Chunks.NumChunks = numChunks
