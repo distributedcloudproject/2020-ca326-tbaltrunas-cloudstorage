@@ -61,7 +61,6 @@ func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 
 func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	utils.GetLogger().Printf("[INFO] Node: %v, received SaveChunk request.", r.cloud.MyNode.Name)
-	// extract contents
 	cloudPath := sr.CloudPath
 	chunk := sr.Chunk
 	contents := sr.Contents
@@ -74,11 +73,6 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	return err
 }
 
-// Private requests and handlers.
-
-// TODO: instead of sending entire ChunkNodes, only send the operation to be performed and a data item,
-// i.e. addToChunkNodes(chunkID, nodeID)
-// additionlly last call overrides all things
 func (n *Node) updateChunkNodes(chunkID datastore.ChunkID, nodeID string) error {
 	utils.GetLogger().Printf("[INFO] Sending updateChunkNodes request to node: %v.", n.Name)
 	utils.GetLogger().Printf("[DEBUG] Sending message to client: %v.", &n.client)
