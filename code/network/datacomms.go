@@ -113,22 +113,3 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 		return nil
 	}
 }
-
-// Contains returns whether the datastore contains the specified file.
-func (ds *DataStore) Contains(file *datastore.File) bool {
-	for _, f := range ds.Files {
-		// TODO: file ID
-		if file.Path == f.Path {
-			return true
-		}
-	}
-	return false
-}
-
-// Add appends a file to the datastore.
-func (ds *DataStore) Add(file *datastore.File) {
-	ds.Files = append(ds.Files, file)
-}
-
-// TODO: move DataStore to datastore package
-// Also DataStore is just a wrapper for a slice?

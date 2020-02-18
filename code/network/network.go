@@ -53,7 +53,8 @@ type Network struct {
 	// List of node IDs that are permitted to enter the network.
 	WhitelistIDs []string
 
-	DataStore DataStore
+	// DataStore is a list of all the user files on the cloud.
+	DataStore datastore.DataStore
 
 	// FileChunkLocations is maps chunk ID's to the Nodes (Node ID's) containing that chunk.
 	// This way we can keep track of which nodes contain which chunks.
@@ -78,11 +79,6 @@ type Cloud struct {
 	Port uint16
 
 	SaveFunc func() io.Writer
-}
-
-// DataStore keeps track of all the user files stored on the cloud.
-type DataStore struct {
-	Files []*datastore.File
 }
 
 type FileChunkLocations map[datastore.ChunkID][]string
