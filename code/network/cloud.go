@@ -187,20 +187,20 @@ func (c *Cloud) saveChunk(cloudPath string, chunk datastore.Chunk, contents []by
 	return nil
 }
 
-func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) {
-	utils.GetLogger().Printf("[DEBUG] Updating FileChunkLocations with ChunkID: %v, NodeID: %v.", 
+func (c *Cloud) updateChunkNodes(chunkID datastore.ChunkID, nodeID string) {
+	utils.GetLogger().Printf("[DEBUG] Updating ChunkNodes with ChunkID: %v, NodeID: %v.", 
 							  chunkID, nodeID)
 
 	c.Mutex.Lock()
 
-	chunkNodes, ok := c.Network.FileChunkLocations[chunkID]
+	chunkNodes, ok := c.Network.ChunkNodes[chunkID]
 	if ok {
 		utils.GetLogger().Printf("[DEBUG] Got list of nodes for key (%v): %v.", chunkID, chunkNodes)
 		for _, nID := range chunkNodes {
 			if nID == nodeID {
 				// node already added
 				// pre-emptive exit.
-				utils.GetLogger().Println("[DEBUG] FileChunkLocations already contains the needed key-value.")
+				utils.GetLogger().Println("[DEBUG] ChunkNodes already contains the needed key-value.")
 				c.Mutex.Unlock()
 
 				return
@@ -209,29 +209,29 @@ func (c *Cloud) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID strin
 	}
 
 	// update our own chunk location data structure
-	utils.GetLogger().Printf("[DEBUG] Updating FileChunkLocations: %v.", c.Network.FileChunkLocations)
+	utils.GetLogger().Printf("[DEBUG] Updating ChunkNodes: %v.", c.Network.ChunkNodes)
 	if !ok {
 		// key not present
-		utils.GetLogger().Printf("[DEBUG] Creating a new list for the key: %v, in FileChunkLocations.", chunkID)
+		utils.GetLogger().Printf("[DEBUG] Creating a new list for the key: %v, in ChunkNodes.", chunkID)
 		chunkNodes = []string{nodeID}
 	} else {
 		// key present and has other nodes
-		utils.GetLogger().Printf("[DEBUG] Appending to the list for the key: %v, in FileChunkLocations.", chunkID)
+		utils.GetLogger().Printf("[DEBUG] Appending to the list for the key: %v, in ChunkNodes.", chunkID)
 		chunkNodes = append(chunkNodes, nodeID)
 	}
-	c.Network.FileChunkLocations[chunkID] = chunkNodes
-	utils.GetLogger().Printf("[DEBUG] Finished updating FileChunkLocations: %v.", c.Network.FileChunkLocations)
+	c.Network.ChunkNodes[chunkID] = chunkNodes
+	utils.GetLogger().Printf("[DEBUG] Finished updating ChunkNodes: %v.", c.Network.ChunkNodes)
 
 	c.Mutex.Unlock()
 
 	// propagate change to other nodes
-	utils.GetLogger().Println("[DEBUG] Communicating change in FileChunkLocations to other nodes.")
+	utils.GetLogger().Println("[DEBUG] Communicating change in ChunkNodes to other nodes.")
 	for _, n := range c.Network.Nodes {
 		if n.client != nil && n.ID != c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in FileChunkLocations to: %v.", 
+			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in ChunkNodes to: %v.", 
 									  n)
-			n.updateFileChunkLocations(chunkID, nodeID)
+			n.updateChunkNodes(chunkID, nodeID)
 		}
 	}
-	utils.GetLogger().Println("[DEBUG] Finished communicating changes in FileChunkLocations to other nodes.")
+	utils.GetLogger().Println("[DEBUG] Finished communicating changes in ChunkNodes to other nodes.")
 }

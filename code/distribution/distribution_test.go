@@ -175,30 +175,30 @@ func TestFileDistribution(t *testing.T) {
 	}
 
 	t.Logf("Network with saved chunk: %v.", cloud.Network)
-	t.Logf("Updated chunk-node locations: %v.", cloud.Network.FileChunkLocations)
-	// Check that we have a required FileChunkLocations.
+	t.Logf("Updated chunk-node locations: %v.", cloud.Network.ChunkNodes)
+	// Check that we have a required ChunkNodes.
 	chunks := file.Chunks.Chunks
-	expectedFileChunkLocations := network.FileChunkLocations{
+	expectedChunkNodes := network.ChunkNodes{
 		chunks[0].ID: []string{cn[0].ID},
 		chunks[1].ID: []string{cn[1].ID},
 		chunks[2].ID: []string{cn[2].ID},
 		chunks[3].ID: []string{cn[3].ID},
 	}
-	t.Logf("Expected FileChunkLocations: %v.", expectedFileChunkLocations)
+	t.Logf("Expected ChunkNodes: %v.", expectedChunkNodes)
 	// Note that DeepEqual has arguments against using it.
 	// https://stackoverflow.com/a/45222521
 	// An alternative struct comparison method may be needed in the future.
-	if !reflect.DeepEqual(cloud.Network.FileChunkLocations, expectedFileChunkLocations) {
-		t.Error("FileChunkLocations does not have the expected contents.")
+	if !reflect.DeepEqual(cloud.Network.ChunkNodes, expectedChunkNodes) {
+		t.Error("ChunkNodes does not have the expected contents.")
 	}
 
-	// Check that all clouds have same FileChunkLocations
-	chunkLocations := cloud.Network.FileChunkLocations
+	// Check that all clouds have same ChunkNodes
+	chunkLocations := cloud.Network.ChunkNodes
 	for _, c := range clouds {
-		chunkLocationsOther := c.Network.FileChunkLocations
-		t.Logf("FileChunkLocations in another cloud representation: %v.", chunkLocationsOther)
+		chunkLocationsOther := c.Network.ChunkNodes
+		t.Logf("ChunkNodes in another cloud representation: %v.", chunkLocationsOther)
 		if !reflect.DeepEqual(chunkLocations, chunkLocationsOther) {
-			t.Error("FileChunkLocations not matching across cloud representations.")
+			t.Error("ChunkNodes not matching across cloud representations.")
 		}
 	}
 }

@@ -56,9 +56,11 @@ type Network struct {
 	// DataStore is a list of all the user files on the cloud.
 	DataStore datastore.DataStore
 
-	// FileChunkLocations is maps chunk ID's to the Nodes (Node ID's) containing that chunk.
+	// ChunkNodes maps chunk ID's to the Nodes (Node ID's) that contain that chunk.
 	// This way we can keep track of which nodes contain which chunks.
-	FileChunkLocations FileChunkLocations  // FIXME: Rename this to something shorter.
+	// And make decisions about the chunk requets to perform.
+	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
+	ChunkNodes ChunkNodes
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
@@ -81,7 +83,7 @@ type Cloud struct {
 	SaveFunc func() io.Writer
 }
 
-type FileChunkLocations map[datastore.ChunkID][]string
+type ChunkNodes map[datastore.ChunkID][]string
 
 type request struct {
 	cloud *Cloud
@@ -154,7 +156,7 @@ func SetupNetwork(me *Node, networkName string, key *rsa.PrivateKey) *Cloud {
 		Network: Network{
 			Name:  networkName,
 			Nodes: []*Node{me},
-			FileChunkLocations: make(map[datastore.ChunkID][]string),
+			ChunkNodes: make(map[datastore.ChunkID][]string),
 		},
 		MyNode:     me,
 		PrivateKey: key,

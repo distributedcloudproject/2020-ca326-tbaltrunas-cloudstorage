@@ -209,8 +209,8 @@ func main() {
 				}
 				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", c.Network.Name, len(c.Network.Nodes), c.OnlineNodesNum())
 				if *verbosePtr {
-					fmt.Printf("DataStore: %v | FileChunkLocations: %v\n", 
-							   c.Network.DataStore, c.Network.FileChunkLocations)
+					fmt.Printf("DataStore: %v | ChunkNodes: %v\n", 
+							   c.Network.DataStore, c.Network.ChunkNodes)
 				}
 				fmt.Printf("Name, ID, Online[, Node]:\n")
 				for _, n := range c.Network.Nodes {

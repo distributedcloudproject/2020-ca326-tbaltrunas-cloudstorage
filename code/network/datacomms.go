@@ -11,7 +11,7 @@ import (
 const (
 	AddFileMsg = "AddFile"
 	SaveChunkMsg = "SaveChunk"
-	updateFileChunkLocationsMsg = "updateFileChunkLocations"
+	updateChunkNodesMsg = "updateChunkNodes"
 )
 
 type SaveChunkRequest struct {
@@ -70,19 +70,19 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	if err != nil {
 		return err
 	}
-	err = r.node.updateFileChunkLocations(chunk.ID, r.cloud.MyNode.ID)
+	err = r.node.updateChunkNodes(chunk.ID, r.cloud.MyNode.ID)
 	return err
 }
 
 // Private requests and handlers.
 
-// TODO: instead of sending entire FileChunkLocations, only send the operation to be performed and a data item,
-// i.e. addToFileChunkLocations(chunkID, nodeID)
+// TODO: instead of sending entire ChunkNodes, only send the operation to be performed and a data item,
+// i.e. addToChunkNodes(chunkID, nodeID)
 // additionlly last call overrides all things
-func (n *Node) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) error {
-	utils.GetLogger().Printf("[INFO] Sending updateFileChunkLocations request to node: %v.", n.Name)
+func (n *Node) updateChunkNodes(chunkID datastore.ChunkID, nodeID string) error {
+	utils.GetLogger().Printf("[INFO] Sending updateChunkNodes request to node: %v.", n.Name)
 	utils.GetLogger().Printf("[DEBUG] Sending message to client: %v.", &n.client)
-	_, err := n.client.SendMessage(updateFileChunkLocationsMsg, chunkID, nodeID)
+	_, err := n.client.SendMessage(updateChunkNodesMsg, chunkID, nodeID)
 	if err != nil {
 		// FIXME: a way to propagate errors returned from requests, i.e. take the place of communication.go errors
 		utils.GetLogger().Printf("[ERROR] %v.", err)
@@ -90,10 +90,10 @@ func (n *Node) updateFileChunkLocations(chunkID datastore.ChunkID, nodeID string
 	return err
 }
 
-func (r request) onUpdateFileChunkLocations(chunkID datastore.ChunkID, nodeID string) {
-	utils.GetLogger().Printf("[INFO] Node: %v, received onUpdateFileChunkLocations request.", r.node.Name)
+func (r request) onUpdateChunkNodes(chunkID datastore.ChunkID, nodeID string) {
+	utils.GetLogger().Printf("[INFO] Node: %v, received onUpdateChunkNodes request.", r.node.Name)
 	utils.GetLogger().Printf("[DEBUG] Received request at client: %v.", &r.node.client)
-	r.cloud.updateFileChunkLocations(chunkID, nodeID)
+	r.cloud.updateChunkNodes(chunkID, nodeID)
 }
 
 func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interface{} {
@@ -108,7 +108,7 @@ func createDataStoreRequestHandler(node *Node, cloud *Cloud) func(string) interf
 		switch message {
 		case AddFileMsg: return r.OnAddFileRequest
 		case SaveChunkMsg: return r.OnSaveChunkRequest
-	    case updateFileChunkLocationsMsg: return r.onUpdateFileChunkLocations
+	    case updateChunkNodesMsg: return r.onUpdateChunkNodes
 		}
 		return nil
 	}
