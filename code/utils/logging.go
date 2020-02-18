@@ -19,19 +19,7 @@ var (
 )
 
 func init() {
-	lvl, ok := os.LookupEnv("CLOUD_LOG_LEVEL")
-	if ok {
-		defaultLevel = lvl
-	}
-	logFile, ok := os.LookupEnv("CLOUD_LOG_FILE")
-	if ok {
-		logWriter, err := os.Create(logFile)
-		if err != nil {
-			GetLogger().Printf("[ERROR] %v.", err)
-			return
-		}
-		defaultWriter = logWriter
-	}
+	logger = NewLoggerFromEnv()
 }
 
 // GetLogger returns a global logger variable, or creates a new default logger.
@@ -81,6 +69,33 @@ func NewLoggerFromLevel(level string) *log.Logger {
 	logger.SetOutput(filter)
 	logger.Println("[DEBUG] Created a new logger from level.")
 	return logger
+}
+
+// NewLoggerFromEnv creates a new logger from environment variables.
+func NewLoggerFromEnv() *log.Logger {
+	lvl, okLvl := os.LookupEnv("CLOUD_LOG_LEVEL")
+	logFile, okFile := os.LookupEnv("CLOUD_LOG_FILE")
+	var logLevel string
+	var logWriter io.Writer
+
+	if okLvl {
+		logLevel = lvl
+	} else {
+		logLevel = defaultLevel
+	}
+
+	if okFile {
+		f, err := os.Create(logFile)
+		if err != nil {
+			GetLogger().Printf("[ERROR] %v.", err)
+			return GetLogger()
+		}
+		logWriter = f
+	} else {
+		logWriter = defaultWriter
+	}
+
+	return NewLoggerFromWriterLevel(logWriter, logLevel)
 }
 
 func newDefaultLogger() *log.Logger {
