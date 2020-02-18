@@ -93,7 +93,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 	}
 
 	// compute file hash
-	id := utils.HashBytes(allContents)
+	id := utils.HashFile(allContents)
 
 	// compute extra information
 	fileSize := file.Chunks.ComputeFileSize()
@@ -125,7 +125,7 @@ func (file *File) GetChunk(n int) ([]byte, int, error) {
 
 // ComputeChunkID calculates the ID (hash) of a buffer of bytes (a chunk).
 func ComputeChunkID(buffer []byte) ChunkID {
-	chunkHash := utils.HashBytes(buffer)
+	chunkHash := utils.HashFile(buffer)
 	return ChunkID(chunkHash)
 }
 

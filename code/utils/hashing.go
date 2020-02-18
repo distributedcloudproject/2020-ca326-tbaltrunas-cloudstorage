@@ -1,18 +1,16 @@
 package utils
 
 import (
-	"hash"
-	"hash/fnv"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 
-// TODO: create a struct/interface for choosing the default hash function to use.
-var hashFunction = hash.Hash(fnv.New32())
-
-// HashBytes hashes a byte slice using a default hashing implementation.
-// The function returns the hash result as a byte slice.
-func HashBytes(buffer []byte) []byte {
-	hashFunction.Write(buffer)
-	result := hashFunction.Sum(make([]byte, 0))
+// HashFile computes the hash of a file's bytes using a suitable hash function.
+// The function returns the hash as a hex-encoded string.
+func HashFile(buffer []byte) string {
+	// Adapted from function network.PublicKeyToID.
+	hash := sha256.Sum256(buffer)
+	result := hex.EncodeToString(hash[:])
 	return result
 }
