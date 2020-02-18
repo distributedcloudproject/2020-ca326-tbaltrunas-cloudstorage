@@ -13,7 +13,7 @@ func TestChunkDistribution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// defer testutils.RemoveDirs(tmpStorageDirs)
+	defer testutils.RemoveDirs(tmpStorageDirs)
 
 	t.Logf("Test clouds: %v.", clouds)
 	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
