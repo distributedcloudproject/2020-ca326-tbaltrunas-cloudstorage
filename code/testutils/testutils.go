@@ -3,6 +3,7 @@ package testutils
 // testutils contains internal utility functions for tests.
 
 import (
+	"os"
 	"crypto/rand"
 	"crypto/rsa"
 )

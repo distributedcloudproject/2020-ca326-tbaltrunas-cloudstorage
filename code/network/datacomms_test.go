@@ -1,7 +1,6 @@
-package distribution
+package network
 
 import (
-	"cloud/network"
 	"cloud/datastore"
 	"cloud/testutils"
 	"testing"
@@ -43,7 +42,7 @@ func getTestFile(t *testing.T) (*datastore.File, *os.File) {
 // TODO: might want to test network representation (which should be the same), not the cloud representation.
 // Also returns the storage directories.
 // The caller must call os.RemoveAll(dir) to remove a directory.
-func createTestClouds(t *testing.T, numNodes int) ([]*network.Cloud, []string) {
+func createTestClouds(t *testing.T, numNodes int) ([]*Cloud, []string) {
 	tmpStorageDirs := make([]string, 0)
 	for i := 0; i < numNodes; i++ {
 		dir, err := ioutil.TempDir("", fmt.Sprintf("cloud_test_data_node_%d_", i))
@@ -57,19 +56,19 @@ func createTestClouds(t *testing.T, numNodes int) ([]*network.Cloud, []string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nID, err := network.PublicKeyToID(&key.PublicKey)
+	nID, err := PublicKeyToID(&key.PublicKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create the first node that will begin the network.
-	me := &network.Node{
+	me := &Node{
 		ID: nID,
 		Name: "Node 1",
 		FileStorageDir: tmpStorageDirs[0],
 	}
-	cloud := network.SetupNetwork(me, "My test network", key)
-	clouds := []*network.Cloud{cloud}
+	cloud := SetupNetwork(me, "My test network", key)
+	clouds := []*Cloud{cloud}
 	cloud.Listen(0)
 	go cloud.AcceptListener()
 	me.IP = cloud.Listener.Addr().String()
@@ -83,12 +82,12 @@ func createTestClouds(t *testing.T, numNodes int) ([]*network.Cloud, []string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		nID, err := network.PublicKeyToID(&key.PublicKey)
+		nID, err := PublicKeyToID(&key.PublicKey)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		n, err := network.BootstrapToNetwork(cloud.Listener.Addr().String(), &network.Node{
+		n, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
 			ID: nID,
 			Name: "Node " + snum,
 			FileStorageDir: tmpStorageDirs[i],
@@ -108,10 +107,10 @@ func createTestClouds(t *testing.T, numNodes int) ([]*network.Cloud, []string) {
 	return clouds, tmpStorageDirs
 }
 
-func TestFileDistribution(t *testing.T) {
+func TestNode_AddFileSaveChunk(t *testing.T) {
 	numNodes := 4
 	clouds, tmpStorageDirs := createTestClouds(t, numNodes)
-	defer RemoveDirs(tmpStorageDirs)
+	defer testutils.RemoveDirs(tmpStorageDirs)
 
 	t.Logf("Test clouds: %v.", clouds)
 	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
@@ -172,7 +171,7 @@ func TestFileDistribution(t *testing.T) {
 	t.Logf("Updated chunk-node locations: %v.", cloud.Network.ChunkNodes)
 	// Check that we have a required ChunkNodes.
 	chunks := file.Chunks.Chunks
-	expectedChunkNodes := network.ChunkNodes{
+	expectedChunkNodes := ChunkNodes{
 		chunks[0].ID: []string{cn[0].ID},
 		chunks[1].ID: []string{cn[1].ID},
 		chunks[2].ID: []string{cn[2].ID},
