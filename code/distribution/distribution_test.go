@@ -185,6 +185,9 @@ func TestFileDistribution(t *testing.T) {
 		chunks[3].ID: []string{cn[3].ID},
 	}
 	t.Logf("Expected FileChunkLocations: %v.", expectedFileChunkLocations)
+	// Note that DeepEqual has arguments against using it.
+	// https://stackoverflow.com/a/45222521
+	// An alternative struct comparison method may be needed in the future.
 	if !reflect.DeepEqual(cloud.Network.FileChunkLocations, expectedFileChunkLocations) {
 		t.Error("FileChunkLocations does not have the expected contents.")
 	}

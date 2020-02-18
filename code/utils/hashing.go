@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 )
 
-
 // HashFile computes the hash of a file's bytes using a suitable hash function.
 // The function returns the hash as a hex-encoded string.
 func HashFile(buffer []byte) string {
