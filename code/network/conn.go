@@ -225,6 +225,7 @@ func (c *cloud) Listen() error {
 			myIP = ips[0] + ":" + strconv.Itoa(newPort)
 		}
 		c.myNode.IP = myIP
+		c.AddNode(c.myNode)
 	}
 	utils.GetLogger().Printf("[INFO] New listener on node: %v.", c.MyNode().ID)
 	if err != nil {

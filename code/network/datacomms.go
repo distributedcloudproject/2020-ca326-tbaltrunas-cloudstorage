@@ -40,7 +40,7 @@ func init() {
 func (c *cloud) AddFile(file *datastore.File) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
 	_, err := c.SendMessageToMe(AddFileMsg, file)
-	go c.SendMessageAllOthers(AddFileMsg, file)
+	c.SendMessageAllOthers(AddFileMsg, file)
 	utils.GetLogger().Printf("[DEBUG] Completed AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
 	return err
 }
@@ -133,7 +133,7 @@ func (c *cloud) updateChunkNodes(chunkID datastore.ChunkID, nodeID string) error
 		// FIXME: a way to propagate errors returned from requests, i.e. take the place of communication.go errors
 		utils.GetLogger().Printf("[ERROR] %v.", err)
 	}
-	go c.SendMessageAllOthers(updateChunkNodesMsg, chunkID, nodeID)
+	c.SendMessageAllOthers(updateChunkNodesMsg, chunkID, nodeID)
 	return err
 }
 
