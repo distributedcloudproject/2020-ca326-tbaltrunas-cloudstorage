@@ -14,119 +14,91 @@ func TestNetworkPing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nID, err := PublicKeyToID(&key.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	me := &Node{
-		ID: nID,
-		Name: "test",
-	}
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   false,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
 
-	cloud := SetupNetwork(me, "My new network", key)
-	cloud.Listen(0)
-	go cloud.AcceptListener()
-	me.IP = cloud.Listener.Addr().String()
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
 
 	key2, err := generateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	nID2, err := PublicKeyToID(&key2.PublicKey)
+	n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	n2, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
-		ID: nID2,
-		Name: "test2",
-	}, key2)
-	if err != nil {
-		t.Error(err)
-	}
 
-	p, err := n2.Network.Nodes[0].Ping()
+	p, err := n2.GetCloudNode(cloud.MyNode().ID).Ping()
 	if err != nil {
 		t.Error(err)
 	}
 	if p != "pong" {
 		t.Errorf("Ping() got %s; expected %s", p, "pong")
 	}
-	if len(cloud.Network.Nodes) != 2 {
-		t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 1)
+	if onlineNodes := cloud.OnlineNodesNum(); onlineNodes != 2 {
+		t.Errorf("network nodes: %v; expected %v", onlineNodes, 2)
 	}
-	if len(n2.Network.Nodes) != 2 {
-		t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 1)
+	if onlineNodes := n2.OnlineNodesNum(); onlineNodes != 2 {
+		t.Errorf("network nodes: %v; expected %v", onlineNodes, 2)
 	}
 }
 
 func TestNetworkBootstrap(t *testing.T) {
-	key, err := generateKey()
+	key, _, err := createKey()
 	if err != nil {
 		t.Fatal(err)
-	}
-	nID, err := PublicKeyToID(&key.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	me := &Node{
-		ID: nID,
-		Name: "test",
 	}
 
-	cloud := SetupNetwork(me, "My new network", key)
-	cloud.Listen(0)
-	go cloud.AcceptListener()
-	me.IP = cloud.Listener.Addr().String()
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   false,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
 
 	for i := 0; i < 4; i++ {
 		key2, err := generateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
-		nID2, err := PublicKeyToID(&key2.PublicKey)
+
+		n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "Node " + strconv.Itoa(i+1)}, key2)
 		if err != nil {
 			t.Fatal(err)
 		}
-		n, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
-			ID: nID2,
-			Name: "Node " + strconv.Itoa(i+1),
-		}, key2)
-		if err != nil {
-			t.Error(err)
-		}
 
-		err = n.Listen(0)
+		err = n2.ListenOnPort(0)
 		if err != nil {
 			t.Error(err)
 		}
-		go n.AcceptListener()
+		go n2.Accept()
 	}
 	time.Sleep(time.Millisecond * 100)
 
-	if len(cloud.Network.Nodes) != 5 {
-		t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 5)
+	if onlineNodes := cloud.OnlineNodesNum(); onlineNodes != 5 {
+		t.Errorf("network nodes: %v; expected %v", onlineNodes, 5)
 	}
 }
 
 func TestNetworkAddNode(t *testing.T) {
-	key, err := generateKey()
+	key, _, err := createKey()
 	if err != nil {
 		t.Fatal(err)
-	}
-	nID, err := PublicKeyToID(&key.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	me := &Node{
-		ID: nID,
-		Name: "test",
 	}
 
-	cloud := SetupNetwork(me, "My new network", key)
-	cloud.Listen(0)
-	go cloud.AcceptListener()
-	me.IP = cloud.Listener.Addr().String()
-	var clouds []*Cloud
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   true,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
+	var clouds []Cloud
 
 	for i := 0; i < 4; i++ {
 		listener, err := net.Listen("tcp", ":0")
@@ -138,74 +110,56 @@ func TestNetworkAddNode(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		id2, _ := PublicKeyToID(&key2.PublicKey)
+		cloud.AddToWhitelist(id2)
 
-		nID2, err := PublicKeyToID(&key2.PublicKey)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		n, err := BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
-			ID: nID2,
+		n, err := BootstrapToNetwork(cloud.MyNode().IP, Node{
 			Name: "Node " + strconv.Itoa(i+1),
-			IP: listener.Addr().String(),
+			IP:   listener.Addr().String(),
 		}, key2)
 		if err != nil {
 			t.Error(err)
 		}
 
-		n.Listener = listener
-		go n.AcceptListener()
+		go n.AcceptUsingListener(listener)
 		clouds = append(clouds, n)
 	}
 	time.Sleep(time.Millisecond * 100)
 
 	for _, c := range clouds {
-		if len(c.Network.Nodes) != 5 {
-			t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 5)
+		if nodes := c.NodesNum(); nodes != 5 {
+			t.Errorf("network(%v) nodes: %v; expected %v", c.MyNode().ID, nodes, 5)
 		}
 	}
 }
 
 func TestNetworkWhitelist(t *testing.T) {
-	key, err := generateKey()
+	key, _, err := createKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	nID, err := PublicKeyToID(&key.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	me := &Node{
-		ID: nID,
-		Name: "test",
-	}
 
-	cloud := SetupNetwork(me, "My new network", key)
-	cloud.Network.Whitelist = true
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   true,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
 
-	cloud.Listen(0)
-	go cloud.AcceptListener()
-	me.IP = cloud.Listener.Addr().String()
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
 
 	// Node 2, should not be permitted into the network.
 	key2, err := generateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	nID2, err := PublicKeyToID(&key2.PublicKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
-		ID: nID2,
-		Name: "test2",
-	}, key2)
+	_, err = BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2)
 	if err == nil {
 		t.Error("Node2 connected to whitelisted network.")
 	}
 
-	if len(cloud.Network.Nodes) != 1 {
-		t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 1)
+	if nodes := cloud.NodesNum(); nodes != 1 {
+		t.Errorf("network nodes: %v; expected %v", nodes, 1)
 	}
 
 	// Node 3, should  be permitted into the network.
@@ -218,40 +172,31 @@ func TestNetworkWhitelist(t *testing.T) {
 		t.Fatal(err)
 	}
 	cloud.AddToWhitelist(nID3)
-	_, err = BootstrapToNetwork(cloud.Listener.Addr().String(), &Node{
-		ID: nID3,
-		Name: "test3",
-	}, key3)
+	_, err = BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test3"}, key3)
 	if err != nil {
 		t.Error("Node3 failed to connect to network: ", err)
 	}
 
-	if len(cloud.Network.Nodes) != 2 {
-		t.Errorf("network nodes: %v; expected %v", len(cloud.Network.Nodes), 2)
+	if nodes := cloud.NodesNum(); nodes != 2 {
+		t.Errorf("network nodes: %v; expected %v", nodes, 2)
 	}
 }
 
 func TestNetworkLocalNode(t *testing.T) {
-	key, err := generateKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	nID, err := PublicKeyToID(&key.PublicKey)
+	key, nID, err := createKey()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	me := &Node{
-		ID: nID,
-		Name: "test",
-	}
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   false,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
 
-	cloud := SetupNetwork(me, "My new network", key)
-	cloud.Listen(0)
-	go cloud.AcceptListener()
-	me.IP = cloud.Listener.Addr().String()
-
-	msg, err := me.Ping()
+	msg, err := cloud.GetCloudNode(nID).Ping()
 	if err != nil {
 		t.Fatal("Failed to ping:", err)
 	}
@@ -259,7 +204,6 @@ func TestNetworkLocalNode(t *testing.T) {
 		t.Fatal("me.Ping() want pong; got", msg)
 	}
 }
-
 
 func generateKey() (*rsa.PrivateKey, error) {
 	pri, err := rsa.GenerateKey(rand.Reader, 2048)

@@ -2,34 +2,40 @@ package network
 
 import (
 	"cloud/utils"
-	"encoding/gob"
-	"io"
+	"crypto/rsa"
 )
 
-func (c *Cloud) Save() error {
-	utils.GetLogger().Println("[INFO] Saving cloud network.")
-	if c.SaveFunc != nil {
-		utils.GetLogger().Println("[DEBUG] Saving cloud network with SaveFunc.")
-		encoder := gob.NewEncoder(c.SaveFunc())
-		return encoder.Encode(c.Network)
-	}
-	return nil
+type SavedNetworkState struct {
+	Network Network
+
+	MyNode     Node
+	PrivateKey *rsa.PrivateKey
 }
 
-// LoadNetwork reads the saved network state from the reader and resumes the network.
-func (c *Cloud) LoadNetwork (r io.Reader) (error) {
+func (c *cloud) SavedNetworkState() SavedNetworkState {
+	utils.GetLogger().Println("[INFO] Retrieving Saved Network State.")
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+	return SavedNetworkState{
+		Network:    c.network,
+		MyNode:     c.myNode,
+		PrivateKey: c.privateKey,
+	}
+}
+
+func LoadNetwork(s SavedNetworkState) Cloud {
 	utils.GetLogger().Println("[INFO] Loading cloud network.")
-	decoder := gob.NewDecoder(r)
-	err := decoder.Decode(&c.Network)
-	if err != nil {
-		return err
-	}
 
-	utils.GetLogger().Println("[DEBUG] Connecting to each node (resetting client).")
-	for i := range c.Network.Nodes {
-		c.Network.Nodes[i].client = nil
-		c.connectToNode(c.Network.Nodes[i])
+	for _, n := range s.Network.Nodes {
+		c, err := BootstrapToNetwork(n.IP, s.MyNode, s.PrivateKey)
+		if err != nil {
+			continue
+		}
+		return c
 	}
-
-	return nil
+	utils.GetLogger().Println("[INFO] Could not reconnect to the network. Starting our own.")
+	c := SetupNetwork(s.Network, s.MyNode, s.PrivateKey)
+	return c
 }

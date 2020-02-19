@@ -1,237 +1,139 @@
 package network
 
 import (
-	"cloud/comm"
 	"cloud/datastore"
-	"cloud/utils"
-	"errors"
-	"os"
-	"path/filepath"
+	"crypto/rsa"
+	"net"
+	"sync"
 )
 
-func (c *Cloud) connectToNode(n *Node) error {
-	utils.GetLogger().Printf("[INFO] Cloud: %v, connecting to node: %v", c, n)
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-	if n.IP != "" && n.ID != c.MyNode.ID && n.client == nil {
-		utils.GetLogger().Printf("[DEBUG] Connecting to a non-me node with nil client: %v.", n)
-		var err error
-		n.client, err = comm.NewClientDial(n.IP, c.PrivateKey)
-		utils.GetLogger().Printf("[DEBUG] Node with added client: %v.", n)
-		if err != nil {
-			return err
-		}
-		n.client.AddRequestHandler(createAuthRequestHandler(n, c))
-		n.client.AddRequestHandler(createRequestHandler(n, c))
-		n.client.AddRequestHandler(createDataStoreRequestHandler(n, c))
-		go n.client.HandleConnection()
-		n.Authenticate(c.MyNode)
-	}else if n.ID == c.MyNode.ID && n.client == nil {
-		n.client = comm.NewLocalClient()
-	}
-	return nil
+type Cloud interface {
+	// Listening.
+	Listen() error
+	ListenOnPort(port int) error
+	Accept()
+	AcceptUsingListener(listener net.Listener)
+	ListenAndAccept() error
+
+	// Config.
+	Config() CloudConfig
+	SetConfig(config CloudConfig)
+
+	// Network.
+	Network() Network
+	MyNode() Node
+	OnlineNodesNum() int
+	NodesNum() int
+
+	// Nodes.
+	AddNode(node Node)
+	IsNodeOnline(ID string) bool
+	GetCloudNode(ID string) *cloudNode
+
+	// Whitelist.
+	AddToWhitelist(ID string) error
+	Whitelist() []string
+
+	// File
+	AddFile(file *datastore.File) error
+
+	// Events.
+	Events() *CloudEvents
+
+	// Saving.
+	SavedNetworkState() SavedNetworkState
 }
 
-func (c *Cloud) addNode(node *Node) {
-	utils.GetLogger().Printf("[INFO] Adding node to cloud: %v.", node)
-	c.NodeMutex.Lock()
-	defer c.NodeMutex.Unlock()
+type CloudEvents struct {
+	NodeAdded   func(node Node)
+	NodeUpdated func(node Node)
+	NodeRemoved func(ID string)
 
-	for _, n := range c.Network.Nodes {
-		if n.ID == node.ID {
-			if n.client == nil {
-				utils.GetLogger().Printf("[DEBUG] Found matching node with nil client: %v.", n)
-				n.IP = node.IP
-				n.Name = node.Name
-				n.client = node.client
-				utils.GetLogger().Printf("[DEBUG] Updated matching nil client node: %v.", n)
-			}
-			return
-		}
-	}
-	c.Network.Nodes = append(c.Network.Nodes, node)
-	c.Save()
+	NodeConnected    func(ID string)
+	NodeDisconnected func(ID string)
+
+	WhitelistAdded   func(ID string)
+	WhitelistRemoved func(ID string)
 }
 
-func (c *Cloud) OnlineNodesNum() int {
-	utils.GetLogger().Println("[DEBUG] Getting the number of nodes online.")
-	c.NodeMutex.RLock()
-	defer c.NodeMutex.RUnlock()
+// Cloud is the client's view of the Network. Contains client-specific information.
+type cloud struct {
+	network Network
+	// NetworkMutex is used only when accessing the Network
+	networkMutex sync.RWMutex
 
-	i := 0
-	for _, n := range c.Network.Nodes {
-		if n.client != nil || n.ID == c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Node with non-nil client or a me-node: %v.", n)
-			i++
-		}
-	}
-	utils.GetLogger().Printf("[DEBUG] Number of online nodes counted: %v.", i)
-	return i
+	// Nodes maps ID -> cloudNode. It only contains online nodes that we are connected with.
+	// This should always include local connection, a cloudNode that corresponds with us.
+	Nodes map[string]*cloudNode
+	// NodesMutex is used only when accessing the Nodes.
+	NodesMutex sync.RWMutex
+
+	// Mutex is used for any other cloud variable.
+	Mutex sync.RWMutex
+
+	// Non-authorized connections.
+	PendingNodes []*cloudNode
+
+	// Used for events.
+	events *CloudEvents
+
+	myNode     Node
+	privateKey *rsa.PrivateKey
+
+	listener net.Listener
+	Port     int
+
+	config CloudConfig
 }
 
-func (c *Cloud) addToWhitelist(ID string) error {
-	if ID == "" {
-		return errors.New("cannot add empty ID")
-	}
-
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
-
-	for i := range c.Network.WhitelistIDs {
-		if c.Network.WhitelistIDs[i] == ID {
-			return errors.New("ID is already whitelisted")
-		}
-	}
-	c.Network.WhitelistIDs = append(c.Network.WhitelistIDs, ID)
-
-	return nil
+func (c *cloud) Config() CloudConfig {
+	return c.config
 }
 
-func (c *Cloud) AddToWhitelist(ID string) error {
-	err := c.addToWhitelist(ID)
-	if err != nil {
-		return err
-	}
-
-	c.NodeMutex.RLock()
-	defer c.NodeMutex.RUnlock()
-	for _, n := range c.Network.Nodes {
-		if n.client != nil && n.ID != c.MyNode.ID {
-			n.AddToWhitelist(ID)
-		}
-	}
-	return nil
+func (c *cloud) SetConfig(config CloudConfig) {
+	c.config = config
 }
 
-func (c *Cloud) IsWhitelisted(ID string) bool {
-	if ID == "" {
-		return false
-	}
+func (c *cloud) Events() *CloudEvents {
+	return c.events
+}
 
+func (c *cloud) MyNode() Node {
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
-
-	for i := range c.Network.WhitelistIDs {
-		if c.Network.WhitelistIDs[i] == ID {
-			return true
-		}
-	}
-	return false
+	return c.myNode
 }
 
-func (c *Cloud) addFile(file *datastore.File) error {
-	utils.GetLogger().Printf("[INFO] Adding file to cloud: %v.", file)
-
-	// check if file is not already added
+func (c *cloud) PrivateKey() *rsa.PrivateKey {
 	c.Mutex.RLock()
-	ok := c.Network.DataStore.Contains(file)
-	c.Mutex.RUnlock()
-	if ok {
-		// exit preemptively
-		// because if the node already has the file, then all other nodes should also have it
-		return nil
-	}
-
-	// add file
-	c.Mutex.Lock()
-	c.Network.DataStore.Add(file)
-	err := c.Save()
-	c.Mutex.Unlock()
-	if err != nil {
-		return err
-	}
-
-	// repeat command to all other nodes
-	utils.GetLogger().Printf("[DEBUG] Network has nodes: %v.", c.Network.Nodes)
-	for _, n := range c.Network.Nodes {
-		if n.client != nil && n.ID != c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Found non-self node with non-nil client: %v.", n)
-			err := n.AddFile(file)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	defer c.Mutex.RUnlock()
+	return c.privateKey
 }
 
-// saveChunk persistently stores a chunk given by its contents, as the given cloud path.
-func (c *Cloud) saveChunk(cloudPath string, chunk datastore.Chunk, contents []byte) error {
-	// TODO: verify chunk ID
-	// chunkID := chunk.ID
+func (c *cloud) OnlineNodesNum() int {
+	c.NodesMutex.RLock()
+	defer c.NodesMutex.RUnlock()
 
-	// persistently store chunk
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
-	
-	localPath := filepath.Join(c.MyNode.FileStorageDir, cloudPath)
-	utils.GetLogger().Printf("[DEBUG] Computed path where to store chunk: %s.", localPath)
-	// TODO: maybe this should be done when setting up the node
-	err := os.MkdirAll(filepath.Dir(localPath), os.ModeDir)
-	if err != nil {
-		return err
-	}
-	utils.GetLogger().Println("[DEBUG] Created/verified existence of path directories.")
-	w, err := os.Create(localPath)
-	if err != nil {
-		return err 
-	}
-	defer w.Close()
-
-	utils.GetLogger().Printf("[DEBUG] Saving chunk to writer: %v.", w)
-	err = datastore.SaveChunk(w, contents)
-	if err != nil { 
-		return err
-	}
-	utils.GetLogger().Printf("[DEBUG] Finished saving chunk to writer: %v.", w)
-	return nil
+	return len(c.Nodes)
 }
 
-func (c *Cloud) updateChunkNodes(chunkID datastore.ChunkID, nodeID string) {
-	utils.GetLogger().Printf("[DEBUG] Updating ChunkNodes with ChunkID: %v, NodeID: %v.", 
-							  chunkID, nodeID)
+func (c *cloud) NodesNum() int {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
 
-	c.Mutex.Lock()
+	return len(c.network.Nodes)
+}
 
-	chunkNodes, ok := c.Network.ChunkNodes[chunkID]
-	if ok {
-		utils.GetLogger().Printf("[DEBUG] Got list of nodes for key (%v): %v.", chunkID, chunkNodes)
-		for _, nID := range chunkNodes {
-			if nID == nodeID {
-				// node already added
-				// pre-emptive exit.
-				utils.GetLogger().Println("[DEBUG] ChunkNodes already contains the needed key-value.")
-				c.Mutex.Unlock()
+func (c *cloud) Network() Network {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
 
-				return
-			}
-		}
+	return c.network
+}
+
+func (c *cloud) ListenAddress() string {
+	if c.listener == nil {
+		return ""
 	}
-
-	// update our own chunk location data structure
-	utils.GetLogger().Printf("[DEBUG] Updating ChunkNodes: %v.", c.Network.ChunkNodes)
-	if !ok {
-		// key not present
-		utils.GetLogger().Printf("[DEBUG] Creating a new list for the key: %v, in ChunkNodes.", chunkID)
-		chunkNodes = []string{nodeID}
-	} else {
-		// key present and has other nodes
-		utils.GetLogger().Printf("[DEBUG] Appending to the list for the key: %v, in ChunkNodes.", chunkID)
-		chunkNodes = append(chunkNodes, nodeID)
-	}
-	c.Network.ChunkNodes[chunkID] = chunkNodes
-	utils.GetLogger().Printf("[DEBUG] Finished updating ChunkNodes: %v.", c.Network.ChunkNodes)
-
-	c.Mutex.Unlock()
-
-	// propagate change to other nodes
-	utils.GetLogger().Println("[DEBUG] Communicating change in ChunkNodes to other nodes.")
-	for _, n := range c.Network.Nodes {
-		if n.client != nil && n.ID != c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Found node to communicate change in ChunkNodes to: %v.", 
-									  n)
-			n.updateChunkNodes(chunkID, nodeID)
-		}
-	}
-	utils.GetLogger().Println("[DEBUG] Finished communicating changes in ChunkNodes to other nodes.")
+	return c.listener.Addr().String()
 }

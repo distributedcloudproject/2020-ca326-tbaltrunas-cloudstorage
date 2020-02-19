@@ -1,17 +1,16 @@
-package testutils
+package network
 
 // testutils contains internal utility functions for tests.
 
 import (
-	"cloud/network"
 	"cloud/utils"
-	"os"
-	"fmt"
-	"strconv"
-	"time"
-	"io/ioutil"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"time"
 )
 
 // GetTestFile returns a file with the given contents (caller must perform clean up on the file).
@@ -20,7 +19,7 @@ func GetTestFile(contents string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	path := tmpfile.Name()
 	utils.GetLogger().Printf("Temporary filepath: %s", path)
 	fileContentsBytes := []byte(contents)
@@ -37,7 +36,7 @@ func GetTestFile(contents string) (*os.File, error) {
 // TODO: might want to test network representation (which should be the same), not the cloud representation.
 // Also returns the storage directories.
 // The caller must call os.RemoveAll(dir) to remove a directory.
-func CreateTestClouds(numNodes int) ([]*network.Cloud, []string, error) {
+func CreateTestClouds(numNodes int) ([]Cloud, []string, error) {
 	tmpStorageDirs := make([]string, 0)
 	for i := 0; i < numNodes; i++ {
 		dir, err := ioutil.TempDir("", fmt.Sprintf("cloud_test_data_node_%d_", i))
@@ -51,52 +50,53 @@ func CreateTestClouds(numNodes int) ([]*network.Cloud, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	nID, err := network.PublicKeyToID(&key.PublicKey)
+	nID, err := PublicKeyToID(&key.PublicKey)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Create the first node that will begin the network.
-	me := &network.Node{
-		ID: nID,
+	me := Node{
+		ID:   nID,
 		Name: "Node 1",
-		FileStorageDir: tmpStorageDirs[0],
 	}
-	cloud := network.SetupNetwork(me, "My test network", key)
-	clouds := []*network.Cloud{cloud}
-	cloud.Listen(0)
-	go cloud.AcceptListener()
-	me.IP = cloud.Listener.Addr().String()
+	cloud := SetupNetwork(Network{
+		Name: "my test network",
+	}, me, key)
+	cloud.SetConfig(CloudConfig{FileStorageDir: tmpStorageDirs[0]})
+	clouds := []Cloud{cloud}
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
 
 	// Create the rest of the nodes.
 	for i := 1; i < numNodes; i++ {
-		snum := strconv.Itoa(i+1)
+		snum := strconv.Itoa(i + 1)
 
 		key, err := GenerateKey()
 		if err != nil {
 			return nil, nil, err
 		}
-		nID, err := network.PublicKeyToID(&key.PublicKey)
+		nID, err := PublicKeyToID(&key.PublicKey)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		node := &network.Node{
-			ID: nID,
+		node := Node{
+			ID:   nID,
 			Name: "Node " + snum,
-			FileStorageDir: tmpStorageDirs[i],
 		}
-		n, err := network.BootstrapToNetwork(cloud.Listener.Addr().String(), node, key)
+		n, err := BootstrapToNetwork(cloud.MyNode().IP, node, key)
 		if err != nil {
 			return nil, nil, err
 		}
+		n.SetConfig(CloudConfig{FileStorageDir: tmpStorageDirs[i]})
 		clouds = append(clouds, n)
 
-		err = n.Listen(0)
+		err = n.ListenOnPort(0)
 		if err != nil {
 			return nil, nil, err
 		}
-		go n.AcceptListener()
+		go n.Accept()
 	}
 	time.Sleep(time.Millisecond * 100)
 	return clouds, tmpStorageDirs, nil
