@@ -72,7 +72,8 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) bool {
 
 	// Add any request handlers - node is now part of the network.
 	r.node.client.AddRequestHandler(createRequestHandler(r.node, r.cloud))
-	utils.GetLogger().Printf("[DEBUG] Added a request handler for node's client: %v.", r.node.client)
+	r.node.client.AddRequestHandler(createDataStoreRequestHandler(r.node, r.cloud))
+	utils.GetLogger().Printf("[DEBUG] Added request handlers for node's client: %v.", r.node.client)
 
 	// Remove the node from the pending nodes list.
 	r.cloud.Mutex.Lock()

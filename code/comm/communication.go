@@ -165,7 +165,7 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 	m.wg.Add(1)
 
 	// Write the buffer to the socket connection.
-	utils.GetLogger().Println("[DEBUG] Writing buffer to socket.")
+	utils.GetLogger().Printf("[DEBUG] Writing buffer to socket: %v (client: %v).", c.conn, &c)
 	written := 0
 	c.writeMutex.Lock()
 	for written < len(buffer) {
@@ -208,7 +208,7 @@ func (c *client) HandleConnection() error {
 	utils.GetLogger().Println("[INFO] Starting handling connection loop.")
 	for {
 		headerBuffer := make([]byte, 9)
-		utils.GetLogger().Println("[DEBUG] Reading header from socket.")
+		utils.GetLogger().Printf("[DEBUG] Reading header from socket: %v (client: %v).", c.conn, &c)
 		_, err := c.conn.Read(headerBuffer)
 		if err != nil {
 			if err == io.EOF || !err.(net.Error).Temporary() {
@@ -290,6 +290,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	funcName := string(data[:index])
 	utils.GetLogger().Printf("[DEBUG] Extracted function name: %v.", funcName)
 	c.requestsMutex.RLock()
+	utils.GetLogger().Printf("[DEBUG] Client's requests map: %v, request handlers: %v.", c.requests, c.requestsHandlers)
 	request, ok := c.requests[funcName]
 	utils.GetLogger().Printf("[DEBUG] Got request handler for function: %v.", request)
 	if !ok {
@@ -322,7 +323,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	if err != io.EOF {
 		return err
 	}
-	utils.GetLogger().Println("[DEBUG] Finished extracting variables.")
+	utils.GetLogger().Println("[DEBUG] Finished extracting variables. Calling handler with variables.")
 	returnVars := reflect.ValueOf(request).Call(vars)
 	utils.GetLogger().Printf("[DEBUG] Return values of request handler with vars: %v.", returnVars)
 
