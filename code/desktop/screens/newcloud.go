@@ -32,6 +32,7 @@ var newCloudForm struct {
 	nodeIP             *widget.Entry
 	nodePort           *widget.Entry
 	nodePrivateKeyPath *widget.Entry
+	nodeFileStorageDir *widget.Entry
 }
 
 func setProgressBarAnimated(newValue float64, timeToUpdate time.Duration) {
@@ -185,6 +186,12 @@ func createNodeScreen(win fyne.Window) fyne.CanvasObject {
 			newCloudForm.nodePrivateKeyPath.SetText(filename)
 		}
 	})
+	browseFileStorageButton := widget.NewButton("Browse", func() {
+		filename, err := dialog.Directory().Browse()
+		if err == nil {
+			newCloudForm.nodeFileStorageDir.SetText(filename)
+		}
+	})
 	keyID := widget.NewEntry()
 	keyID.Disable()
 
@@ -213,6 +220,8 @@ func createNodeScreen(win fyne.Window) fyne.CanvasObject {
 		newCloudForm.nodePort,
 		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, newCloudForm.nodePrivateKeyPath, browseButton),
 			newCloudForm.nodePrivateKeyPath, browseButton),
+		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, newCloudForm.nodeFileStorageDir, browseFileStorageButton),
+			newCloudForm.nodeFileStorageDir, browseFileStorageButton),
 		widget.NewHBox(keyID, widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 			clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
 			clipboard.SetContent(keyID.Text)
@@ -278,12 +287,14 @@ func connectingToNetworkScreen(win fyne.Window) fyne.CanvasObject {
 			IP:        newCloudForm.nodeIP.Text + ":" + newCloudForm.nodePort.Text,
 			PublicKey: key.PublicKey,
 		}
+		config := network.CloudConfig{FileStorageDir: newCloudForm.nodeFileStorageDir.Text}
 		if newCloudForm.newNetwork {
 			c := network.SetupNetwork(network.Network{
 				Name:        newCloudForm.networkName.Text,
 				RequireAuth: true,
 				Whitelist:   true,
 			}, me, key)
+			c.SetConfig(config)
 			err = c.ListenOnPort(port)
 			if err != nil {
 				fdialog.ShowError(err, win)
@@ -295,6 +306,7 @@ func connectingToNetworkScreen(win fyne.Window) fyne.CanvasObject {
 				displayError(err)
 				return
 			}
+			c.SetConfig(config)
 			err = c.ListenOnPort(port)
 			if err != nil {
 				displayError(err)
