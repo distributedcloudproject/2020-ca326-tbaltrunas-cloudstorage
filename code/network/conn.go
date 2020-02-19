@@ -2,6 +2,7 @@ package network
 
 import (
 	"cloud/comm"
+	"cloud/datastore"
 	"cloud/utils"
 	"crypto/rsa"
 	"errors"
@@ -10,6 +11,11 @@ import (
 	"strconv"
 	"strings"
 )
+
+type CloudConfig struct {
+	// FileStorageDir is a file path to a directory where user files should be stored on this node.
+	FileStorageDir string
+}
 
 // ConnectToNode establishes a connection to a node with that ID. Will return error if a connection could not be
 // established or if the node does not exist in the network. Will not return an error if a connection is already
@@ -154,6 +160,10 @@ func SetupNetwork(network Network, myNode Node, privateKey *rsa.PrivateKey) Clou
 	myNode.PublicKey = privateKey.PublicKey
 	myNode.ID, _ = PublicKeyToID(&privateKey.PublicKey)
 
+	if network.ChunkNodes == nil {
+		network.ChunkNodes = make(map[datastore.ChunkID][]string)
+	}
+
 	cloud := &cloud{
 		network:    network,
 		events:     &CloudEvents{},
@@ -176,6 +186,11 @@ func SetupNetwork(network Network, myNode Node, privateKey *rsa.PrivateKey) Clou
 	}
 	cloud.addRequestHandlers(cloud.Nodes[myNode.ID])
 	return cloud
+}
+func SetupNetworkWithConfig(network Network, myNode Node, privateKey *rsa.PrivateKey, config CloudConfig) Cloud {
+	c := SetupNetwork(network, myNode, privateKey)
+	c.SetConfig(config)
+	return c
 }
 
 func (c *cloud) ListenAndAccept() error {

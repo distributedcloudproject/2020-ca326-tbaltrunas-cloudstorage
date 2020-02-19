@@ -1,32 +1,46 @@
 package network
 
 import (
+	"cloud/datastore"
 	"crypto/rsa"
 	"net"
 	"sync"
 )
 
 type Cloud interface {
+	// Listening.
 	Listen() error
 	ListenOnPort(port int) error
 	Accept()
 	AcceptUsingListener(listener net.Listener)
 	ListenAndAccept() error
 
+	// Config.
+	Config() CloudConfig
+	SetConfig(config CloudConfig)
+
+	// Network.
 	Network() Network
 	MyNode() Node
 	OnlineNodesNum() int
 	NodesNum() int
 
+	// Nodes.
 	AddNode(node Node)
 	IsNodeOnline(ID string) bool
 	GetCloudNode(ID string) *cloudNode
 
+	// Whitelist.
 	AddToWhitelist(ID string) error
 	Whitelist() []string
 
+	// File
+	AddFile(file *datastore.File) error
+
+	// Events.
 	Events() *CloudEvents
 
+	// Saving.
 	SavedNetworkState() SavedNetworkState
 }
 
@@ -68,6 +82,16 @@ type cloud struct {
 
 	listener net.Listener
 	Port     int
+
+	config CloudConfig
+}
+
+func (c *cloud) Config() CloudConfig {
+	return c.config
+}
+
+func (c *cloud) SetConfig(config CloudConfig) {
+	c.config = config
 }
 
 func (c *cloud) Events() *CloudEvents {

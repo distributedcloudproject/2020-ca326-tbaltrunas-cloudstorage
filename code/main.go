@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"cloud/datastore"
 	"cloud/network"
 	"cloud/utils"
 	"crypto/rsa"
@@ -51,6 +52,11 @@ func main() {
 	portPtr := flag.Int("port", 9000, "Port to listen on.")
 
 	fancyDisplayPtr := flag.Bool("fancy-display", false, "Display node information in a fancy-way.")
+	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
+
+	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
+	fileStorageDirPtr := flag.String("file-storage-dir", "",
+		"Directory where cloud files should be stored on the node.")
 
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
@@ -61,8 +67,13 @@ func main() {
 	fmt.Println("Name:", *namePtr)
 	fmt.Println("IP:", *ipPtr+":"+strconv.Itoa(*portPtr))
 	fmt.Println("Save File:", *saveFilePtr)
+
 	fmt.Println("Secure:", *networkSecurePtr)
 	fmt.Println("Whitelist:", *networkWhitelistPtr)
+
+	fmt.Println("Test file to back up to the cloud:", *filePtr)
+	fmt.Println("Directory for user file storage:", *fileStorageDirPtr)
+
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
 	}
@@ -121,6 +132,7 @@ func main() {
 			Whitelist:   *networkWhitelistPtr,
 			RequireAuth: *networkSecurePtr,
 		}, me, key)
+		c.SetConfig(network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 	} else {
 		utils.GetLogger().Println("[INFO] Bootstrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
@@ -131,6 +143,7 @@ func main() {
 			return
 		}
 		c = n
+		c.SetConfig(network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
 
@@ -170,13 +183,46 @@ func main() {
 						cmd.Run()
 					}
 				}
+
 				network := c.Network()
 				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", network.Name, len(network.Nodes), c.OnlineNodesNum())
+				fmt.Printf("Name, ID, Online[, Node]:\n")
 				for _, n := range network.Nodes {
 					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
+				if *verbosePtr {
+					fmt.Printf("DataStore: %v | ChunkNodes: %v\n",
+						network.DataStore, network.ChunkNodes)
+					fmt.Printf("My node: %v.", c.MyNode())
+				}
 			}
 		}(c)
+	}
+
+	if *filePtr != "" && *fileStorageDirPtr != "" {
+		fmt.Println("Storing user file: ", *filePtr)
+		r, err := os.Open(*filePtr)
+		defer r.Close()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		file, err := datastore.NewFile(r, *filePtr, 5)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		err = c.AddFile(file)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = network.Distribute(file, c)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")

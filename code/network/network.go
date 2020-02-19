@@ -1,6 +1,7 @@
 package network
 
 import (
+	"cloud/datastore"
 	"cloud/utils"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -21,7 +22,18 @@ type Network struct {
 
 	// List of node IDs that are permitted to enter the network.
 	WhitelistIDs []string
+
+	// DataStore is a list of all the user files on the cloud.
+	DataStore datastore.DataStore
+
+	// ChunkNodes maps chunk ID's to the Nodes (Node ID's) that contain that chunk.
+	// This way we can keep track of which nodes contain which chunks.
+	// And make decisions about the chunk requets to perform.
+	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
+	ChunkNodes ChunkNodes
 }
+
+type ChunkNodes map[datastore.ChunkID][]string
 
 type request struct {
 	Cloud    *cloud
