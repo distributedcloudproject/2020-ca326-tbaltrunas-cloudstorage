@@ -68,6 +68,10 @@ func createWidgets() {
 	newCloudForm.nodePrivateKeyPath = &widget.Entry{
 		PlaceHolder: "Path to your private key",
 	}
+
+	newCloudForm.nodeFileStorageDir = &widget.Entry{
+		PlaceHolder: "Path to directory to store files",
+	}
 }
 
 func navButtons(back func(), next func()) fyne.CanvasObject {
