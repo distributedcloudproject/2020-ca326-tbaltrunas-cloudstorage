@@ -93,7 +93,7 @@ func TestNetworkAddNode(t *testing.T) {
 
 	cloud := SetupNetwork(Network{
 		Name:        "My new network",
-		Whitelist:   false,
+		Whitelist:   true,
 		RequireAuth: true,
 	}, Node{Name: "test"}, key)
 	cloud.ListenOnPort(0)
@@ -110,6 +110,8 @@ func TestNetworkAddNode(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		id2, _ := PublicKeyToID(&key2.PublicKey)
+		cloud.AddToWhitelist(id2)
 
 		n, err := BootstrapToNetwork(cloud.MyNode().IP, Node{
 			Name: "Node " + strconv.Itoa(i+1),
@@ -126,7 +128,7 @@ func TestNetworkAddNode(t *testing.T) {
 
 	for _, c := range clouds {
 		if nodes := c.NodesNum(); nodes != 5 {
-			t.Errorf("network nodes: %v; expected %v", nodes, 5)
+			t.Errorf("network(%v) nodes: %v; expected %v", c.MyNode().ID, nodes, 5)
 		}
 	}
 }

@@ -12,10 +12,12 @@ func (c *cloud) SendMessageAllOthers(msg string, any ...interface{}) []Response 
 	sent := 0
 	myID := c.MyNode().ID
 
-	for _, n := range c.Nodes {
+	for k := range c.Nodes {
+		n := c.Nodes[k]
 		if n.ID == myID {
 			continue
 		}
+
 		sent++
 		go func(node *cloudNode, res chan Response) {
 			ret, err := n.client.SendMessage(msg, any...)
@@ -40,7 +42,8 @@ func (c *cloud) SendMessageAll(msg string, any ...interface{}) []Response {
 	responseChannel := make(chan Response)
 	c.NodesMutex.RLock()
 	sent := 0
-	for _, n := range c.Nodes {
+	for k := range c.Nodes {
+		n := c.Nodes[k]
 		sent++
 		go func(node *cloudNode, res chan Response) {
 			ret, err := n.client.SendMessage(msg, any...)
