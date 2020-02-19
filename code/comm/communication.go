@@ -12,9 +12,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 	"reflect"
 	"sync"
 	"sync/atomic"
+)
+
+var (
+	msgTimeout = 30 * time.Second
 )
 
 // message is used to keep track of sent requests/messages and retrieving the response.
@@ -110,6 +115,23 @@ func (c *client) PublicKey() *rsa.PublicKey {
 	return c.publicKey
 }
 
+// Adapted from: https://stackoverflow.com/questions/32840687/timeout-for-waitgroup-wait.
+// waitTimeout waits for the waitgroup for the specified max timeout.
+// Returns true if waiting timed out.
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+    c := make(chan struct{})
+    go func() {
+        defer close(c)
+        wg.Wait()
+    }()
+    select {
+    case <-c:
+        return false // completed normally
+    case <-time.After(timeout):
+        return true // timed out
+    }
+}
+
 // SendMessage sends a request with the msg and the data passed. Returns a list of arguments that were returned.
 func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, error) {
 	utils.GetLogger().Printf("[DEBUG] Sending message: %v.", msg)
@@ -180,7 +202,10 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 
 	// Waitgroup will be released when there's a response to the request.
 	utils.GetLogger().Println("[DEBUG] Blocking until receive response to request.")
-	m.wg.Wait()
+	// m.wg.Wait()
+	if waitTimeout(&m.wg, msgTimeout) {
+    	return nil, errors.New("Timeout")
+	}
 	utils.GetLogger().Println("[DEBUG] Received response to request.")
 
 	// Decode the response from gob into interface{} values. The interface{} then can be casted onto their original

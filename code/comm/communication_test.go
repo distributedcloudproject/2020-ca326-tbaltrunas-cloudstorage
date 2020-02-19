@@ -51,9 +51,65 @@ func TestComm(t *testing.T) {
 	}
 }
 
+func TestCommTimeout(t *testing.T) {
+	key1, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	listener, err := listen(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clientServ Client
+	go func() {
+		for {
+			var err error
+			conn, err := listener.Accept()
+			t.Logf("Accepted conn: %v.", conn)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			clientServ, err = NewServerClient(conn, key1)
+			t.Logf("%v.", clientServ)
+			clientServ.RegisterRequest("ping", Testt)
+			if err != nil {
+				t.Fatal(err)
+			}
+			go func() {
+				clientServ.HandleConnection()
+			}()
+		}
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	key2, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cl, err := NewClientDial(listener.Addr().String(), key2)
+	go cl.HandleConnection()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = cl.SendMessage("ping", "pingtimeout")
+    if err == nil || err.Error() != "Timeout" {
+        t.Fatalf("Wanted a Timeout error. Got: %v.", err)
+    }
+}
+
 func Testt(msg string) string {
 	if msg == "ping" {
 		return "pong"
+	} else if msg == "pingtimeout" {
+		for {
+			fmt.Println("Timing out...")
+			time.Sleep(10 * time.Second)
+		}
 	}
 	return ""
 }
