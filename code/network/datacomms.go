@@ -31,6 +31,9 @@ func init() {
 	gob.Register(datastore.ChunkID(""))
 }
 
+// AddFile adds a file to the Network's datastore.
+// It does not add the actual chunks.
+// TODO: might want to do the actual distribution here, so that the file gets saved with this call.
 func (n *Node) AddFile(file *datastore.File) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, n)
 	utils.GetLogger().Printf("[DEBUG] Node's client is: %v.", n.client)
@@ -45,6 +48,7 @@ func (r request) OnAddFileRequest(file *datastore.File) error {
 	return err
 }
 
+// SaveChunk persistently stores the chunkNum chunk on the node, using metadata from the file the chunk belongs to.
 func (n *Node) SaveChunk(file *datastore.File, chunkNum int) error {
 	utils.GetLogger().Printf("[INFO] Sending SaveChunk request for file: %v, chunk number: %d, on node: %v.", 
 							 file.Path, chunkNum, n.Name)
@@ -73,6 +77,9 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	return err
 }
 
+// updateChunkNodes updates the node's ChunkNodes data structure.
+// It maps the chunkID key and appends the nodeID value.
+// updateChunkNodes recursively sends out the update to other nodes.
 func (n *Node) updateChunkNodes(chunkID datastore.ChunkID, nodeID string) error {
 	utils.GetLogger().Printf("[INFO] Sending updateChunkNodes request to node: %v.", n.Name)
 	utils.GetLogger().Printf("[DEBUG] Sending message to client: %v.", &n.client)
