@@ -185,19 +185,19 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 
 	// Waitgroup will be released when there's a response to the request.
 	utils.GetLogger().Println("[DEBUG] Blocking until receive response to request.")
-	// 	Implement a timeout for the message.
+	// Implement a timeout for the message.
 	// Adapted from: https://stackoverflow.com/questions/32840687/timeout-for-waitgroup-wait.
-    ch := make(chan struct{})
-    go func() {
-        defer close(ch)
-        m.wg.Wait()
-    }()
-    select {
-    	case <- ch:
-	    case <- time.After(msgTimeout):
-	    	// timed out
-	        return nil, errors.New("Timeout") 
-    }
+	ch := make(chan struct{})
+	go func() {
+		defer close(ch)
+		m.wg.Wait()
+	}()
+	select {
+		case <- ch:
+		case <- time.After(msgTimeout):
+			// timed out
+			return nil, errors.New("Timeout") 
+	}
 	utils.GetLogger().Println("[DEBUG] Received response to request.")
 
 	// Decode the response from gob into interface{} values. The interface{} then can be casted onto their original
