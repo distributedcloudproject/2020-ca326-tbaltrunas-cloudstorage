@@ -108,6 +108,8 @@ func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error
 	cloud := &Cloud{MyNode: me, PrivateKey: key}
 	utils.GetLogger().Printf("[DEBUG] Initial cloud: %v.", cloud)
 	node.client.AddRequestHandler(createAuthRequestHandler(node, cloud))
+	node.client.AddRequestHandler(createRequestHandler(node, cloud))
+	node.client.AddRequestHandler(createDataStoreRequestHandler(node, cloud))
 	go node.client.HandleConnection()
 
 	success, err := node.Authenticate(me)
@@ -117,9 +119,6 @@ func BootstrapToNetwork(ip string, me *Node, key *rsa.PrivateKey) (*Cloud, error
 	if !success {
 		return nil, errors.New("server refused to authenticate")
 	}
-	node.client.AddRequestHandler(createRequestHandler(node, cloud))
-
-	node.client.AddRequestHandler(createDataStoreRequestHandler(node, cloud))
 
 	// Update our info on the node.
 	nodeInfo, err := node.NodeInfo()
@@ -199,6 +198,7 @@ func (n *Cloud) AcceptListener() {
 		}
 		utils.GetLogger().Printf("[INFO] Connected to a new node: %v", node)
 		node.client.AddRequestHandler(createAuthRequestHandler(node, n))
+		node.client.AddRequestHandler(createDataStoreRequestHandler(node, n))
 		n.PendingNodes = append(n.PendingNodes, node)
 		utils.GetLogger().Printf("[DEBUG] Added node to pending nodes: %v", n.PendingNodes)
 		go func(node *Node) {

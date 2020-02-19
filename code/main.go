@@ -2,8 +2,9 @@ package main
 
 import (
 	"bufio"
-	"cloud/network"
 	"cloud/datastore"
+	"cloud/distribution"
+	"cloud/network"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -19,7 +20,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"path/filepath"
 )
 
 
@@ -58,7 +58,7 @@ func main() {
 	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
 
 	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
-	fileStorageDirPtr := flag.String("file-storage-dir", filepath.Join("data", "user", "files"), 
+	fileStorageDirPtr := flag.String("file-storage-dir", "", 
 									 "Directory where cloud files should be stored on the node.")
 
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
@@ -211,14 +211,11 @@ func main() {
 				if *verbosePtr {
 					fmt.Printf("DataStore: %v | ChunkNodes: %v\n", 
 							   c.Network.DataStore, c.Network.ChunkNodes)
+					fmt.Printf("My node: %v.", c.MyNode)
 				}
 				fmt.Printf("Name, ID, Online[, Node]:\n")
 				for _, n := range c.Network.Nodes {
-					row := fmt.Sprintf("|%-20v|%-20v|%-8v|", n.Name, n.ID, n.Online())
-					if *verbosePtr {
-						row += fmt.Sprintf("\t%v|", n)
-					}
-					fmt.Printf("%v\n", row)
+					fmt.Printf("|%-20v|%-20v|%-8v|\n", n.Name, n.ID, n.Online())
 				}
 			}
 		}(c)
@@ -238,36 +235,16 @@ func main() {
 			return
 		}
 
-		for i := range c.Network.Nodes {
-			fmt.Println(c.Network.Nodes[i])
-			err = c.Network.Nodes[i].AddFile(file)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+		err = c.MyNode.AddFile(file)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
-
-		// err = c.MyNode.AddFile(file)
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
-
-		// i := 0
-		// err = c.MyNode.SaveChunk(file, i)
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
-
-		// for i := range c.Network.Nodes {
-		// 	fmt.Println(c.Network.Nodes[i])
-		// 	err = c.Network.Nodes[i].SaveChunk(file, i)
-		// 	if err != nil {
-		// 		fmt.Println(err)
-		// 		return
-		// 	}
-		// }
+		err = distribution.Distribute(file, c)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")

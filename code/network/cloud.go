@@ -22,10 +22,10 @@ func (c *Cloud) connectToNode(n *Node) error {
 			return err
 		}
 		n.client.AddRequestHandler(createAuthRequestHandler(n, c))
-		go n.client.HandleConnection()
-		n.Authenticate(c.MyNode)
 		n.client.AddRequestHandler(createRequestHandler(n, c))
 		n.client.AddRequestHandler(createDataStoreRequestHandler(n, c))
+		go n.client.HandleConnection()
+		n.Authenticate(c.MyNode)
 	}else if n.ID == c.MyNode.ID && n.client == nil {
 		n.client = comm.NewLocalClient()
 	}

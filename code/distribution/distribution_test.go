@@ -54,7 +54,7 @@ func TestChunkDistribution(t *testing.T) {
 	t.Logf("Distributing file.")
 	err = Distribute(file, cloud)
 	if err != nil {
-		t.Error(nil)
+		t.Error(err)
 	}
 	t.Logf("Final ChunkNodes: %v.", cloud.Network.ChunkNodes)
 
