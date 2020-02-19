@@ -168,6 +168,9 @@ func (r request) OnRemoveFromWhitelist(ID string) error {
 	for i := range r.Cloud.network.WhitelistIDs {
 		if r.Cloud.network.WhitelistIDs[i] == ID {
 			r.Cloud.network.WhitelistIDs = append(r.Cloud.network.WhitelistIDs[:i], r.Cloud.network.WhitelistIDs[i+1:]...)
+			if r.Cloud.events.WhitelistRemoved != nil {
+				go r.Cloud.events.WhitelistRemoved(ID)
+			}
 			return nil
 		}
 	}
