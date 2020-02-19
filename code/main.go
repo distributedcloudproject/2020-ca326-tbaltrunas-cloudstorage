@@ -3,14 +3,13 @@ package main
 import (
 	"bufio"
 	"cloud/network"
+	"cloud/utils"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"cloud/utils"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -19,7 +18,6 @@ import (
 	"strings"
 	"time"
 )
-
 
 func readKey(file string) (*rsa.PrivateKey, error) {
 	b, err := ioutil.ReadFile(file)
@@ -108,27 +106,33 @@ func main() {
 		utils.NewLoggerFromLevel(*logLevelPtr)
 	}
 
-	me := &network.Node{
-		ID:   id,
-		IP:   *ipPtr + ":" + strconv.Itoa(*portPtr),
-		Name: *namePtr,
+	me := network.Node{
+		ID:        id,
+		IP:        *ipPtr + ":" + strconv.Itoa(*portPtr),
+		Name:      *namePtr,
 		PublicKey: key.PublicKey,
 	}
 	utils.GetLogger().Printf("[INFO] My node: %v.", me)
 
-	var saveFunc func() io.Writer
-	if *saveFilePtr != "" {
-		utils.GetLogger().Println("[DEBUG] saveFilePtr is not empty. Creating saveFunc")
-		saveFunc = func() io.Writer {
-			f, _ := os.Create(*saveFilePtr)
-			return f
+	var c network.Cloud
+	if *networkPtr == "new" {
+		c = network.SetupNetwork(network.Network{
+			Name:        *networkNamePtr,
+			Whitelist:   *networkWhitelistPtr,
+			RequireAuth: *networkSecurePtr,
+		}, me, key)
+	} else {
+		utils.GetLogger().Println("[INFO] Bootstrapping to an existing network.")
+		// TODO: Verify ip is a valid ip.
+		ip := *networkPtr
+		n, err := network.BootstrapToNetwork(ip, me, key)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
+		c = n
+		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
-
-	c := network.SetupNetwork(me, *networkNamePtr, key)
-	c.SaveFunc = saveFunc
-	c.Network.RequireAuth = *networkSecurePtr
-	c.Network.Whitelist = *networkWhitelistPtr
 
 	if *networkWhitelistFilePtr != "" {
 		r, err := os.Open(*networkWhitelistFilePtr)
@@ -147,37 +151,9 @@ func main() {
 
 	utils.GetLogger().Printf("[INFO] Cloud: %v.", c)
 
-	if *saveFilePtr != "" {
-		utils.GetLogger().Println("[INFO] saveFilePtr is not empty. Loading from save file.")
-		r, err := os.Open(*saveFilePtr)
-		if err == nil {
-			err := c.LoadNetwork(r)
-			r.Close()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}
-		utils.GetLogger().Printf("[INFO] Loaded cloud: %v.", c)
-	}
-
-	if *networkPtr != "new" {
-		utils.GetLogger().Println("[INFO] Boostrapping to an existing network.")
-		// TODO: Verify ip is a valid ip.
-		ip := *networkPtr
-		n, err := network.BootstrapToNetwork(ip, me, key)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		n.SaveFunc = saveFunc
-		c = n
-		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
-	}
-
 	if *fancyDisplayPtr {
 		utils.GetLogger().Println("[INFO] Initialising fancy display.")
-		go func(c *network.Cloud) {
+		go func(c network.Cloud) {
 			for {
 				time.Sleep(time.Second * 1)
 				switch runtime.GOOS {
@@ -194,20 +170,20 @@ func main() {
 						cmd.Run()
 					}
 				}
-				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", c.Network.Name, len(c.Network.Nodes), c.OnlineNodesNum())
-				for _, n := range c.Network.Nodes {
-					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, n.Online())
+				network := c.Network()
+				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", network.Name, len(network.Nodes), c.OnlineNodesNum())
+				for _, n := range network.Nodes {
+					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
 			}
 		}(c)
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")
-	err = c.Listen(*portPtr)
+	err = c.ListenOnPort(*portPtr)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	c.AcceptListener()
+	c.Accept()
 }
-

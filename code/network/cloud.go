@@ -1,116 +1,115 @@
 package network
 
 import (
-	"cloud/comm"
-	"errors"
-	"cloud/utils"
+	"crypto/rsa"
+	"net"
+	"sync"
 )
 
-func (c *Cloud) connectToNode(n *Node) error {
-	utils.GetLogger().Printf("[INFO] Cloud: %v, connecting to node: %v", c, n)
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-	if n.IP != "" && n.ID != c.MyNode.ID && n.client == nil {
-		utils.GetLogger().Printf("[DEBUG] Connecting to a non-me node with nil client: %v.", n)
-		var err error
-		n.client, err = comm.NewClientDial(n.IP, c.PrivateKey)
-		utils.GetLogger().Printf("[DEBUG] Node with added client: %v.", n)
-		if err != nil {
-			return err
-		}
-		n.client.AddRequestHandler(createAuthRequestHandler(n, c))
-		go n.client.HandleConnection()
-		n.Authenticate(c.MyNode)
-		n.client.AddRequestHandler(createRequestHandler(n, c))
-	}else if n.ID == c.MyNode.ID && n.client == nil {
-		n.client = comm.NewLocalClient()
-	}
-	return nil
+type Cloud interface {
+	Listen() error
+	ListenOnPort(port int) error
+	Accept()
+	AcceptUsingListener(listener net.Listener)
+	ListenAndAccept() error
+
+	Network() Network
+	MyNode() Node
+	OnlineNodesNum() int
+	NodesNum() int
+
+	AddNode(node Node)
+	IsNodeOnline(ID string) bool
+	GetCloudNode(ID string) *cloudNode
+
+	AddToWhitelist(ID string) error
+	Whitelist() []string
+
+	Events() *CloudEvents
+
+	SavedNetworkState() SavedNetworkState
 }
 
-func (c *Cloud) addNode(node *Node) {
-	utils.GetLogger().Printf("[INFO] Adding node to cloud: %v.", node)
-	c.NodeMutex.Lock()
-	defer c.NodeMutex.Unlock()
+type CloudEvents struct {
+	NodeAdded   func(node Node)
+	NodeUpdated func(node Node)
+	NodeRemoved func(ID string)
 
-	for _, n := range c.Network.Nodes {
-		if n.ID == node.ID {
-			if n.client == nil {
-				utils.GetLogger().Printf("[DEBUG] Found matching node with nil client: %v.", n)
-				n.IP = node.IP
-				n.Name = node.Name
-				n.client = node.client
-				utils.GetLogger().Printf("[DEBUG] Updated matching nil client node: %v.", n)
-			}
-			return
-		}
-	}
-	c.Network.Nodes = append(c.Network.Nodes, node)
-	c.Save()
+	NodeConnected    func(ID string)
+	NodeDisconnected func(ID string)
+
+	WhitelistAdded   func(ID string)
+	WhitelistRemoved func(ID string)
 }
 
-func (c *Cloud) OnlineNodesNum() int {
-	utils.GetLogger().Println("[DEBUG] Getting the number of nodes online.")
-	c.NodeMutex.RLock()
-	defer c.NodeMutex.RUnlock()
+// Cloud is the client's view of the Network. Contains client-specific information.
+type cloud struct {
+	network Network
+	// NetworkMutex is used only when accessing the Network
+	networkMutex sync.RWMutex
 
-	i := 0
-	for _, n := range c.Network.Nodes {
-		if n.client != nil || n.ID == c.MyNode.ID {
-			utils.GetLogger().Printf("[DEBUG] Node with non-nil client or a me-node: %v.", n)
-			i++
-		}
-	}
-	utils.GetLogger().Printf("[DEBUG] Number of online nodes counted: %v.", i)
-	return i
+	// Nodes maps ID -> cloudNode. It only contains online nodes that we are connected with.
+	// This should always include local connection, a cloudNode that corresponds with us.
+	Nodes map[string]*cloudNode
+	// NodesMutex is used only when accessing the Nodes.
+	NodesMutex sync.RWMutex
+
+	// Mutex is used for any other cloud variable.
+	Mutex sync.RWMutex
+
+	// Non-authorized connections.
+	PendingNodes []*cloudNode
+
+	// Used for events.
+	events *CloudEvents
+
+	myNode     Node
+	privateKey *rsa.PrivateKey
+
+	listener net.Listener
+	Port     int
 }
 
-func (c *Cloud) addToWhitelist(ID string) error {
-	if ID == "" {
-		return errors.New("cannot add empty ID")
-	}
-
-	c.Mutex.Lock()
-	defer c.Mutex.Unlock()
-
-	for i := range c.Network.WhitelistIDs {
-		if c.Network.WhitelistIDs[i] == ID {
-			return errors.New("ID is already whitelisted")
-		}
-	}
-	c.Network.WhitelistIDs = append(c.Network.WhitelistIDs, ID)
-
-	return nil
+func (c *cloud) Events() *CloudEvents {
+	return c.events
 }
 
-func (c *Cloud) AddToWhitelist(ID string) error {
-	err := c.addToWhitelist(ID)
-	if err != nil {
-		return err
-	}
-
-	c.NodeMutex.RLock()
-	defer c.NodeMutex.RUnlock()
-	for _, n := range c.Network.Nodes {
-		if n.client != nil && n.ID != c.MyNode.ID {
-			n.AddToWhitelist(ID)
-		}
-	}
-	return nil
-}
-
-func (c *Cloud) IsWhitelisted(ID string) bool {
-	if ID == "" {
-		return false
-	}
-
+func (c *cloud) MyNode() Node {
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
+	return c.myNode
+}
 
-	for i := range c.Network.WhitelistIDs {
-		if c.Network.WhitelistIDs[i] == ID {
-			return true
-		}
+func (c *cloud) PrivateKey() *rsa.PrivateKey {
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+	return c.privateKey
+}
+
+func (c *cloud) OnlineNodesNum() int {
+	c.NodesMutex.RLock()
+	defer c.NodesMutex.RUnlock()
+
+	return len(c.Nodes)
+}
+
+func (c *cloud) NodesNum() int {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+
+	return len(c.network.Nodes)
+}
+
+func (c *cloud) Network() Network {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+
+	return c.network
+}
+
+func (c *cloud) ListenAddress() string {
+	if c.listener == nil {
+		return ""
 	}
-	return false
+	return c.listener.Addr().String()
 }
