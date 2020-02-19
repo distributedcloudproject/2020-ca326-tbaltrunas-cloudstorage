@@ -29,6 +29,7 @@ type Cloud interface {
 	AddNode(node Node)
 	IsNodeOnline(ID string) bool
 	GetCloudNode(ID string) *cloudNode
+	NodeByID(ID string) (node Node, found bool)
 
 	// Whitelist.
 	AddToWhitelist(ID string) error
@@ -36,6 +37,7 @@ type Cloud interface {
 
 	// File
 	AddFile(file *datastore.File, filepath string) error
+	DistributeFile(file *datastore.File)
 
 	// Events.
 	Events() *CloudEvents

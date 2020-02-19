@@ -69,6 +69,16 @@ func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 	return nil
 }
 
+func (c *cloud) DistributeFile(file *datastore.File) {
+	for i := 0; i < file.Chunks.NumChunks; i++ {
+		c.NodesMutex.RLock()
+		for j := range c.Nodes {
+			c.Nodes[j].SaveChunk(file, i)
+		}
+		c.NodesMutex.RUnlock()
+	}
+}
+
 // SaveChunk persistently stores the chunkNum chunk on the node, using metadata from the file the chunk belongs to.
 func (n *cloudNode) SaveChunk(file *datastore.File, chunkNum int) error {
 	utils.GetLogger().Printf("[INFO] Sending SaveChunk request for file: %v, chunk number: %d, on node: %v.",
