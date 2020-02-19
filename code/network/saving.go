@@ -7,6 +7,7 @@ import (
 
 type SavedNetworkState struct {
 	Network Network
+	Config  CloudConfig
 
 	MyNode     Node
 	PrivateKey *rsa.PrivateKey
@@ -20,6 +21,7 @@ func (c *cloud) SavedNetworkState() SavedNetworkState {
 	defer c.Mutex.RUnlock()
 	return SavedNetworkState{
 		Network:    c.network,
+		Config:     c.Config(),
 		MyNode:     c.myNode,
 		PrivateKey: c.privateKey,
 	}
@@ -30,6 +32,7 @@ func LoadNetwork(s SavedNetworkState) Cloud {
 
 	for _, n := range s.Network.Nodes {
 		c, err := BootstrapToNetwork(n.IP, s.MyNode, s.PrivateKey)
+		c.SetConfig(s.Config)
 		if err != nil {
 			continue
 		}
@@ -37,5 +40,6 @@ func LoadNetwork(s SavedNetworkState) Cloud {
 	}
 	utils.GetLogger().Println("[INFO] Could not reconnect to the network. Starting our own.")
 	c := SetupNetwork(s.Network, s.MyNode, s.PrivateKey)
+	c.SetConfig(s.Config)
 	return c
 }
