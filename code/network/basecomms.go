@@ -81,7 +81,7 @@ func (r request) OnNodeInfoRequest() (Node, error) {
 
 func (c *cloud) AddNode(node Node) {
 	c.SendMessageToMe(AddNodeMsg, node)
-	go c.SendMessageAllOthers(AddNodeMsg, node)
+	c.SendMessageAllOthers(AddNodeMsg, node)
 }
 
 func (r request) OnAddNodeRequest(node Node) {

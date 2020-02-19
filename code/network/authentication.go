@@ -65,7 +65,7 @@ func (r request) OnAuthenticateRequest(ar AuthRequest) bool {
 
 	// If whitelist is enabled, verify that the node is allowed to access it.
 	if r.Cloud.network.Whitelist {
-		if !r.Cloud.IsWhitelisted(id) {
+		if _, ok := r.Cloud.NodeByID(id); !ok && !r.Cloud.IsWhitelisted(id) {
 			// LOG: fmt.Println("Unauthorized access", id)
 			return false
 		}
