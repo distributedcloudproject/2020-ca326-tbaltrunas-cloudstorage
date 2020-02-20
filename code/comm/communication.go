@@ -1,8 +1,8 @@
 package comm
 
 import (
-	"cloud/utils"
 	"bytes"
+	"cloud/utils"
 	cipher2 "crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
@@ -26,13 +26,23 @@ var (
 type message struct {
 	// The data that was received as per response.
 	value []byte
-	err error
+	err   error
 
 	// The channel allows us to block the sending thread until a response is received.
 	ch chan struct{}
 }
 
 type RequestHandler func(message string) interface{}
+
+var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
+
+type commError struct {
+	Error string
+}
+
+func init() {
+	gob.Register(commError{})
+}
 
 // Client represents a connection to another node.
 type Client interface {
@@ -52,7 +62,7 @@ type client struct {
 
 	// messages is used to retrieve responses from a request.
 	// Lock the mutex when accessing the map.
-	messages map[uint32]*message // TODO: timeout
+	messages      map[uint32]*message // TODO: timeout
 	messagesMutex sync.Mutex
 
 	// Access msgID atomically.
@@ -63,9 +73,9 @@ type client struct {
 	// all of the data is written.
 	writeMutex sync.Mutex
 
-	requests map[string]interface{}
+	requests         map[string]interface{}
 	requestsHandlers []RequestHandler
-	requestsMutex sync.RWMutex
+	requestsMutex    sync.RWMutex
 
 	// Our private key, used for decryption.
 	privateKey *rsa.PrivateKey
@@ -75,9 +85,8 @@ type client struct {
 
 	// Master key used for symmetric encryption/decryption.
 	masterKey []byte
-	cipher cipher2.AEAD
+	cipher    cipher2.AEAD
 }
-
 
 // NewClientDial creates a new client by dialing the ip and creating a new socket connection.
 func NewClientDial(address string, key *rsa.PrivateKey) (Client, error) {
@@ -212,8 +221,18 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 	if err != io.EOF {
 		return nil, err
 	}
+	err = nil
 
-	return vars, nil
+	if len(vars) > 0 {
+		if e, ok := vars[len(vars)-1].(commError); ok {
+			vars = vars[:len(vars)-1]
+			if e.Error != "" {
+				err = errors.New(e.Error)
+			}
+		}
+	}
+
+	return vars, err
 }
 
 func (c *client) HandleConnection() error {
@@ -236,8 +255,8 @@ func (c *client) HandleConnection() error {
 		}
 		messageID := binary.LittleEndian.Uint32(headerBuffer[1:5])
 		messageLength := int(binary.LittleEndian.Uint32(headerBuffer[5:9]))
-		utils.GetLogger().Printf("[DEBUG] Extracted from header isResponse: %v, messageID: %v, messageLength: %v.", 
-								 response, messageID, messageLength)
+		utils.GetLogger().Printf("[DEBUG] Extracted from header isResponse: %v, messageID: %v, messageLength: %v.",
+			response, messageID, messageLength)
 
 		encryptedBuffer := make([]byte, messageLength)
 		totalRead := 0
@@ -297,7 +316,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	index := bytes.IndexByte(data, '\000')
 	if index == -1 {
 		fmt.Println(index, data)
-		return errors.New("request incorrectly formed - could not extract function name")
+		return c.respondWithError(messageID, errors.New("request incorrectly formed - could not extract function name"))
 	}
 	funcName := string(data[:index])
 	utils.GetLogger().Printf("[DEBUG] Extracted function name: %v.", funcName)
@@ -317,7 +336,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	c.requestsMutex.RUnlock()
 
 	if !ok {
-		return errors.New("function " + funcName + " is not registered.")
+		return c.respondWithError(messageID, errors.New("function "+funcName+" is not registered."))
 	}
 
 	// Decode the buffer into variables.
@@ -339,8 +358,65 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 	returnVars := reflect.ValueOf(request).Call(vars)
 	utils.GetLogger().Printf("[DEBUG] Return values of request handler with vars: %v.", returnVars)
 
+	// If the last return argument is an error, change it to our 'error' type, so that we can recognise it later.
+	if len(returnVars) > 0 && returnVars[len(returnVars)-1].Type().Implements(errorInterface) {
+		if !returnVars[len(returnVars)-1].IsNil() {
+			err := returnVars[len(returnVars)-1].Interface().(error)
+			returnVars[len(returnVars)-1] = reflect.ValueOf(commError{err.Error()})
+		} else {
+			returnVars[len(returnVars)-1] = reflect.ValueOf(commError{""})
+		}
+	}
+
 	// Encode the return variables and send them as reply.
 	utils.GetLogger().Println("[DEBUG] Encoding returned values.")
+	b := bytes.Buffer{}
+	e := gob.NewEncoder(&b)
+	for i := range returnVars {
+		d := returnVars[i].Interface()
+		err := e.Encode(&d)
+		if err != nil {
+			return c.respondWithError(messageID, err)
+		}
+	}
+	utils.GetLogger().Println("[DEBUG] Finished encoding return values.")
+
+	// Encrypt the data using symmetric key.
+	nonce := make([]byte, c.cipher.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return c.respondWithError(messageID, err)
+	}
+
+	encryptedBuffer := c.cipher.Seal(nonce, nonce, b.Bytes(), nil)
+
+	buffer := make([]byte, 9+len(encryptedBuffer))
+	buffer[0] = 1 // This is a response.
+	binary.LittleEndian.PutUint32(buffer[1:5], messageID)
+	binary.LittleEndian.PutUint32(buffer[5:9], uint32(len(encryptedBuffer)))
+	copy(buffer[9:], encryptedBuffer)
+	utils.GetLogger().Printf("[DEBUG] Created a response buffer (isResponse, messageID, length): %v.", buffer[:9])
+
+	written := 0
+	c.writeMutex.Lock()
+	utils.GetLogger().Println("[DEBUG] Writing response to socket.")
+	for written < len(buffer) {
+		n, err := c.conn.Write(buffer[written:])
+		if err != nil {
+			return err
+		}
+		written += n
+	}
+	utils.GetLogger().Println("[DEBUG] Finished writing response to socket.")
+	c.writeMutex.Unlock()
+	return nil
+}
+
+func (c *client) respondWithError(messageID uint32, err error) error {
+	utils.GetLogger().Println("[DEBUG] Responding with error", err)
+	returnVars := []reflect.Value{reflect.ValueOf(commError{err.Error()})}
+
+	// Encode the return error and send it as reply.
+	utils.GetLogger().Println("[DEBUG] Encoding returned error.")
 	b := bytes.Buffer{}
 	e := gob.NewEncoder(&b)
 	for i := range returnVars {
@@ -350,7 +426,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 			return err
 		}
 	}
-	utils.GetLogger().Println("[DEBUG] Finished encoding return values.")
+	utils.GetLogger().Println("[DEBUG] Finished encoding return error.")
 
 	// Encrypt the data using symmetric key.
 	nonce := make([]byte, c.cipher.NonceSize())

@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -102,6 +103,80 @@ func TestCommTimeout(t *testing.T) {
     }
 }
 
+func TestError(t *testing.T) {
+	key1, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	listener, err := listen(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		err := acceptListener(listener, key1)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	key2, err := generateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cl, err := NewClientDial(listener.Addr().String(), key2)
+	go cl.HandleConnection()
+	if err != nil {
+		t.Fatal(err)
+	}
+	testCases := []struct {
+		Input string
+
+		Output1 string
+		Output2 string
+		Error   string
+	}{
+		{
+			Input:   "test1:test2",
+			Output1: "test1",
+			Output2: "test2",
+			Error:   "",
+		},
+		{
+			Input:   "var:voom",
+			Output1: "var",
+			Output2: "voom",
+			Error:   "",
+		},
+		{
+			Input:   "test1:test2:test3",
+			Output1: "",
+			Output2: "",
+			Error:   "invalid string",
+		},
+		{
+			Input:   "test1test2",
+			Output1: "",
+			Output2: "",
+			Error:   "invalid string",
+		},
+	}
+	for _, testCase := range testCases {
+		m, err := cl.SendMessage("split", testCase.Input)
+		if err == nil && testCase.Error != "" {
+			t.Errorf("case(%v).Error got nil; want %v", testCase.Input, testCase.Error)
+		}
+		if err != nil && err.Error() != testCase.Error {
+			t.Errorf("case(%v).Error got %v; want %v", testCase.Input, err.Error(), testCase.Error)
+		}
+		if m[0].(string) != testCase.Output1 {
+			t.Errorf("case(%v).Output1 got %v; want %v", testCase.Input, m[0].(string), testCase.Output1)
+		}
+		if m[1].(string) != testCase.Output2 {
+			t.Errorf("case(%v).Output2 got %v; want %v", testCase.Input, m[1].(string), testCase.Output2)
+		}
+	}
+}
+
 func Testt(msg string) string {
 	if msg == "ping" {
 		return "pong"
@@ -112,6 +187,14 @@ func Testt(msg string) string {
 		}
 	}
 	return ""
+}
+
+func SplitByColonTwice(msg string) (part1 string, part2 string, err error) {
+	s := strings.Split(msg, ":")
+	if len(s) != 2 {
+		return "", "", errors.New("invalid string")
+	}
+	return s[0], s[1], nil
 }
 
 func listen(port int) (net.Listener, error) {
@@ -131,6 +214,7 @@ func acceptListener(listener net.Listener, key *rsa.PrivateKey) error {
 
 		client, err := NewServerClient(conn, key)
 		client.RegisterRequest("ping", Testt)
+		client.RegisterRequest("split", SplitByColonTwice)
 		if err != nil {
 			return err
 		}
@@ -160,10 +244,10 @@ func generateCert() ([]byte, []byte, error) {
 			Organization: []string{"Wolf Cola"},
 		},
 		NotBefore: notBefore,
-		NotAfter: notAfter,
+		NotAfter:  notAfter,
 
-		KeyUsage: x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
 
@@ -173,11 +257,11 @@ func generateCert() ([]byte, []byte, error) {
 	}
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		return nil, nil,  errors.New(fmt.Sprintf("%v: marshaling private key", err))
+		return nil, nil, errors.New(fmt.Sprintf("%v: marshaling private key", err))
 	}
 
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}),
-		   pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privBytes}), nil
+		pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privBytes}), nil
 }
 
 func generateKey() (*rsa.PrivateKey, error) {
