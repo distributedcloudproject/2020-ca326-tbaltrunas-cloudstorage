@@ -5,7 +5,7 @@ import (
 	"cloud/utils"
 )
 
-// Distribute computes how to distribute a file and calls the requests.
+// Distribute computes how to distribute a file and saves the chunks on the required nodes.
 func Distribute(file *datastore.File, cloud Cloud) error {
 	// TODO: Actual distribution algorithm. For now we copy all chunks to each node.
 	nodes := cloud.Network().Nodes
