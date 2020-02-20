@@ -108,7 +108,7 @@ func Testt(msg string) string {
 	} else if msg == "pingtimeout" {
 		for {
 			fmt.Println("Timing out...")
-			time.Sleep(10 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 	}
 	return ""
