@@ -57,6 +57,7 @@ func TestChunkDistribution(t *testing.T) {
 		t.Error(err)
 	}
 	t.Logf("Final ChunkNodes: %v.", cloud.Network().ChunkNodes)
+	t.Logf("Pretty ChunkNodes: %v.", cloud.ReadableChunkNodes())
 
 	// TODO: proper comparison
 	chunks := file.Chunks.Chunks

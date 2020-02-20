@@ -24,6 +24,7 @@ type Cloud interface {
 	MyNode() Node
 	OnlineNodesNum() int
 	NodesNum() int
+	ReadableChunkNodes() map[string][]string
 
 	// Nodes.
 	AddNode(node Node)
@@ -136,4 +137,11 @@ func (c *cloud) ListenAddress() string {
 		return ""
 	}
 	return c.listener.Addr().String()
+}
+
+func (c *cloud) ReadableChunkNodes() map[string][]string {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+
+	return c.network.ReadableChunkNodes()
 }

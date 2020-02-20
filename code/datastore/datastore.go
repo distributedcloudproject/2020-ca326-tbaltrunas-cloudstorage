@@ -116,6 +116,17 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 	return file, nil
 }
 
+// GetChunkByID returns a chunk belonging to the file by its ID.
+// Returns nil if the chunk can not be found.
+func (file *File) GetChunkByID(chunkID ChunkID) *Chunk {
+	for _, chunk := range file.Chunks.Chunks {
+		if chunk.ID == chunkID {
+			return &chunk
+		}
+	}
+	return nil
+}
+
 // Contains returns whether the datastore contains the specified file.
 func (ds *DataStore) Contains(file *File) bool {
 	for _, f := range ds.Files {
@@ -130,4 +141,16 @@ func (ds *DataStore) Contains(file *File) bool {
 // Add appends a file to the datastore.
 func (ds *DataStore) Add(file *File) {
 	ds.Files = append(ds.Files, file)
+}
+
+// GetChunkByID searches for the chunk with the given ID and the file the chunk belongs to.
+// Returns nil if the chunk can not be found.
+func (ds *DataStore) GetChunkByID(chunkID ChunkID) (*Chunk, *File) {
+	for _, file := range ds.Files {
+		chunk := file.GetChunkByID(chunkID)
+		if chunk != nil {
+			return chunk, file
+		}
+	}
+	return nil, nil
 }
