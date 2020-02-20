@@ -32,10 +32,10 @@ func LoadNetwork(s SavedNetworkState) Cloud {
 
 	for _, n := range s.Network.Nodes {
 		c, err := BootstrapToNetwork(n.IP, s.MyNode, s.PrivateKey)
-		c.SetConfig(s.Config)
 		if err != nil {
 			continue
 		}
+		c.SetConfig(s.Config)
 		return c
 	}
 	utils.GetLogger().Println("[INFO] Could not reconnect to the network. Starting our own.")

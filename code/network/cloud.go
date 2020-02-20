@@ -36,6 +36,7 @@ type Cloud interface {
 	Whitelist() []string
 
 	// File
+	GetFolder(path string) (*NetworkFolder, error)
 	AddFile(file *datastore.File, filepath string) error
 	DistributeFile(file *datastore.File)
 

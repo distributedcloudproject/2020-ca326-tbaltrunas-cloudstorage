@@ -50,6 +50,12 @@ type Network struct {
 	ChunkNodes ChunkNodes
 }
 
+func (c *cloud) GetFolder(folder string) (*NetworkFolder, error) {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	return c.network.GetFolder(folder)
+}
+
 func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 	paths := strings.Split(folder, "/")
 

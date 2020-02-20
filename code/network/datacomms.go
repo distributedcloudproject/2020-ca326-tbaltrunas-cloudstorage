@@ -64,6 +64,7 @@ func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 
 	c.networkMutex.Lock()
 	folder.Files.Add(file)
+	c.network.DataStore.Add(file)
 	c.networkMutex.Unlock()
 
 	return nil
