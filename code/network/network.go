@@ -7,7 +7,22 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
+	"strings"
 )
+
+type NetworkFolder struct {
+	Name       string
+	SubFolders []*NetworkFolder
+
+	// Files is a list of files in current folder on the Cloud.
+	Files datastore.DataStore
+
+	// ChunkNodes maps chunk ID's to the Nodes (Node ID's) that contain that chunk.
+	// This way we can keep track of which nodes contain which chunks.
+	// And make decisions about the chunk requests to perform.
+	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
+	// ChunkNodes ChunkNodes
+}
 
 // Network is the general info of the network. Each node would have the same presentation of Network.
 type Network struct {
@@ -23,6 +38,8 @@ type Network struct {
 	// List of node IDs that are permitted to enter the network.
 	WhitelistIDs []string
 
+	RootFolder *NetworkFolder
+
 	// DataStore is a list of all the user files on the cloud.
 	DataStore datastore.DataStore
 
@@ -31,6 +48,40 @@ type Network struct {
 	// And make decisions about the chunk requets to perform.
 	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
 	ChunkNodes ChunkNodes
+}
+
+func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
+	paths := strings.Split(folder, "/")
+
+	if n.RootFolder == nil {
+		n.RootFolder = &NetworkFolder{
+			Name: "/",
+		}
+	}
+	f := n.RootFolder
+
+	for _, p := range paths {
+		if p == "" {
+			continue
+		}
+
+		// TODO: Check validity of path.
+
+		foundFolder := false
+		for _, sub := range f.SubFolders {
+			if sub.Name == p {
+				foundFolder = true
+				f = sub
+				break
+			}
+		}
+		if !foundFolder {
+			newFolder := &NetworkFolder{Name: p}
+			f.SubFolders = append(f.SubFolders, newFolder)
+			f = newFolder
+		}
+	}
+	return f, nil
 }
 
 type ChunkNodes map[datastore.ChunkID][]string

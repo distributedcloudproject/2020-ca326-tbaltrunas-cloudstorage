@@ -5,6 +5,7 @@ import (
 	"cloud/utils"
 	"encoding/gob"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 )
@@ -37,27 +38,32 @@ func init() {
 // AddFile adds a file to the Network's datastore.
 // It does not add the actual chunks.
 // TODO: might want to do the actual distribution here, so that the file gets saved with this call.
-func (c *cloud) AddFile(file *datastore.File) error {
+func (c *cloud) AddFile(file *datastore.File, path string) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
-	_, err := c.SendMessageToMe(AddFileMsg, file)
-	c.SendMessageAllOthers(AddFileMsg, file)
+	_, err := c.SendMessageToMe(AddFileMsg, file, path)
+	c.SendMessageAllOthers(AddFileMsg, file, path)
 	utils.GetLogger().Printf("[DEBUG] Completed AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
 	return err
 }
 
-func (r request) OnAddFileRequest(file *datastore.File) error {
+func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 	utils.GetLogger().Printf("[INFO] Node: %v, received AddFile request for file: %v.", r.Cloud.MyNode().ID, file)
 
 	c := r.Cloud
 	c.networkMutex.RLock()
-	ok := c.network.DataStore.Contains(file)
+	folder, err := c.network.GetFolder(path.Dir(filepath))
+	if err != nil {
+		c.networkMutex.RUnlock()
+		return err
+	}
+	ok := folder.Files.Contains(file)
 	c.networkMutex.RUnlock()
 	if ok {
 		return nil
 	}
 
 	c.networkMutex.Lock()
-	c.network.DataStore.Add(file)
+	folder.Files.Add(file)
 	c.networkMutex.Unlock()
 
 	return nil

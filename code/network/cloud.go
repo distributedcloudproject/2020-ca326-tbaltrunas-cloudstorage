@@ -35,7 +35,7 @@ type Cloud interface {
 	Whitelist() []string
 
 	// File
-	AddFile(file *datastore.File) error
+	AddFile(file *datastore.File, filepath string) error
 
 	// Events.
 	Events() *CloudEvents
