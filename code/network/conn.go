@@ -15,6 +15,9 @@ import (
 type CloudConfig struct {
 	// FileStorageDir is a file path to a directory where user files should be stored on this node.
 	FileStorageDir string
+
+	// FileStorageCapacity is the maximum amount of user data that should be stored on this node, in bytes.
+	FileStorageCapacity int64
 }
 
 // ConnectToNode establishes a connection to a node with that ID. Will return error if a connection could not be

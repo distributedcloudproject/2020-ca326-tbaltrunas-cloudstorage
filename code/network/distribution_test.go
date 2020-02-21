@@ -9,6 +9,15 @@ import (
 func TestChunkDistribution(t *testing.T) {
 	numNodes := 5
 	clouds, tmpStorageDirs, err := CreateTestClouds(numNodes)
+
+	storageCapacities := []int64{100, 100, 100, 100, 100}
+	for i, cloud := range clouds {
+		cloud.SetConfig(CloudConfig{
+			FileStorageDir: tmpStorageDirs[i],
+			FileStorageCapacity: storageCapacities[i],
+		})
+	}
+
 	if err != nil {
 		t.Fatal(err)
 	}
