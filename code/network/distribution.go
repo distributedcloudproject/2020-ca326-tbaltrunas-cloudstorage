@@ -91,7 +91,7 @@ func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 					for _, seqNum := range seqNums {
 						// TODO: method to get chunk by sequence number. Encapsulate file in methods.
 						ch := file.Chunks.Chunks[seqNum]
-						expectedOccupation += int64(ch.ContentSize)
+						expectedOccupation += int64(ch.ContentSize)  // FIXME: mixing int64 and int types - just stick to one
 					}
 				}
 				expectedStorageRemaining := storageSpaceRemaining - expectedOccupation
