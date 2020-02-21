@@ -12,6 +12,7 @@ func init() {
 	handlers = append(handlers, createBenchmarkRequestHandler)
 }
 
+// TODO: display bytes in terms of megabytes (divide by 1024^2)
 func (n *cloudNode) StorageSpaceRemaining() (int64, error) {
 	ret, err := n.client.SendMessage(StorageSpaceRemainingMsg)
 	return ret[0].(int64), err
@@ -20,15 +21,16 @@ func (n *cloudNode) StorageSpaceRemaining() (int64, error) {
 func (r request) OnStorageSpaceRemaining() (int64, error) {
 	c := r.Cloud
 
+	storageDir := c.config.FileStorageDir
+	utils.GetLogger().Printf("[DEBUG] Storage Path on the node: %s.", storageDir)
 	storageCapacity := c.config.FileStorageCapacity
 	utils.GetLogger().Printf("[DEBUG] Storage Capacity on the node: %d.", storageCapacity)
 	if storageCapacity == 0 {
-		// TODO: If maximum capacity 0, calculate available disk space
-		return 0, nil
+		// If maximum capacity 0, calculate available disk space
+		spaceRemaining := utils.AvailableDisk(storageDir)
+		return spaceRemaining, nil
 	} else {
-		// Walk through directory
-		storageDir := c.config.FileStorageDir
-		utils.GetLogger().Printf("[DEBUG] Storage Path on the node: %s.", storageDir)
+		// Walk through directory	
 
 		spaceUsed, err := utils.DirSize(storageDir)
 		if err != nil {
