@@ -55,9 +55,30 @@ func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 		utils.GetLogger().Printf("[DEBUG] Working with Chunk (SequenceNumber): %d.", chunk.SequenceNumber)
 		// FIXME: need to replace Network().Nodes with cloudNodes (use only nodes you can connect to).
 		// sorted and filtered priority list
-		candidateNodes := applyAffinityRule(sequenceNumber, availableNodes, scheme, antiAffinity) // TODO: filter and sort
+		// candidateNodes := applyAffinityRule(sequenceNumber, availableNodes, scheme, antiAffinity) // TODO: filter and sort
 		// TODO: check that candidateNodes / allNodes is len > 0
-		chosenNode := candidateNodes[0] // we will send the chunk on this node.
+		scores := make([]int, 0)
+		for _, n := range availableNodes {
+			score := 0
+			if antiAffinity {
+				affine := isAffine(n, sequenceNumber, scheme) // does not contain the chunk already
+				if affine {
+					score += 10
+				}
+			}
+			scores = append(scores, score)
+		}
+		utils.GetLogger().Printf("[DEBUG] Got scores for each node: %v.", scores)
+
+		bestScore := 0
+		bestScoreIdx := 0
+		for i, score := range scores {
+			if bestScore < score {
+				bestScore = score
+				bestScoreIdx = i
+			}
+		}
+		chosenNode := availableNodes[bestScoreIdx] // we will send the chunk on this node.
 		utils.GetLogger().Printf("[DEBUG] Chosen node to distribute chunk to (Node name): %s.", chosenNode.Name)
 
 		// TODO: move this into a method
@@ -88,6 +109,19 @@ func DistributionAll(file *datastore.File, cloud Cloud) DistributionScheme {
 
 // FIXME: make functions private.
 
+func isAffine(n Node, chunkSequenceNumber int, currentScheme DistributionScheme) bool {
+	seqNums, ok := currentScheme[n.ID]
+	if !ok {
+		return true
+	}
+	for _, seqNum := range seqNums {
+		if seqNum == chunkSequenceNumber {
+			// chunk is already on the node
+			return false
+		}
+	}
+	return true
+}
 
 func applyAffinityRule(chunkSequenceNumber int, candidateNodes []Node, currentScheme DistributionScheme, antiAffinity bool) []Node {
 	if !antiAffinity {

@@ -48,7 +48,7 @@ func TestChunkDistribution(t *testing.T) {
 	t.Logf("Added File to network DataStore: %v.", cloud.Network().DataStore)
 
 	t.Logf("Distributing file.")
-	numReplicas := 2
+	numReplicas := 1
 	antiAffinity := true
 	err = Distribute(file, cloud, numReplicas, antiAffinity)
 	if err != nil {
