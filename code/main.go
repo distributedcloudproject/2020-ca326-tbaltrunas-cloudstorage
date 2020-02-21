@@ -218,7 +218,9 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		err = network.Distribute(file, c)
+		numReplicas := -1
+		antiAffinity := true
+		err = network.Distribute(file, c, numReplicas, antiAffinity)
 		if err != nil {
 			fmt.Println(err)
 			return
