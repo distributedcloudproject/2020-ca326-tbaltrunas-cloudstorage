@@ -66,13 +66,6 @@ func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 		for _, n := range availableNodes {
 			score := 0
 			
-			if antiAffinity {
-				affine := isAffine(n, sequenceNumber, scheme) // does not contain the chunk already
-				if affine {
-					score += 10
-					score *= 2
-				}
-			}
 
 			// StorageRemaining returns the amount of storage remaining on a node.
 			// func StorageRemaining() int
@@ -102,6 +95,13 @@ func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 			}
 			// FIXME: if nil, remove from list of availableNodes.
 
+			if antiAffinity {
+				antiAffine := upholdsAntiAffinity(n, sequenceNumber, scheme) // does not contain the chunk already
+				if !antiAffine {
+					score += 1
+					score *= -1
+				}
+			}
 
 			scores = append(scores, score)
 		}
@@ -133,6 +133,7 @@ func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 
 // DistributionAll specifies to store a copy of the file on each node.
 func DistributionAll(file *datastore.File, cloud Cloud) (DistributionScheme, error) {
+	utils.GetLogger().Printf("[DEBUG] Distributing file to all nodes.")
 	scheme := make(DistributionScheme)
 	allSequenceNumbers := make([]int, 0)
 	for i := 0; i < file.Chunks.NumChunks; i++ {
@@ -146,7 +147,7 @@ func DistributionAll(file *datastore.File, cloud Cloud) (DistributionScheme, err
 
 // FIXME: make functions private.
 
-func isAffine(n Node, chunkSequenceNumber int, currentScheme DistributionScheme) bool {
+func upholdsAntiAffinity(n Node, chunkSequenceNumber int, currentScheme DistributionScheme) bool {
 	seqNums, ok := currentScheme[n.ID]
 	if !ok {
 		return true

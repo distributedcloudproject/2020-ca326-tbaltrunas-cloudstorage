@@ -4,10 +4,12 @@ import (
 	"cloud/datastore"
 	"cloud/utils"
 	"reflect"
+	"sort"
 	"testing"
 )
 
-// map from chunk idx to node idx's
+// map from node indices to a slice of chunk indices (sequence number)
+// node indices are in terms of the first cloud.
 type testCaseDistribution map[int][]int
 
 func TestDistribution(t *testing.T) {
@@ -22,6 +24,8 @@ func TestDistribution(t *testing.T) {
 
 		Distribution 		testCaseDistribution
 	}{
+		// Two nodes with equal storage.
+		// Both get a chunk.
 		{
 			Contents: "hellothere", // 2 chunks
 			StorageCapacities: []int64{100, 100},
@@ -32,29 +36,46 @@ func TestDistribution(t *testing.T) {
 				1: []int{1},				
 			},
 		},
+		// One large node, one small.
+		// Large node gets both chunks.
 		{
 			Contents: "hellothere", // 2 chunks
 			StorageCapacities: []int64{500, 100},
 			NumReplicas: 0,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
-				0: []int{0},
-				1: []int{0},				
+				0: []int{0, 1},				
 			},
 		},
-		// {
-		// 	Contents: "hello", // 1 chunk
-		// 	StorageCapacities: []int64{500, 100},
-		// 	NumReplicas: 1, // 2 chunks
-		// 	AntiAffinity: true,
-		// 	Distribution: testCaseDistribution{
-		// 		0: []int{0, 1},				
-		// 	},
-		// },
+		// One large node, one small.
+		// Both nodes get replicas of one chunk (anti-affinity rule).
+		{
+			Contents: "hello", // 1 chunk
+			StorageCapacities: []int64{500, 100},
+			NumReplicas: 1, // 2 chunks
+			AntiAffinity: true,
+			Distribution: testCaseDistribution{
+				0: []int{0},
+				1: []int{0},
+			},
+		},
+		// Special replication case.
+		// All nodes get all chunks.
+		{
+			Contents: "helloworld", // 2 chunks
+			StorageCapacities: []int64{200, 100},
+			NumReplicas: -1,
+			AntiAffinity: true,
+			Distribution: testCaseDistribution{
+				0: []int{0, 1},
+				1: []int{0, 1},
+			},
+		},
 	}
 
-	// Distribute file
 	for i, testCase := range testCases {
+		t.Logf("Case: %d.", i)
+		// FIXME: optimize by not creating a new cloud each time, i.e. reset ChunkNodes
 		clouds, err := CreateTestClouds(numNodes)
 		if err != nil {
 			t.Fatal(err)
@@ -95,38 +116,39 @@ func TestDistribution(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectedChunkIDs := make([]datastore.ChunkID, 0)
-		for idx, _ := range testCase.Distribution {
-			expectedChunkIDs = append(expectedChunkIDs, file.Chunks.Chunks[idx].ID)
+		// Create a ChunkNodes object from the test case map
+		expectedChunkNodes := make(ChunkNodes)
+		for nodeIndex, chunkIndices := range testCase.Distribution {
+			nodeID := cloud.Network().Nodes[nodeIndex].ID
+			for _, chunkIndex := range chunkIndices {
+				chunkID := file.Chunks.Chunks[chunkIndex].ID
+				nodeIDs, ok := expectedChunkNodes[chunkID]
+				if ok {
+					nodeIDs = append(nodeIDs, nodeID)
+				} else {
+					nodeIDs = []string{nodeID}
+				}
+				expectedChunkNodes[chunkID] = nodeIDs
+			}
 		}
 
-		expectedNodeIDs := make([][]string, 0)
-		for _, nodeIDsx := range testCase.Distribution {
-			nodeIDs := make([]string, 0)
-			for _, idx := range nodeIDsx {
-				nodeIDs = append(nodeIDs, cloud.Network().Nodes[idx].ID)
-			}
-			expectedNodeIDs = append(expectedNodeIDs, nodeIDs)
+		// sort for working comparison
+		for _, nodeIDs := range expectedChunkNodes {
+			sort.Strings(nodeIDs)
 		}
-
-		t.Logf("case(%d) ChunkNodes %v.", i, cloud.Network().ChunkNodes)
-		if len(testCase.Distribution) != len(cloud.Network().ChunkNodes) {
-			t.Errorf("case(%d).Distribution got length %d; want %d", i, len(testCase.Distribution), len(cloud.Network().ChunkNodes))
+		for _, nodeIDs := range cloud.Network().ChunkNodes {
+			sort.Strings(nodeIDs)
 		}
-		for chunkIDx, _ := range testCase.Distribution {
-			eChunkID := expectedChunkIDs[chunkIDx]
-			eNodeIDs := expectedNodeIDs[chunkIDx]
-			nodeIDs, ok := cloud.Network().ChunkNodes[eChunkID]
-			if !ok {
-				t.Errorf("case(%d).Distribution missing chunk %v", i, eChunkID)
-			}
-			if !reflect.DeepEqual(eNodeIDs, nodeIDs) {
-				t.Errorf("case(%d).Distribution.chunk(%v) got nodes %v; want %v", i, eChunkID, nodeIDs, eNodeIDs)
-			}
+		
+		if !reflect.DeepEqual(expectedChunkNodes, cloud.Network().ChunkNodes) {
+			t.Errorf("case(%d).Distribution got ChunkNodes %v; want %v", i, cloud.Network().ChunkNodes, expectedChunkNodes)
 		}
 	}
 }
 
 func TestDistributionError(t *testing.T) {
-
+	err := Distribute(nil, nil, -2, true)
+	if err == nil {
+		t.Fatalf("Got err: %v. Expected non-nil err.", err)
+	}
 }
