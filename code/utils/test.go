@@ -48,8 +48,6 @@ func GetTestFile(prefix string, contents []byte) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	GetLogger().Printf("Temporary filepath: %s", tmpfile.Name())
-	GetLogger().Printf("Writing contents to temporary file: %s", contents)
 	err = ioutil.WriteFile(tmpfile.Name(), contents, os.ModePerm)
 	if err != nil {
 		return nil, err

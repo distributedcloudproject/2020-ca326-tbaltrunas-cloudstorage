@@ -43,6 +43,7 @@ func Distribute(file *datastore.File, cloud Cloud, numReplicas int, antiAffinity
 // antiAffinity specifies whether to avoid storing replicas of the same chunk on the same node.
 // The function also uses node benchmarking to achieve best efficiency (load balancing storage, and using the fastest network).
 func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, antiAffinity bool) (DistributionScheme, error) {
+	// FIXME: pass fileID instead of file struct? Then reference the datastore?
 	if numReplicas == -1 {
 		return DistributionAll(file, cloud)
 	} else if numReplicas < -1 {
@@ -95,6 +96,8 @@ func DistributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 					}
 				}
 				expectedStorageRemaining := storageSpaceRemaining - expectedOccupation
+				// check if can actually store the chunk with expectedStorageRemaining?
+				// if negative storage (can't store), huge penalty & let OS raise error
 				score += int(expectedStorageRemaining)
 			}
 			// FIXME: if nil, remove from list of availableNodes.

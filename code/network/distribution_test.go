@@ -3,79 +3,92 @@ package network
 import (
 	"cloud/datastore"
 	"cloud/utils"
+	"reflect"
 	"testing"
 )
 
-func TestChunkDistribution(t *testing.T) {
-	numNodes := 5
+func TestDistribution(t *testing.T) {
+	numNodes := 2
 	clouds, err := CreateTestClouds(numNodes)
-
-	tmpStorageDirs, err := utils.GetTestDirs("cloud_test_node_data_", numNodes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer utils.GetTestDirsCleanup(tmpStorageDirs)
-	// TODO: create multiple test cases with different clouds and expected distributions.
-	// Test cases:
-	// - Storage (same)
-	// - Storage (different)
-	// - Storage (unlimited)
-	// - Affinity
-	storageCapacities := []int64{100, 100, 100, 100, 100}
-	for i, cloud := range clouds {
-		cloud.SetConfig(CloudConfig{
-			FileStorageDir: tmpStorageDirs[i],
-			FileStorageCapacity: storageCapacities[i],
-		})
-	}
-
-	t.Logf("Test clouds: %v.", clouds)
-	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
-
 	cloud := clouds[0]
-	t.Logf("Main cloud: %v.", cloud)
-	t.Logf("MyNode on cloud: %v.", cloud.MyNode())
-	t.Logf("Cloud with other nodes: %v.", cloud)
-	t.Logf("Network: %v.", cloud.Network())
-	nodes := cloud.Network().Nodes
-	for i := range nodes {
-		t.Logf("Node %d: %v.", i, nodes[i])
-	}
 
-	tmpfile, err := utils.GetTestFile("cloud_test_file_*", []byte("hello there i see that you are a fan of bytes ?!@1")) // 50 bytes
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer utils.GetTestFileCleanup(tmpfile)
+	chunkSize := 5
+	testCases := []struct {
+		Contents 			string
+		StorageCapacities 	[]int64
+		NumReplicas 		int
+		AntiAffinity 		bool
 
-	chunkSize := 10 // will give 5 chunks
-	file, err := datastore.NewFile(tmpfile, tmpfile.Name(), chunkSize)
-	if err != nil {
-		t.Fatal(err)
+		Distribution 		map[int][]string // map from chunk idx to node ID's
+	}{
+		{
+			Contents: "hellothere", // 2 chunks
+			StorageCapacities: []int64{100, 100},
+			NumReplicas: 0,
+			AntiAffinity: true,
+			Distribution: map[int][]string{
+				0: []string{cloud.Network().Nodes[0].ID},
+				1: []string{cloud.Network().Nodes[1].ID},				
+			},
+		},
 	}
-	t.Logf("File: %v", file)
 
 	// Distribute file
-	err = cloud.AddFile(file)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("Added File to network DataStore: %v.", cloud.Network().DataStore)
+	for i, testCase := range testCases {
+		tmpfile, err := utils.GetTestFile("cloud_test_file_*", []byte(testCase.Contents))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer utils.GetTestFileCleanup(tmpfile)
 
-	t.Logf("Distributing file.")
-	numReplicas := 1
-	antiAffinity := true
-	err = Distribute(file, cloud, numReplicas, antiAffinity)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("Final ChunkNodes: %v.", cloud.Network().ChunkNodes)
-	t.Logf("Pretty ChunkNodes: %v.", cloud.ReadableChunkNodes())
+		file, err := datastore.NewFile(tmpfile, tmpfile.Name(), chunkSize)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("File: %v", file)
 
-	// TODO: proper comparison
-	// chunks := file.Chunks.Chunks
-	// chunkNodes := cloud.Network().ChunkNodes
-	// if !(len(chunkNodes) == 2 && len(chunkNodes[chunks[0].ID]) == 2 && len(chunkNodes[chunks[1].ID]) == 2) {
-	// 	t.Error("Unexpected ChunkNodes contents.")
-	// }
+		tmpStorageDirs, err := utils.GetTestDirs("cloud_test_node_data_", numNodes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer utils.GetTestDirsCleanup(tmpStorageDirs)
+		t.Logf("Temporary directories for nodes: %v.", tmpStorageDirs)
+
+		for i, cloud := range clouds {
+			cloud.SetConfig(CloudConfig{
+				FileStorageDir: tmpStorageDirs[i],
+				FileStorageCapacity: testCase.StorageCapacities[i],
+			})
+		}
+
+		err = Distribute(file, cloud, testCase.NumReplicas, testCase.AntiAffinity)
+		if err != nil {
+			t.Error(err)
+		}
+
+		expectedChunkIDs := make([]datastore.ChunkID, 0)
+		for idx, _ := range testCase.Distribution {
+			expectedChunkIDs = append(expectedChunkIDs, file.Chunks.Chunks[idx].ID)
+		}
+		if len(testCase.Distribution) != len(cloud.Network().ChunkNodes) {
+			t.Errorf("case(%d).Distribution got length %d; want %d", i, len(testCase.Distribution), len(cloud.Network().ChunkNodes))
+		}
+		for chunkIDx, eNodeIDs := range testCase.Distribution {
+			eChunkID := expectedChunkIDs[chunkIDx]
+			nodeIDs, ok := cloud.Network().ChunkNodes[eChunkID]
+			if !ok {
+				t.Errorf("case(%d).Distribution missing chunk %v", i, eChunkID)
+			}
+			if !reflect.DeepEqual(eNodeIDs, nodeIDs) {
+				t.Errorf("case(%d).Distribution.chunk(%v) got nodes %v; want %v", i, eChunkID, nodeIDs, eNodeIDs)
+			}
+		}
+	}
+}
+
+func TestDistributionError(t *testing.T) {
+
 }
