@@ -2,15 +2,25 @@ package network
 
 import (
 	"cloud/datastore"
-	"os"
+	"cloud/utils"
 	"testing"
 )
 
 func TestChunkDistribution(t *testing.T) {
 	numNodes := 5
-	clouds, tmpStorageDirs, err := CreateTestClouds(numNodes)
+	clouds, err := CreateTestClouds(numNodes)
 
+	tmpStorageDirs, err := utils.GetTestDirs("cloud_test_node_data_", numNodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer utils.GetTestDirsCleanup(tmpStorageDirs)
 	// TODO: create multiple test cases with different clouds and expected distributions.
+	// Test cases:
+	// - Storage (same)
+	// - Storage (different)
+	// - Storage (unlimited)
+	// - Affinity
 	storageCapacities := []int64{100, 100, 100, 100, 100}
 	for i, cloud := range clouds {
 		cloud.SetConfig(CloudConfig{
@@ -18,11 +28,6 @@ func TestChunkDistribution(t *testing.T) {
 			FileStorageCapacity: storageCapacities[i],
 		})
 	}
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer RemoveDirs(tmpStorageDirs)
 
 	t.Logf("Test clouds: %v.", clouds)
 	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
@@ -37,12 +42,12 @@ func TestChunkDistribution(t *testing.T) {
 		t.Logf("Node %d: %v.", i, nodes[i])
 	}
 
-	tmpfile, err := GetTestFile("hello there i see that you are a fan of bytes ?!@1") // 50 bytes
+	tmpfile, err := utils.GetTestFile("cloud_test_file_*", []byte("hello there i see that you are a fan of bytes ?!@1")) // 50 bytes
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
-	defer tmpfile.Close()
+	defer utils.GetTestFileCleanup(tmpfile)
+
 	chunkSize := 10 // will give 5 chunks
 	file, err := datastore.NewFile(tmpfile, tmpfile.Name(), chunkSize)
 	if err != nil {
