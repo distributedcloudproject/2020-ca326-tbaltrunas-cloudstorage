@@ -19,27 +19,24 @@ func (n *cloudNode) StorageSpaceRemaining() (int64, error) {
 }
 
 func (r request) OnStorageSpaceRemaining() (int64, error) {
-	c := r.Cloud
+	r.Cloud.Mutex.Lock()
+	defer r.Cloud.Mutex.Unlock()
 
-	storageDir := c.config.FileStorageDir
+	storageDir := r.Cloud.config.FileStorageDir
 	utils.GetLogger().Printf("[DEBUG] Storage Path on the node: %s.", storageDir)
-	storageCapacity := c.config.FileStorageCapacity
+	storageCapacity := r.Cloud.config.FileStorageCapacity
 	utils.GetLogger().Printf("[DEBUG] Storage Capacity on the node: %d.", storageCapacity)
 	if storageCapacity == 0 {
-		// If maximum capacity 0, calculate available disk space
+		// StorageCapacity not set, calculate available disk space
 		spaceRemaining := utils.AvailableDisk(storageDir)
 		return spaceRemaining, nil
 	} else {
-		// Walk through directory	
-
+		// Walk through the directory to calculate current usage.
 		spaceUsed, err := utils.DirSize(storageDir)
 		if err != nil {
 			return 0, err
 		}
 		utils.GetLogger().Printf("[DEBUG] Computed space usage: %d.", spaceUsed)
-
-		// Subtract contents from maximum capacity.
-		// FIXME: validate that capacity > usage ?
 		spaceRemaining := storageCapacity - spaceUsed
 		return spaceRemaining, nil
 	}
