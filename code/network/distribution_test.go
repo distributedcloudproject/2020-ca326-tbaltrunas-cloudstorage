@@ -111,7 +111,7 @@ func TestDistribution(t *testing.T) {
 			})
 		}
 
-		err = Distribute(file, cloud, testCase.NumReplicas, testCase.AntiAffinity)
+		err = cloud.Distribute(*file, testCase.NumReplicas, testCase.AntiAffinity)
 		if err != nil {
 			t.Error(err)
 		}
@@ -147,7 +147,13 @@ func TestDistribution(t *testing.T) {
 }
 
 func TestDistributionError(t *testing.T) {
-	err := Distribute(nil, nil, -2, true)
+	clouds, err := CreateTestClouds(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cloud := clouds[0]
+	var file datastore.File
+	err = cloud.Distribute(file, -2, true)
 	if err == nil {
 		t.Fatalf("Got err: %v. Expected non-nil err.", err)
 	}

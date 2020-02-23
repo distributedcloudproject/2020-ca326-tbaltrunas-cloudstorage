@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"cloud/datastore"
+	// "cloud/datastore"
 	"cloud/network"
 	"cloud/utils"
 	"crypto/rsa"
@@ -200,31 +200,32 @@ func main() {
 	}
 
 	if *filePtr != "" && *fileStorageDirPtr != "" {
-		fmt.Println("Storing user file: ", *filePtr)
-		r, err := os.Open(*filePtr)
-		defer r.Close()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		file, err := datastore.NewFile(r, *filePtr, 5)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		fmt.Println("Not Implemented")
+		// fmt.Println("Storing user file: ", *filePtr)
+		// r, err := os.Open(*filePtr)
+		// defer r.Close()
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
+		// file, err := datastore.NewFile(r, *filePtr, 5)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
 
-		err = c.AddFile(file)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		numReplicas := -1
-		antiAffinity := true
-		err = network.Distribute(file, c, numReplicas, antiAffinity)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		// err = c.AddFile(file)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
+		// numReplicas := -1
+		// antiAffinity := true
+		// err = network.Distribute(file, c, numReplicas, antiAffinity)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")

@@ -16,12 +16,12 @@ type distributionScheme map[string][]int
 // if numReplicas is -1, then a copy of the file is stored on each node in the cloud.
 // Distribute acts with two goals in mind: reliability (redundancy) and efficiency.
 // The function uses node benchmarking to achieve best efficiency (load balanced storage, optimized network, etc).
-func Distribute(file *datastore.File, cloud Cloud, numReplicas int, antiAffinity bool) error {
+func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bool) error {
 	// TODO: mutex while reading cloud state
 
 	// Internally Distribute computes a distributionScheme, a mapping telling which nodes should contain which chunks.
 	// It then acts on the distributionScheme to perform the actual requests for saving the chunks.
-	distributionScheme, err := distributionAlgorithm(file, cloud, numReplicas, antiAffinity)
+	distributionScheme, err := c.distributionAlgorithm(file, numReplicas, antiAffinity)
 	if err != nil {
 		return err
 	}
@@ -29,10 +29,10 @@ func Distribute(file *datastore.File, cloud Cloud, numReplicas int, antiAffinity
 
 	for nodeID, sequenceNumbers := range distributionScheme {
 		for _, sequenceNumber := range sequenceNumbers {
-			cnode := cloud.GetCloudNode(nodeID)
+			cnode := c.GetCloudNode(nodeID)
 			if cnode != nil {
 				utils.GetLogger().Printf("[INFO] Saving chunk: %v on node %v.", sequenceNumber, nodeID)
-				err := cnode.SaveChunk(file, sequenceNumber)
+				err := cnode.SaveChunk(&file, sequenceNumber)
 				if err != nil {
 					return err
 				}
@@ -43,16 +43,27 @@ func Distribute(file *datastore.File, cloud Cloud, numReplicas int, antiAffinity
 }
 
 // distributionAlgorithm returns a suitable distributionScheme for the file and the given cloud.
-func distributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, antiAffinity bool) (distributionScheme, error) {
+func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, antiAffinity bool) (distributionScheme, error) {
 	// FIXME: pass fileID instead of file struct? Then reference the datastore?
 	if numReplicas == -1 {
-		return distributionAll(file, cloud)
+		return c.distributionAll(file)
 	} else if numReplicas < -1 {
 		// TODO: return error?
 		return nil, errors.New("numReplicas must be greater than or equal to -1.")
 	}
 
-	availableNodes := cloud.Network().Nodes // TODO: sort by benchmark - need to re-run each time, i.e. include chunk in storage calc?
+	// get benchmarks once, then reuse for each chunk (to not block the network mutex)
+	availableNodes := c.GetAllCloudNodes()
+	utils.GetLogger().Printf("[DEBUG] Got available nodes: %v.", availableNodes)
+	nodeBenchmarks := make([]NodeBenchmark, 0)
+	for _, cnode := range availableNodes {
+		benchmark, err := cnode.Benchmark()
+		if err != nil {
+			utils.GetLogger().Printf("[ERROR] %v", err)
+			continue
+		}
+		nodeBenchmarks = append(nodeBenchmarks, benchmark)
+	}
 	scheme := make(distributionScheme)
 	// We use a loop and the modulus operator to iterate over chunks multiple times (creating replicas this way).
 	for i := 0; i < file.Chunks.NumChunks * (numReplicas + 1); i++ {
@@ -62,11 +73,11 @@ func distributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 		// FIXME: need to replace Network().Nodes with cloudNodes (use only nodes you can connect to).
 		// TODO: check that availableNodes is len > 0
 
-		chosenNode, err := bestNode(availableNodes, cloud, scheme, sequenceNumber, file, antiAffinity)
+		chosenNode, err := c.bestNode(availableNodes, scheme, sequenceNumber, file, antiAffinity, nodeBenchmarks)
 		if err != nil {
 			return nil, err
 		}
-		utils.GetLogger().Printf("[DEBUG] Chosen node to distribute chunk to (Node name): %s.", chosenNode.Name)
+		utils.GetLogger().Printf("[DEBUG] Chosen node to distribute chunk to: %s.", chosenNode.ID)
 
 		// TODO: move this into a method
 		nodeID := chosenNode.ID
@@ -82,14 +93,14 @@ func distributionAlgorithm(file *datastore.File, cloud Cloud, numReplicas int, a
 }
 
 // distributionAll specifies to store a copy of the file on each node.
-func distributionAll(file *datastore.File, cloud Cloud) (distributionScheme, error) {
+func (c *cloud) distributionAll(file datastore.File) (distributionScheme, error) {
 	utils.GetLogger().Printf("[DEBUG] Distributing file to all nodes.")
 	scheme := make(distributionScheme)
 	allSequenceNumbers := make([]int, 0)
 	for i := 0; i < file.Chunks.NumChunks; i++ {
 		allSequenceNumbers = append(allSequenceNumbers, i)
 	}
-	for _, n := range cloud.Network().Nodes {
+	for _, n := range c.Network().Nodes {
 		scheme[n.ID] = allSequenceNumbers
 	}
 	return scheme, nil
@@ -97,68 +108,13 @@ func distributionAll(file *datastore.File, cloud Cloud) (distributionScheme, err
 
 // FIXME: make functions private.
 
-func upholdsAntiAffinity(n Node, chunkSequenceNumber int, currentScheme distributionScheme) bool {
-	seqNums, ok := currentScheme[n.ID]
-	if !ok {
-		return true
-	}
-	for _, seqNum := range seqNums {
-		if seqNum == chunkSequenceNumber {
-			// chunk is already on the node
-			return false
-		}
-	}
-	return true
-}
-
-func Score(n Node, cloud Cloud, currentScheme distributionScheme, chunkSequenceNumber int, file *datastore.File, antiAffinity bool) (int, error) {
-	score := 0
-	
-	// StorageRemaining returns the amount of storage remaining on a node.
-	// func StorageRemaining() int
-	// storageSpaceRemaining := StorageRemaining(n)
-	cnode := cloud.GetCloudNode(n.ID)
-	if cnode != nil {
-		storageSpaceRemaining, err := cnode.StorageSpaceRemaining()
-		if err != nil {
-			return 0, err
-		}
-		utils.GetLogger().Printf("[DEBUG] Storage space remaining: %d.", storageSpaceRemaining)
-		// Note that we do not distribute the current chunks until the distributionScheme is fully constructed.
-
-		var expectedOccupation int64
-		seqNums, ok := currentScheme[n.ID]
-		if ok {
-			for _, seqNum := range seqNums {
-				// TODO: method to get chunk by sequence number. Encapsulate file in methods.
-				ch := file.Chunks.Chunks[seqNum]
-				expectedOccupation += int64(ch.ContentSize)  // FIXME: mixing int64 and int types - just stick to one
-			}
-		}
-		expectedStorageRemaining := storageSpaceRemaining - expectedOccupation
-		// check if can actually store the chunk with expectedStorageRemaining?
-		// if negative storage (can't store), huge penalty & let OS raise error
-		score += int(expectedStorageRemaining)
-	}
-	// FIXME: if nil, remove from list of availableNodes.
-
-	if antiAffinity {
-		antiAffine := upholdsAntiAffinity(n, chunkSequenceNumber, currentScheme) // does not contain the chunk already
-		if !antiAffine {
-			score += 1
-			score *= -1
-		}
-	}
-	return score, nil
-}
-
-func bestNode(availableNodes []Node, cloud Cloud, currentScheme distributionScheme, chunkSequenceNumber int, file *datastore.File, antiAffinity bool) (Node, error) {
-		var chosenNode Node
+func (c *cloud) bestNode(availableNodes []*cloudNode, currentScheme distributionScheme, chunkSequenceNumber int, 
+						 file datastore.File, antiAffinity bool, benchmarks []NodeBenchmark) (*cloudNode, error) {
 		scores := make([]int, 0)
-		for _, n := range availableNodes {
-			score, err := Score(n, cloud, currentScheme, chunkSequenceNumber, file, antiAffinity)
+		for i, n := range availableNodes {
+			score, err := c.Score(n, benchmarks[i], currentScheme, chunkSequenceNumber, file, antiAffinity)
 			if err != nil {
-				return chosenNode, err
+				return nil, err
 			}
 			scores = append(scores, score)
 		}
@@ -172,6 +128,52 @@ func bestNode(availableNodes []Node, cloud Cloud, currentScheme distributionSche
 				bestScoreIdx = i
 			}
 		}
-		chosenNode = availableNodes[bestScoreIdx]
-		return chosenNode, nil
+		return availableNodes[bestScoreIdx], nil
+}
+
+func (c *cloud) Score(cnode *cloudNode, benchmark NodeBenchmark, currentScheme distributionScheme, 
+					  chunkSequenceNumber int, file datastore.File, antiAffinity bool) (int, error) {
+	score := 0
+	
+	storageSpaceRemaining := benchmark.StorageSpaceRemaining
+	// Note that we do not distribute the current chunks until the distributionScheme is fully constructed.
+	expectedOccupation := expectedOccupation(cnode.ID, currentScheme, file)
+	expectedStorageRemaining := storageSpaceRemaining - expectedOccupation
+	score += int(expectedStorageRemaining)
+
+	if antiAffinity {
+		antiAffine := upholdsAntiAffinity(cnode.ID, chunkSequenceNumber, currentScheme) // does not contain the chunk already
+		score += 1
+		if !antiAffine {
+			score *= -1
+		}
+	}
+	return score, nil
+}
+
+func upholdsAntiAffinity(nodeID string, chunkSequenceNumber int, currentScheme distributionScheme) bool {
+	seqNums, ok := currentScheme[nodeID]
+	if !ok {
+		return true
+	}
+	for _, seqNum := range seqNums {
+		if seqNum == chunkSequenceNumber {
+			// chunk is already on the node
+			return false
+		}
+	}
+	return true
+}
+
+func expectedOccupation(nodeID string, currentScheme distributionScheme, file datastore.File) int64 {
+	var expectedOccupation int64
+	seqNums, ok := currentScheme[nodeID]
+	if ok {
+		for _, seqNum := range seqNums {
+			// TODO: method to get chunk by sequence number. Encapsulate file in methods.
+			ch := file.Chunks.Chunks[seqNum]
+			expectedOccupation += int64(ch.ContentSize)  // FIXME: mixing int64 and int types - just stick to one
+		}
+	}
+	return expectedOccupation
 }

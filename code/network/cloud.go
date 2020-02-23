@@ -30,6 +30,7 @@ type Cloud interface {
 	AddNode(node Node)
 	IsNodeOnline(ID string) bool
 	GetCloudNode(ID string) *cloudNode
+	GetAllCloudNodes() []*cloudNode
 
 	// Whitelist.
 	AddToWhitelist(ID string) error
@@ -37,6 +38,7 @@ type Cloud interface {
 
 	// File
 	AddFile(file *datastore.File) error
+	Distribute(file datastore.File, numReplicas int, antiAffinity bool) error
 
 	// Events.
 	Events() *CloudEvents
@@ -144,4 +146,18 @@ func (c *cloud) ReadableChunkNodes() map[string][]string {
 	defer c.networkMutex.RUnlock()
 
 	return c.network.ReadableChunkNodes()
+}
+
+func (c *cloud) GetAllCloudNodes() []*cloudNode {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+
+	cloudNodes := make([]*cloudNode, 0)
+	for _, n := range c.Network().Nodes {
+		cnode := c.GetCloudNode(n.ID)
+		if cnode != nil {
+			cloudNodes = append(cloudNodes, cnode)
+		}
+	}
+	return cloudNodes
 }
