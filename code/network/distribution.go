@@ -7,7 +7,6 @@ import (
 )
 
 // Mapping from Node ID's to a slice of Chunk SequenceNumber's.
-// TODO: maybe other way around is better. Nodes are unique. Chunks may be replicated!
 type distributionScheme map[string][]int
 
 // Distribute computes how to distribute a file and saves the file chunks on the cloud..
@@ -36,6 +35,7 @@ func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bo
 				if err != nil {
 					return err
 				}
+				// TODO: re-run operation in case of error.
 			}
 		}
 	}
@@ -54,6 +54,8 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 
 	// get benchmarks once, then reuse for each chunk (to not block the network mutex)
 	availableNodes := c.GetAllCloudNodes()
+	// TODO: check that availableNodes is len > 0
+
 	utils.GetLogger().Printf("[DEBUG] Got available nodes: %v.", availableNodes)
 	nodeBenchmarks := make([]NodeBenchmark, 0)
 	for _, cnode := range availableNodes {
@@ -70,8 +72,6 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 		chunk := file.Chunks.Chunks[i % file.Chunks.NumChunks]
 		sequenceNumber := chunk.SequenceNumber
 		utils.GetLogger().Printf("[DEBUG] Working with Chunk (SequenceNumber): %d.", chunk.SequenceNumber)
-		// FIXME: need to replace Network().Nodes with cloudNodes (use only nodes you can connect to).
-		// TODO: check that availableNodes is len > 0
 
 		chosenNode, err := c.bestNode(availableNodes, scheme, sequenceNumber, file, antiAffinity, nodeBenchmarks)
 		if err != nil {
@@ -106,8 +106,6 @@ func (c *cloud) distributionAll(file datastore.File) (distributionScheme, error)
 	return scheme, nil
 }
 
-// FIXME: make functions private.
-
 func (c *cloud) bestNode(availableNodes []*cloudNode, currentScheme distributionScheme, chunkSequenceNumber int, 
 						 file datastore.File, antiAffinity bool, benchmarks []NodeBenchmark) (*cloudNode, error) {
 		scores := make([]int, 0)
@@ -120,15 +118,11 @@ func (c *cloud) bestNode(availableNodes []*cloudNode, currentScheme distribution
 		}
 		utils.GetLogger().Printf("[DEBUG] Got scores for each node: %v.", scores)
 
-		bestScore := 0
-		bestScoreIdx := 0
-		for i, score := range scores {
-			if bestScore < score {
-				bestScore = score
-				bestScoreIdx = i
-			}
+		_, idx, err := utils.MaxInt(scores)
+		if err != nil {
+			return nil, err
 		}
-		return availableNodes[bestScoreIdx], nil
+		return availableNodes[idx], nil
 }
 
 func (c *cloud) Score(cnode *cloudNode, benchmark NodeBenchmark, currentScheme distributionScheme, 
