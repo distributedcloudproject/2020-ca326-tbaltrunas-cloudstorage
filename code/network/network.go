@@ -82,7 +82,7 @@ func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 			}
 		}
 		if !foundFolder {
-			newFolder := &NetworkFolder{Name: p}
+			newFolder := &NetworkFolder{Name: p, Files: datastore.DataStore{}}
 			f.SubFolders = append(f.SubFolders, newFolder)
 			f = newFolder
 		}

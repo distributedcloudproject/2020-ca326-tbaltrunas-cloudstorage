@@ -2,8 +2,8 @@ package datastore
 
 import (
 	"cloud/utils"
-	"io"
 	"errors"
+	"io"
 )
 
 type FileSize int
@@ -20,33 +20,33 @@ type FileIOReader io.ReaderAt
 
 // File represents a user's file stored on the cloud.
 type File struct {
-	ID          FileID  // ID of the file (hash of file contents).
+	ID FileID // ID of the file (hash of file contents TODO: and a random string for uniqueness).
 
-	Path 		string  // Path of the user's file.
-	
-	Size 		FileSize  // File size.
-	
-	Chunks 		Chunks  // List of the file's chunk ID's.
+	Name string // The name of the file.
 
-	reader		FileIOReader  // Reader used to access the file contents.
+	Size FileSize // File size.
+
+	Chunks Chunks // List of the file's chunk ID's.
+
+	reader FileIOReader // Reader used to access the file contents.
 }
 
 type Chunks struct {
-	NumChunks 	int  // Number of chunks that this file is split into.
+	NumChunks int // Number of chunks that this file is split into.
 
-	ChunkSize 	int  // The maximum size of each chunk.
+	ChunkSize int // The maximum size of each chunk.
 
-	Chunks 		[]Chunk  // List of chunks belonging to the file.
+	Chunks []Chunk // List of chunks belonging to the file.
 }
 
 // Chunk represents a "chunk" of a file, a sequential part of a file.
 // Each chunk has an ID and a sequence number.
 type Chunk struct {
-	ID 				ChunkID  // Unique ID of the chunk (hash value of the contents).
+	ID ChunkID // Unique ID of the chunk (hash value of the contents).
 
-	SequenceNumber	int // Chunk sequence used to place the chunk in the correct position in the file.
+	SequenceNumber int // Chunk sequence used to place the chunk in the correct position in the file.
 
-	ContentSize		int // Number of bytes of actual content.
+	ContentSize int // Number of bytes of actual content.
 }
 
 // DataStore represents a collection of files.
@@ -75,7 +75,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 	for !stop {
 		offset = int64(chunkSize * i)
 		numRead, err := reader.ReadAt(buffer, offset)
-		if err == io.EOF && numRead == 0{
+		if err == io.EOF && numRead == 0 {
 			// EOF and read nothing
 			break
 		} else if err == io.EOF {
@@ -87,9 +87,9 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 		}
 		chunkID := ComputeChunkID(buffer)
 		chunk := Chunk{
-			ID: chunkID,
+			ID:             chunkID,
 			SequenceNumber: i,
-			ContentSize: numRead,
+			ContentSize:    numRead,
 		}
 		allContents = append(allContents, buffer...)
 		chunks = append(chunks, chunk)
@@ -108,7 +108,7 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 
 	file.reader = reader
 	file.ID = FileID(id)
-	file.Path = path
+	file.Name = path
 	file.Size = FileSize(fileSize)
 	file.Chunks.NumChunks = numChunks
 	file.Chunks.ChunkSize = chunkSize
@@ -119,8 +119,16 @@ func NewFile(reader FileIOReader, path string, chunkSize int) (*File, error) {
 // Contains returns whether the datastore contains the specified file.
 func (ds *DataStore) Contains(file *File) bool {
 	for _, f := range ds.Files {
-		// TODO: file ID
-		if file.Path == f.Path {
+		if file.Name == f.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func (ds *DataStore) ContainsName(name string) bool {
+	for _, f := range ds.Files {
+		if name == f.Name {
 			return true
 		}
 	}

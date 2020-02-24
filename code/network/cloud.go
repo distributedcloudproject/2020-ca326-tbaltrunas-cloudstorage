@@ -37,8 +37,15 @@ type Cloud interface {
 
 	// File
 	GetFolder(path string) (*NetworkFolder, error)
-	AddFile(file *datastore.File, filepath string) error
 	DistributeFile(file *datastore.File)
+	CreateDirectory(folderPath string) error
+	DeleteDirectory(folderPath string) error
+	AddFile(file *datastore.File, filepath string) error
+	UpdateFile(file *datastore.File, filepath string) error
+	DeleteFile(filepath string) error
+	MoveFile(filepath string, newFilepath string) error
+	LockFile(path string) bool
+	UnlockFile(path string)
 
 	// Events.
 	Events() *CloudEvents
@@ -70,6 +77,11 @@ type cloud struct {
 	Nodes map[string]*cloudNode
 	// NodesMutex is used only when accessing the Nodes.
 	NodesMutex sync.RWMutex
+
+	// Locks a file (full path) to a node ID. If a path is locked, only the given node ID may interact
+	// with the file. This is to prevent race conditions.
+	fileLocks     map[string]string
+	fileLockMutex sync.RWMutex
 
 	// Mutex is used for any other cloud variable.
 	Mutex sync.RWMutex

@@ -81,6 +81,7 @@ func BootstrapToNetwork(bootstrapIP string, myNode Node, privateKey *rsa.Private
 	// Create the cloud object.
 	cloud := &cloud{
 		Nodes:      make(map[string]*cloudNode),
+		fileLocks:  make(map[string]string),
 		events:     &CloudEvents{},
 		myNode:     myNode,
 		privateKey: privateKey,
@@ -168,6 +169,7 @@ func SetupNetwork(network Network, myNode Node, privateKey *rsa.PrivateKey) Clou
 		network:    network,
 		events:     &CloudEvents{},
 		Nodes:      make(map[string]*cloudNode),
+		fileLocks:  make(map[string]string),
 		myNode:     myNode,
 		privateKey: privateKey,
 		Port:       0,

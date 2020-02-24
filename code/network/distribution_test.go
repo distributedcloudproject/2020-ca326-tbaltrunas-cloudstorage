@@ -45,7 +45,7 @@ func TestChunkDistribution(t *testing.T) {
 	t.Logf("Node: %v.", n)
 
 	// Distribute file
-	err = cloud.AddFile(file)
+	err = cloud.AddFile(file, "")
 	if err != nil {
 		t.Error(err)
 	}
