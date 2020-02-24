@@ -3,7 +3,7 @@ package network
 // NodeBenchmark represents a set of benchmarks for a node given by ID.
 type NodeBenchmark struct {
 	ID string
-	StorageSpaceRemaining int64
+	StorageSpaceRemaining uint64
 }
 
 func (n *cloudNode) Benchmark() (NodeBenchmark, error) {

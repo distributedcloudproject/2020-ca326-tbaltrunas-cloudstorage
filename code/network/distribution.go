@@ -134,6 +134,7 @@ func (c *cloud) Score(cnode *cloudNode, benchmark NodeBenchmark, currentScheme d
 	expectedOccupation := expectedOccupation(cnode.ID, currentScheme, file)
 	expectedStorageRemaining := storageSpaceRemaining - expectedOccupation
 	score += int(expectedStorageRemaining)
+	// TODO: proper handling of big numbers
 
 	if antiAffinity {
 		antiAffine := upholdsAntiAffinity(cnode.ID, chunkSequenceNumber, currentScheme) // does not contain the chunk already
@@ -159,14 +160,14 @@ func upholdsAntiAffinity(nodeID string, chunkSequenceNumber int, currentScheme d
 	return true
 }
 
-func expectedOccupation(nodeID string, currentScheme distributionScheme, file datastore.File) int64 {
-	var expectedOccupation int64
+func expectedOccupation(nodeID string, currentScheme distributionScheme, file datastore.File) uint64 {
+	var expectedOccupation uint64 = 0
 	seqNums, ok := currentScheme[nodeID]
 	if ok {
 		for _, seqNum := range seqNums {
 			// TODO: method to get chunk by sequence number. Encapsulate file in methods.
 			ch := file.Chunks.Chunks[seqNum]
-			expectedOccupation += int64(ch.ContentSize)  // FIXME: mixing int64 and int types - just stick to one
+			expectedOccupation += ch.ContentSize
 		}
 	}
 	return expectedOccupation

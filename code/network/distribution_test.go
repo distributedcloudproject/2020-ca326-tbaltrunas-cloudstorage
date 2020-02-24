@@ -18,7 +18,7 @@ func TestDistribution(t *testing.T) {
 
 	testCases := []struct {
 		Contents 			string
-		StorageCapacities 	[]int64
+		StorageCapacities 	[]uint64
 		NumReplicas 		int
 		AntiAffinity 		bool
 
@@ -28,7 +28,7 @@ func TestDistribution(t *testing.T) {
 		// Both get a chunk.
 		{
 			Contents: "hellothere", // 2 chunks
-			StorageCapacities: []int64{100, 100},
+			StorageCapacities: []uint64{100, 100},
 			NumReplicas: 0,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -40,7 +40,7 @@ func TestDistribution(t *testing.T) {
 		// Large node gets both chunks.
 		{
 			Contents: "hellothere", // 2 chunks
-			StorageCapacities: []int64{500, 100},
+			StorageCapacities: []uint64{500, 100},
 			NumReplicas: 0,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -51,7 +51,7 @@ func TestDistribution(t *testing.T) {
 		// Both nodes get replicas of one chunk (anti-affinity rule).
 		{
 			Contents: "hello", // 1 chunk
-			StorageCapacities: []int64{500, 100},
+			StorageCapacities: []uint64{500, 100},
 			NumReplicas: 1, // 2 chunks
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -63,7 +63,7 @@ func TestDistribution(t *testing.T) {
 		// All nodes get all chunks.
 		{
 			Contents: "helloworld", // 2 chunks
-			StorageCapacities: []int64{200, 100},
+			StorageCapacities: []uint64{200, 100},
 			NumReplicas: -1,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{

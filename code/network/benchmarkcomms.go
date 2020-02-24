@@ -12,13 +12,13 @@ func init() {
 	handlers = append(handlers, createBenchmarkRequestHandler)
 }
 
-// TODO: display bytes in terms of megabytes (divide by 1024^2)
-func (n *cloudNode) StorageSpaceRemaining() (int64, error) {
+// StorageSpaceRemaining returns the amount of storage space in bytes that remains for user data on the node.
+func (n *cloudNode) StorageSpaceRemaining() (uint64, error) {
 	ret, err := n.client.SendMessage(StorageSpaceRemainingMsg)
-	return ret[0].(int64), err
+	return ret[0].(uint64), err
 }
 
-func (r request) OnStorageSpaceRemaining() (int64, error) {
+func (r request) OnStorageSpaceRemaining() (uint64, error) {
 	r.Cloud.Mutex.Lock()
 	defer r.Cloud.Mutex.Unlock()
 
