@@ -1,17 +1,18 @@
 import React from 'react';
+import { 
+  BrowserRouter as Router, 
+  Link, 
+  Route 
+} from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Button from 'react-bootstrap/Button';
+import Login from "./components/Login";
+import Home from "./components/Home";
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-      </header>
-      <Button>
-        Connect
-      </Button>
-    </div>
-  );
+    <Router>
+      <Route exact path="/" component={Home} />
+      <Route path="/login" component={Login} />
+    </Router>
+    );
 }
-
-export default App;
