@@ -25,7 +25,7 @@ func FileListScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		nw := c.Network()
 		for _, f := range nw.DataStore.Files {
 			list.Append(widget.NewLabel("File: " + string(f.ID)))
-			list.Append(widget.NewLabel("Path: " + f.Path))
+			list.Append(widget.NewLabel("Path: " + f.Name))
 			list.Append(widget.NewLabel("Size: " + strconv.Itoa(int(f.Size))))
 
 			for i, chunk := range f.Chunks.Chunks {
@@ -125,7 +125,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 
 		for i := range folder.Files.Files {
 			file := folder.Files.Files[i]
-			list.Append(widget.NewHBox(widget.NewButtonWithIcon(path.Base(file.Path), theme.ContentPasteIcon(), func() {
+			list.Append(widget.NewHBox(widget.NewButtonWithIcon(path.Base(file.Name), theme.ContentPasteIcon(), func() {
 				// Nothing
 			})))
 		}
