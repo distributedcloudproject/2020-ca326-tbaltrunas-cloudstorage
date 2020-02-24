@@ -4,7 +4,9 @@ import (
 	"cloud/datastore"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
+	"time"
 )
 
 func TestNode_AddFileSaveChunk(t *testing.T) {
@@ -43,7 +45,7 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 	n := nodes[0]
 	t.Logf("Node: %v.", n)
 
-	err = cloud.AddFile(file)
+	err = cloud.AddFile(file, "/")
 	if err != nil {
 		t.Error(err)
 	}
@@ -129,4 +131,166 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 			t.Error("ChunkNodes not matching across cloud representations.")
 		}
 	}
+}
+
+func TestNodeFileLock(t *testing.T) {
+	key, _, err := createKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   false,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
+
+	var clouds []Cloud
+	for i := 0; i < 4; i++ {
+		key2, err := generateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "Node " + strconv.Itoa(i+1)}, key2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = n2.ListenOnPort(0)
+		if err != nil {
+			t.Error(err)
+		}
+		go n2.Accept()
+		clouds = append(clouds, n2)
+	}
+	time.Sleep(time.Millisecond * 100)
+
+	if !cloud.LockFile("/file") {
+		t.Fatal("could not lock /file")
+	}
+
+	if clouds[0].LockFile("/file") {
+		t.Fatal("Node 1 acquired lock to /file; expected false")
+	}
+	clouds[0].UnlockFile("/file")
+	if clouds[0].LockFile("/file") {
+		t.Fatal("Node 1 unlocked and locked /file after; expected false")
+	}
+	cloud.UnlockFile("/file")
+	if !clouds[0].LockFile("/file") {
+		t.Fatal("Node 1 could not lock /file after it was unlocked")
+	}
+}
+
+func TestNodeFileOperations(t *testing.T) {
+	key, _, err := createKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cloud := SetupNetwork(Network{
+		Name:        "My new network",
+		Whitelist:   false,
+		RequireAuth: true,
+	}, Node{Name: "test"}, key)
+	cloud.ListenOnPort(0)
+	go cloud.Accept()
+
+	clouds := []Cloud{cloud}
+	for i := 0; i < 4; i++ {
+		key2, err := generateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "Node " + strconv.Itoa(i+1)}, key2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = n2.ListenOnPort(0)
+		if err != nil {
+			t.Error(err)
+		}
+		go n2.Accept()
+		clouds = append(clouds, n2)
+	}
+	time.Sleep(time.Millisecond * 100)
+
+	// Create Directory.
+	if err := cloud.CreateDirectory("/folder"); err != nil {
+		t.Errorf("CreateDirectory(): %v", err)
+	}
+	if err := cloud.CreateDirectory("/folder2"); err != nil {
+		t.Errorf("CreateDirectory(): %v", err)
+	}
+	if err := cloud.DeleteDirectory("/folder2"); err != nil {
+		t.Errorf("CreateDirectory(): %v", err)
+	}
+
+	for _, c := range clouds {
+		sub := c.Network().RootFolder.SubFolders
+		if len(sub) != 1 || sub[0].Name != "folder" {
+			t.Errorf("RootFolder directories: %v; expected: [folder]", sub)
+			for _, s := range sub {
+				t.Errorf(s.Name)
+			}
+		}
+	}
+
+	// Create File.
+	if !cloud.LockFile("/folder/file") {
+		t.Fatal("could not lock /file")
+	}
+	if !cloud.LockFile("/folder/file2") {
+		t.Fatal("could not lock /file")
+	}
+	if !cloud.LockFile("/folder2/file") {
+		t.Fatal("could not lock /file")
+	}
+	if err := cloud.AddFile(&datastore.File{
+		ID:     "tempID",
+		Name:   "file",
+		Size:   0,
+		Chunks: datastore.Chunks{},
+	}, "/folder/file"); err != nil {
+		t.Errorf("AddFile(): %v", err)
+	}
+	if err := cloud.AddFile(&datastore.File{
+		ID:     "tempID",
+		Name:   "file2",
+		Size:   0,
+		Chunks: datastore.Chunks{},
+	}, "/folder/file2"); err != nil {
+		t.Errorf("AddFile(): %v", err)
+	}
+	if err := cloud.DeleteFile("/folder/file2"); err != nil {
+		t.Errorf("DeleteFile(): %v", err)
+	}
+
+	for _, c := range clouds {
+		n := c.Network()
+		nw, _ := n.GetFolder("/folder")
+		if len(nw.Files.Files) != 1 || !nw.Files.ContainsName("file") {
+			t.Errorf("Network files: %v; expected: [file]", nw.Files.Files)
+		}
+	}
+
+	if err := cloud.MoveFile("/folder/file", "/folder2/file"); err != nil {
+		t.Errorf("MoveFile(): %v", err)
+	}
+	for _, c := range clouds {
+		n := c.Network()
+		nw, _ := n.GetFolder("/folder2")
+		if len(nw.Files.Files) != 1 || !nw.Files.ContainsName("file") {
+			t.Errorf("Network files: %v; expected: [file]", nw.Files.Files)
+		}
+	}
+
+	cloud.UnlockFile("/folder/file")
+	cloud.UnlockFile("/folder/file2")
+	cloud.UnlockFile("/folder2/file")
 }
