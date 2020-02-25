@@ -44,7 +44,7 @@ type Cloud interface {
 	// Saving.
 	SavedNetworkState() SavedNetworkState
 
-	// Benchmark state for this cloud.
+	// Benchmark state for this cloud's node.
 	BenchmarkState() CloudBenchmarkState
 	SetBenchmarkState(benchmarkState CloudBenchmarkState)
 }
