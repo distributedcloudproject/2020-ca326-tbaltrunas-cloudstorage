@@ -43,6 +43,10 @@ type Cloud interface {
 
 	// Saving.
 	SavedNetworkState() SavedNetworkState
+
+	// Benchmark state for this cloud.
+	BenchmarkState() CloudBenchmarkState
+	SetBenchmarkState(benchmarkState CloudBenchmarkState)
 }
 
 type CloudEvents struct {
@@ -85,6 +89,8 @@ type cloud struct {
 	Port     int
 
 	config CloudConfig
+
+	benchmarkState CloudBenchmarkState
 }
 
 func (c *cloud) Config() CloudConfig {

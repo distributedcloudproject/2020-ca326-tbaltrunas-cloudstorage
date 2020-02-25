@@ -37,7 +37,9 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 		t.Logf("Node %d: %v.", i, nodes[i])
 	}
 
-	tmpfile, err := utils.GetTestFile("cloud_test_file_*", []byte("hellothere i see you are a fan of bytes?")) // 40 bytes
+	content := "hellothere i see you are a fan of bytes?"  // 40 bytes
+	contentBytes := []byte(content)
+	tmpfile, err := utils.GetTestFile("cloud_test_file_*", contentBytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,5 +140,12 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 		if !reflect.DeepEqual(chunkLocations, chunkLocationsOther) {
 			t.Error("ChunkNodes not matching across cloud representations.")
 		}
+	}
+	
+	// Check that the storage benchmark state has been updated.
+	spaceUsed := cloud.BenchmarkState().StorageSpaceUsed
+	if spaceUsed != chunks[0].ContentSize {
+		t.Errorf("Invalid benchmark state. Expected StorageSpaceUsed: %v. Got: %v.", 
+				 len(contentBytes), spaceUsed)
 	}
 }

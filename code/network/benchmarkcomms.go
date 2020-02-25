@@ -34,11 +34,13 @@ func (r request) OnStorageSpaceRemaining() (uint64, error) {
 		spaceRemaining := utils.AvailableDisk(storageDir)
 		return spaceRemaining, nil
 	} else {
-		// Walk through the directory to calculate current usage.
-		spaceUsed, err := utils.DirSize(storageDir)
-		if err != nil {
-			return 0, err
-		}
+		// Get the current usage from benchmark state.
+		spaceUsed := r.Cloud.BenchmarkState().StorageSpaceUsed
+
+		// TODO: An alternative method when no data is available
+		// may be to walk through the entire directory to calculate its usage.
+		// We can use utils.DirSize for that. 
+
 		utils.GetLogger().Printf("[DEBUG] Computed space usage: %d.", spaceUsed)
 		spaceRemaining := uint64(storageCapacity) - spaceUsed
 		return spaceRemaining, nil
