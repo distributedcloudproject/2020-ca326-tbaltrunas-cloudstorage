@@ -17,7 +17,8 @@ type CloudConfig struct {
 	FileStorageDir string
 
 	// FileStorageCapacity is the maximum amount of user data that should be stored on this node, in bytes.
-	// Pass -1 to indicate no storage allowed on the node.
+	// If 0, the node's available disk capacity (under the FileStorageDir path) will be taken as the storage capacity.
+	// If -1, no storage will be allowed on the node.
 	FileStorageCapacity int64
 }
 
