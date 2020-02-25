@@ -11,13 +11,13 @@ func DirSize(path string) (uint64, error) {
 	var size uint64 = 0
 	err := filepath.Walk(path, func(subpath string, info os.FileInfo, err error) error {
 		GetLogger().Printf("[DEBUG] Walking path: %v.", subpath)
-        if err != nil {
-            return err
-        }
-        if !info.IsDir() {
-            size += uint64(info.Size())
-        }
-        return nil
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += uint64(info.Size())
+		}
+		return nil
 	})
 	return size, err
 }
