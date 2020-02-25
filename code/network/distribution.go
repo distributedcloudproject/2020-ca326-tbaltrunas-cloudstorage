@@ -9,8 +9,10 @@ import (
 // Mapping from Node ID's to a slice of Chunk SequenceNumber's.
 type distributionScheme map[string][]int
 
-// Distribute computes how to distribute a file and saves the file chunks on the cloud..
+// Distribute computes how to distribute a file and saves the file chunks on the cloud.
 // numReplicas specifies how many copies of all file's chunks should be stored on the cloud.
+// Note that a replica does not include the original file itself.
+// So we store numReplicas+1 contents of the same file on the cloud.
 // antiAffinity specifies whether to avoid storing replicas of the same chunk on the same node.
 // if numReplicas is -1, then a copy of the file is stored on each node in the cloud.
 // Distribute acts with two goals in mind: reliability (redundancy) and efficiency.
@@ -24,6 +26,7 @@ func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bo
 	}
 	utils.GetLogger().Printf("[DEBUG] Distribution scheme retrieved: %v.", distributionScheme)
 
+	// Apply the scheme.
 	for nodeID, sequenceNumbers := range distributionScheme {
 		for _, sequenceNumber := range sequenceNumbers {
 			cnode := c.GetCloudNode(nodeID)
@@ -42,12 +45,11 @@ func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bo
 
 // distributionAlgorithm returns a suitable distributionScheme for the file and the given cloud.
 func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, antiAffinity bool) (distributionScheme, error) {
-	// FIXME: pass fileID instead of file struct? Then reference the datastore?
-	if numReplicas == -1 {
-		return c.distributionAll(file)
-	} else if numReplicas < -1 {
+	scheme := make(distributionScheme)
+
+	if numReplicas < -1 {
 		// TODO: return error?
-		return nil, errors.New("numReplicas must be greater than or equal to -1.")
+		return nil, errors.New("numReplicas must be greater than or equal to -1")
 	}
 
 	// Get all the nodes we are currently connected to.
@@ -80,9 +82,19 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 	}
 	utils.GetLogger().Printf("[DEBUG] Filtered available nodes: %v.", availableNodes)
 
-	// Apply the scheme.
+	if numReplicas == -1 {
+		utils.GetLogger().Printf("[DEBUG] Distributing file to all nodes.")
+		allSequenceNumbers := make([]int, 0)
+		for i := 0; i < file.Chunks.NumChunks; i++ {
+			allSequenceNumbers = append(allSequenceNumbers, i)
+		}
+		for _, n := range availableNodes {
+			scheme[n.ID] = allSequenceNumbers
+		}
+	}
+
+	// numReplicas is >= 0
 	// We use a loop and the modulus operator to iterate over chunks multiple times (creating replicas this way).
-	scheme := make(distributionScheme)
 	for i := 0; i < file.Chunks.NumChunks * (numReplicas + 1); i++ {
 		chunk := file.Chunks.Chunks[i % file.Chunks.NumChunks]
 		sequenceNumber := chunk.SequenceNumber
@@ -104,20 +116,6 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 			sequenceNumbers = append(sequenceNumbers, sequenceNumber)
 		}
 		scheme[nodeID] = sequenceNumbers
-	}
-	return scheme, nil
-}
-
-// distributionAll specifies to store a copy of the file on each node.
-func (c *cloud) distributionAll(file datastore.File) (distributionScheme, error) {
-	utils.GetLogger().Printf("[DEBUG] Distributing file to all nodes.")
-	scheme := make(distributionScheme)
-	allSequenceNumbers := make([]int, 0)
-	for i := 0; i < file.Chunks.NumChunks; i++ {
-		allSequenceNumbers = append(allSequenceNumbers, i)
-	}
-	for _, n := range c.Network().Nodes {
-		scheme[n.ID] = allSequenceNumbers
 	}
 	return scheme, nil
 }
