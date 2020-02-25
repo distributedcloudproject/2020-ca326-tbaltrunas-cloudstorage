@@ -29,7 +29,6 @@ type Cloud interface {
 	AddNode(node Node)
 	IsNodeOnline(ID string) bool
 	GetCloudNode(ID string) *cloudNode
-	GetAllCloudNodes() []*cloudNode
 
 	// Whitelist.
 	AddToWhitelist(ID string) error
@@ -138,18 +137,4 @@ func (c *cloud) ListenAddress() string {
 		return ""
 	}
 	return c.listener.Addr().String()
-}
-
-func (c *cloud) GetAllCloudNodes() []*cloudNode {
-	c.networkMutex.RLock()
-	defer c.networkMutex.RUnlock()
-
-	cloudNodes := make([]*cloudNode, 0)
-	for _, n := range c.Network().Nodes {
-		cnode := c.GetCloudNode(n.ID)
-		if cnode != nil {
-			cloudNodes = append(cloudNodes, cnode)
-		}
-	}
-	return cloudNodes
 }

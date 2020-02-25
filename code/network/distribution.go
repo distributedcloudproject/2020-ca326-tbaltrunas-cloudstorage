@@ -52,7 +52,12 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 		return nil, errors.New("numReplicas must be greater than or equal to -1.")
 	}
 
-	availableNodes := c.GetAllCloudNodes()
+	// Get all the nodes we are currently connected to.
+	availableNodes := make([]*cloudNode, 0)
+	for _, cnode := range c.Nodes {
+		availableNodes = append(availableNodes, cnode)
+	}
+
 	if len(availableNodes) == 0 {
 		// TODO: Might want to replace an error message with a custom error type.
 		return nil, errors.New("No nodes available")
