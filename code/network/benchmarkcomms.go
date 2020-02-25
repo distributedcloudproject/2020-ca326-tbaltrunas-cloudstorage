@@ -20,8 +20,8 @@ func (n *cloudNode) StorageSpaceRemaining() (uint64, error) {
 }
 
 func (r request) OnStorageSpaceRemaining() (uint64, error) {
-	r.Cloud.Mutex.Lock()
-	defer r.Cloud.Mutex.Unlock()
+	r.Cloud.Mutex.RLock()
+	defer r.Cloud.Mutex.RUnlock()
 
 	storageDir := r.Cloud.config.FileStorageDir
 	utils.GetLogger().Printf("[DEBUG] Storage Path on the node: %s.", storageDir)

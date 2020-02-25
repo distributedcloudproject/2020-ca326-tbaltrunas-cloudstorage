@@ -16,9 +16,7 @@ type distributionScheme map[string][]int
 // Distribute acts with two goals in mind: reliability (redundancy) and efficiency.
 // The function uses node benchmarking to achieve best efficiency (load balanced storage, optimized network, etc).
 func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bool) error {
-	// TODO: mutex while reading cloud state
-
-	// Internally Distribute computes a distributionScheme, a mapping telling which nodes should contain which chunks.
+	// Distribute computes a distributionScheme, a mapping telling which nodes should contain which chunks.
 	// It then acts on the distributionScheme to perform the actual requests for saving the chunks.
 	distributionScheme, err := c.distributionAlgorithm(file, numReplicas, antiAffinity)
 	if err != nil {
