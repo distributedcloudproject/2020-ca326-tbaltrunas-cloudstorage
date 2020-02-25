@@ -7,8 +7,6 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
-	"path/filepath"
-	"strconv"
 )
 
 // Network is the general info of the network. Each node would have the same presentation of Network.
@@ -106,28 +104,4 @@ func PublicKeyToID(key *rsa.PublicKey) (string, error) {
 	}
 	sha := sha256.Sum256(pub)
 	return hex.EncodeToString(sha[:]), nil
-}
-
-// ReadableChunkNodes returns a mpping from a readable chunk name (filename+SequenceNumber) to a list of node names.
-// The method returns an alternative representation of Network.ChunkNodes.
-func (n *Network) ReadableChunkNodes() map[string][]string {
-	m := make(map[string][]string)
-	for chunkID, nodeIDs := range n.ChunkNodes {
-		chunk, file := n.DataStore.GetChunkByID(chunkID)
-		if chunk == nil {
-			return nil
-		}
-		newChunkID := filepath.Base(file.Path) + "-" + strconv.Itoa(chunk.SequenceNumber)
-		newNodeIDs := make([]string, 0)
-		for _, nodeID := range nodeIDs {
-			node, found := n.NodeByID(nodeID)
-			if !found {
-				return nil
-			}
-			newNodeID := node.Name
-			newNodeIDs = append(newNodeIDs, newNodeID)
-		}
-		m[newChunkID] = newNodeIDs
-	}
-	return m
 }

@@ -17,7 +17,8 @@ type CloudConfig struct {
 	FileStorageDir string
 
 	// FileStorageCapacity is the maximum amount of user data that should be stored on this node, in bytes.
-	FileStorageCapacity uint64
+	// Pass -1 to indicate no storage allowed on the node.
+	FileStorageCapacity int64
 }
 
 // ConnectToNode establishes a connection to a node with that ID. Will return error if a connection could not be

@@ -18,7 +18,7 @@ func TestDistribution(t *testing.T) {
 
 	testCases := []struct {
 		Contents 			string
-		StorageCapacities 	[]uint64
+		StorageCapacities 	[]int64
 		NumReplicas 		int
 		AntiAffinity 		bool
 
@@ -28,7 +28,7 @@ func TestDistribution(t *testing.T) {
 		// Both get a chunk.
 		{
 			Contents: "hellothere", // 2 chunks
-			StorageCapacities: []uint64{100, 100},
+			StorageCapacities: []int64{100, 100},
 			NumReplicas: 0,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -40,7 +40,7 @@ func TestDistribution(t *testing.T) {
 		// Large node gets both chunks.
 		{
 			Contents: "hellothere", // 2 chunks
-			StorageCapacities: []uint64{500, 100},
+			StorageCapacities: []int64{500, 100},
 			NumReplicas: 0,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -51,7 +51,7 @@ func TestDistribution(t *testing.T) {
 		// Both nodes get replicas of one chunk (anti-affinity rule).
 		{
 			Contents: "hello", // 1 chunk
-			StorageCapacities: []uint64{500, 100},
+			StorageCapacities: []int64{500, 100},
 			NumReplicas: 1, // 2 chunks
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -63,7 +63,7 @@ func TestDistribution(t *testing.T) {
 		// All nodes get all chunks.
 		{
 			Contents: "helloworld", // 2 chunks
-			StorageCapacities: []uint64{200, 100},
+			StorageCapacities: []int64{200, 100},
 			NumReplicas: -1,
 			AntiAffinity: true,
 			Distribution: testCaseDistribution{
@@ -143,6 +143,34 @@ func TestDistribution(t *testing.T) {
 		if !reflect.DeepEqual(expectedChunkNodes, cloud.Network().ChunkNodes) {
 			t.Errorf("case(%d).Distribution got ChunkNodes %v; want %v", i, cloud.Network().ChunkNodes, expectedChunkNodes)
 		}
+	}
+}
+
+func TestDistributionNoStore(t *testing.T) {
+	clouds, err := CreateTestClouds(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cloud := clouds[0]
+	cloud.SetConfig(CloudConfig{
+		FileStorageCapacity: -1,
+	})
+
+	tmpfile, err := utils.GetTestFile("cloud_test_file_*", []byte("hello"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer utils.GetTestFileCleanup(tmpfile)
+	file, err := datastore.NewFile(tmpfile, tmpfile.Name(), 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = cloud.Distribute(*file, 0, true)
+	if err == nil {
+		t.Errorf("Expected error. Got: %v.", err)
+	} else if err.Error() != "No nodes available" {
+		t.Errorf("Expected error message: No node available. Got: %s.", err.Error())
 	}
 }
 

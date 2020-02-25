@@ -52,11 +52,14 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 		return nil, errors.New("numReplicas must be greater than or equal to -1.")
 	}
 
-	// get benchmarks once, then reuse for each chunk (to not block the network mutex)
 	availableNodes := c.GetAllCloudNodes()
-	// TODO: check that availableNodes is len > 0
-
+	if len(availableNodes) > 0 {
+		// TODO: Might want to replace an error message with a custom error type.
+		return nil, errors.New("No nodes available")
+	}
 	utils.GetLogger().Printf("[DEBUG] Got available nodes: %v.", availableNodes)
+
+	// Get node benchmarks once to not block the network.
 	nodeBenchmarks := make([]NodeBenchmark, 0)
 	for _, cnode := range availableNodes {
 		benchmark, err := cnode.Benchmark()
@@ -66,13 +69,23 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 		}
 		nodeBenchmarks = append(nodeBenchmarks, benchmark)
 	}
-	scheme := make(distributionScheme)
+
+	// Apply hard constraints (must be met) on nodes.	
+	availableNodes, nodeBenchmarks = filterNodes(availableNodes, nodeBenchmarks)
+	if len(availableNodes) > 0 {
+		return nil, errors.New("No nodes available")
+	}
+	utils.GetLogger().Printf("[DEBUG] Filtered available nodes: %v.", availableNodes)
+
+	// Apply the scheme.
 	// We use a loop and the modulus operator to iterate over chunks multiple times (creating replicas this way).
+	scheme := make(distributionScheme)
 	for i := 0; i < file.Chunks.NumChunks * (numReplicas + 1); i++ {
 		chunk := file.Chunks.Chunks[i % file.Chunks.NumChunks]
 		sequenceNumber := chunk.SequenceNumber
 		utils.GetLogger().Printf("[DEBUG] Working with Chunk (SequenceNumber): %d.", chunk.SequenceNumber)
 
+		// Apply soft constraints (desired but may not be met) to get the best node.
 		chosenNode, err := c.bestNode(availableNodes, scheme, sequenceNumber, file, antiAffinity, nodeBenchmarks)
 		if err != nil {
 			return nil, err
@@ -104,6 +117,22 @@ func (c *cloud) distributionAll(file datastore.File) (distributionScheme, error)
 		scheme[n.ID] = allSequenceNumbers
 	}
 	return scheme, nil
+}
+
+func filterNodes(availableNodes []*cloudNode, benchmarks []NodeBenchmark) ([]*cloudNode, []NodeBenchmark) {
+	var newAvailableNodes []*cloudNode
+	var newBenchmarks []NodeBenchmark
+	for i, n := range availableNodes {
+		benchmark := benchmarks[i]
+		
+		if benchmark.StorageSpaceRemaining == 0 {
+			// node not allowed to store data
+			continue
+		}
+		newAvailableNodes = append(newAvailableNodes, n)
+		newBenchmarks = append(newBenchmarks, benchmark)
+	}
+	return newAvailableNodes, newBenchmarks
 }
 
 func (c *cloud) bestNode(availableNodes []*cloudNode, currentScheme distributionScheme, chunkSequenceNumber int, 
