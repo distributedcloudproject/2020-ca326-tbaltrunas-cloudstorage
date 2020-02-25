@@ -201,6 +201,7 @@ func main() {
 
 	if *filePtr != "" && *fileStorageDirPtr != "" {
 		fmt.Println("Storing user file: ", *filePtr)
+		time.Sleep(time.Millisecond * 100)
 		r, err := os.Open(*filePtr)
 		defer r.Close()
 		if err != nil {

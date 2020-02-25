@@ -1,0 +1,9 @@
+---
+all:
+  children:
+    nodes:
+      hosts:
+        # TODO: set IP's here instead of setting in /etc/hosts
+        # node-0:
+        node-1:
+        node-2:
