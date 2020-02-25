@@ -17,9 +17,11 @@ export default function App() {
   const [authTokens, setAuthTokens] = useState();
 
   const setAuthTokensCallback = (data) => {
+    console.log('auth tokens callback called')
     // TODO: try cookies instead of localStorage
     localStorage.setItem('tokens', JSON.stringify(data));
     setAuthTokens(data);
+    console.log('new auth tokens: ' + authTokens);
   }
 
   return (

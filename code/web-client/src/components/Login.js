@@ -9,7 +9,7 @@ import { useAuthContext} from '../context/Authentication';
 
 export default function Login(props) {
     // Add state to our Login component.
-    const [isLoggedIn, setLoggedIn] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isError, setIsError] = useState(false);
     const [networkAddr, setNetworkAddr] = useState("");
 
@@ -17,7 +17,8 @@ export default function Login(props) {
     const { setAuthTokensCallback } = useAuthContext();
 
     // Get referer if available (to go back to the page that the user wanted to access).
-    const referer = props.location.state.referer || '/';
+    // const referer = props.location.state.referer || '/';
+    const referer = '/';
 
     // Methods (closures)
     function postLogin() {
@@ -25,7 +26,7 @@ export default function Login(props) {
         // if result successful
         const token = { accessToken: "hello" }
         setAuthTokensCallback(token)
-        setLoggedIn(true);
+        setIsLoggedIn(true);
     }
 
     if (isLoggedIn) {
