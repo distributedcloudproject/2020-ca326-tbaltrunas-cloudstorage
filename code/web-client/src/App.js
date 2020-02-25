@@ -14,7 +14,7 @@ import { AuthContext } from './context/Authentication';
 export default function App() {
   // Add state to our App component.
   // Returns the value and a setter.
-  const [authTokens, setAuthTokens] = useState();
+  const [authTokens, setAuthTokens] = useState(localStorage.getItem('tokens' || undefined));
 
   const setAuthTokensCallback = (data) => {
     console.log('auth tokens callback called')
