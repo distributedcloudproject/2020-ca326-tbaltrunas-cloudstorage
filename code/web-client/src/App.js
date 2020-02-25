@@ -17,6 +17,7 @@ export default function App() {
   const [authTokens, setAuthTokens] = useState(localStorage.getItem('tokens' || undefined));
 
   const setAuthTokensCallback = (data) => {
+    // Callback updates both app state and storage state
     console.log('auth tokens callback called')
     // TODO: try cookies instead of localStorage
     localStorage.setItem('tokens', JSON.stringify(data));
