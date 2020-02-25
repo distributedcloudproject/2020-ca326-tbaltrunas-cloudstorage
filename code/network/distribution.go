@@ -53,7 +53,7 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 	}
 
 	availableNodes := c.GetAllCloudNodes()
-	if len(availableNodes) > 0 {
+	if len(availableNodes) == 0 {
 		// TODO: Might want to replace an error message with a custom error type.
 		return nil, errors.New("No nodes available")
 	}
@@ -72,7 +72,7 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 
 	// Apply hard constraints (must be met) on nodes.	
 	availableNodes, nodeBenchmarks = filterNodes(availableNodes, nodeBenchmarks)
-	if len(availableNodes) > 0 {
+	if len(availableNodes) == 0 {
 		return nil, errors.New("No nodes available")
 	}
 	utils.GetLogger().Printf("[DEBUG] Filtered available nodes: %v.", availableNodes)
