@@ -6,7 +6,7 @@ export default function Logout(props) {
     const { setAuthTokensCallback } = useAuthContext();
 
     function logOut() {
-        setAuthTokensCallback()
+        setAuthTokensCallback(false)
     }
 
     return (

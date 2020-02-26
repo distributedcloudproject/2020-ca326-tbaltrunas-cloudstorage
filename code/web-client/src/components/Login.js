@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Redirect } from 'react-router-dom';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
@@ -19,18 +20,39 @@ export default function Login(props) {
     const referer = '/';
 
     // Methods (closures)
-    function postLogin() {
+    function postLogin(e) {
+        console.log('Post login called')
+        e.preventDefault();
+
         // POST request
         // if result successful
-        const token = { accessToken: 'hello' }
-        setAuthTokensCallback(token)
-        setIsLoggedIn(true);
+        const path = 'http://127.0.0.1:9001/auth'
+        console.log('Getting: ' + path)
+        axios.get(path)
+            .then(response => {
+                console.log(response)
+                console.log(response.status)
+                console.log(response.data)
+                if (response.status === 200) {
+                    setAuthTokensCallback(response.data)
+                    setIsLoggedIn(true);            
+                } else {
+                    console.log(response.status)
+                    setIsError(true)
+                }
+            })
+            .catch(error => {
+                console.log(error)
+                setIsError(true)
+            })
     }
+
+    console.log("Error: " + isError)
 
     if (isLoggedIn) {
         return <Redirect to={referer} />
     }
-    // not logged in, return a login page
+
     return (
         <Container className='p-5 col-md-4'>
                 <Form className='d-flex flex-column justify-content-center'>
@@ -45,7 +67,7 @@ export default function Login(props) {
                             }}
                         />
                     </Form.Group>
-                    <Button variant='primary' type='submit' onClick={postLogin}>Connect</Button>
+                    <Button variant='primary' type='submit' onClick={e => {postLogin(e)}} >Connect</Button>
                 </Form>
         </Container>
     );

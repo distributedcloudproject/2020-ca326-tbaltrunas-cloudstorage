@@ -1,7 +1,6 @@
 package web
 
 import (
-	"cloud/utils"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,11 +17,11 @@ func Serve(address string, handlers HandlersMap) error {
 	for path, handlerFunc := range handlers {
 		r.HandleFunc(path, handlerFunc)
 	}
+	r.Methods("GET", "OPTIONS")
 
 	http.Handle("/", r)
 
 	// Serve content.
-	utils.GetLogger().Printf("[INFO] Web backend listening on address: %s.", address)
 	return http.ListenAndServe(address, r)
 }
 
