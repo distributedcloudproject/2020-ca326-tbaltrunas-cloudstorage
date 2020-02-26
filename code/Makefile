@@ -15,6 +15,7 @@ make: deps
 
 deps:
 	go get github.com/hashicorp/logutils
+	go get github.com/gorilla/mux
 
 
 clean:

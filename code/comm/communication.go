@@ -12,9 +12,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 	"reflect"
 	"sync"
 	"sync/atomic"
+)
+
+var (
+	msgTimeout = 30 * time.Second
 )
 
 // message is used to keep track of sent requests/messages and retrieving the response.
@@ -23,8 +28,8 @@ type message struct {
 	value []byte
 	err   error
 
-	// The wait group allows us to block the sending thread until a response is received.
-	wg sync.WaitGroup
+	// The channel allows us to block the sending thread until a response is received.
+	ch chan struct{}
 }
 
 type RequestHandler func(message string) interface{}
@@ -163,15 +168,15 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 
 	// Place our message into the map, so that it can be used when receiving responses.
 	m := &message{
-		wg: sync.WaitGroup{},
+		ch: make(chan struct{}),
 	}
+	defer close(m.ch)
+
 	utils.GetLogger().Printf("[DEBUG] Created message: %v.", m)
 	c.messagesMutex.Lock()
 	c.messages[id] = m
 	utils.GetLogger().Printf("[DEBUG] Added message to map: %v.", c.messages)
 	c.messagesMutex.Unlock()
-
-	m.wg.Add(1)
 
 	// Write the buffer to the socket connection.
 	utils.GetLogger().Printf("[DEBUG] Writing buffer to socket: %v (client: %v).", c.conn, &c)
@@ -189,7 +194,14 @@ func (c *client) SendMessage(msg string, data ...interface{}) ([]interface{}, er
 
 	// Waitgroup will be released when there's a response to the request.
 	utils.GetLogger().Println("[DEBUG] Blocking until receive response to request.")
-	m.wg.Wait()
+	// Time out if the message does not complete in time.
+	// Adapted from: https://stackoverflow.com/questions/32840687/timeout-for-waitgroup-wait.
+	select {
+		case <- m.ch:
+		case <- time.After(msgTimeout):
+			// timed out
+			return nil, errors.New("Timeout") 
+	}
 	utils.GetLogger().Println("[DEBUG] Received response to request.")
 
 	// Decode the response from gob into interface{} values. The interface{} then can be casted onto their original
@@ -291,7 +303,7 @@ func (c *client) processRequest(response bool, messageID uint32, data []byte) er
 		if ok {
 			delete(c.messages, messageID)
 			message.value = data
-			message.wg.Done()
+			message.ch <- struct{}{}
 		}
 		utils.GetLogger().Printf("[DEBUG] Updated message map: %v.", c.messages)
 		c.messagesMutex.Unlock()
