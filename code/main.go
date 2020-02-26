@@ -55,8 +55,8 @@ func main() {
 	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
 
 	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
-	fileStorageDirPtr := flag.String("file-storage-dir", "",
-		"Directory where cloud files should be stored on the node.")
+	fileStorageDirPtr := flag.String("file-storage-dir", "", "Directory where cloud files should be stored on the node.")
+	fileStorageCapacityPtr := flag.Int64("file-storage-capacity", 0, "Storage space in bytes allocated for file storage.")
 
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
@@ -143,7 +143,10 @@ func main() {
 			return
 		}
 		c = n
-		c.SetConfig(network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
+		c.SetConfig(network.CloudConfig{
+			FileStorageDir: *fileStorageDirPtr, 
+			FileStorageCapacity: *fileStorageCapacityPtr,
+		})
 		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
 
