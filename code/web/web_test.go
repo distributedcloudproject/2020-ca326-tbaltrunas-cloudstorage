@@ -2,9 +2,22 @@ package web
 
 import (
 	"testing"
+	"net/http"
 )
 
-func TestWebLive(t *testing.T) {
-	go Serve(":9001")
-	for {}
+func TestWebPing(t *testing.T) {
+	handlers := make(HandlersMap)
+	handlers["/ping"] = PingHandler
+	go Serve(":9001", handlers)
+	resp, err := http.Get("http://localhost:9001/ping")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(resp)
+}
+
+// PingHandler for /ping.
+func PingHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "pong"}`))
 }

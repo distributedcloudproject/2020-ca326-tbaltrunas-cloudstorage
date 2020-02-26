@@ -9,19 +9,20 @@ import (
 
 // Web backend, a HTTP API.
 
-func Serve(address string) {
+type HandlersMap map[string]func(http.ResponseWriter, *http.Request)
+
+func Serve(address string, handlers HandlersMap) error {
 	r := mux.NewRouter()
 
-	// Attach handlers
-	r.HandleFunc("/ping", PingHandler)
+	// Attach handlers.
+	for path, handlerFunc := range handlers {
+		r.HandleFunc(path, handlerFunc)
+	}
 
-	utils.GetLogger().Printf("[INFO] Web backend listening on address: %s.", address)
 	http.Handle("/", r)
-	http.ListenAndServe(address, r)
+
+	// Serve content.
+	utils.GetLogger().Printf("[INFO] Web backend listening on address: %s.", address)
+	return http.ListenAndServe(address, r)
 }
 
-// PingHandler for /ping.
-func PingHandler(w http.ResponseWriter, req *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "pong"}`))
-}
