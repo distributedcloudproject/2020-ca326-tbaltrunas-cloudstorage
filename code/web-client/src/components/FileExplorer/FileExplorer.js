@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import FileBrowser from 'react-keyed-file-browser';
-import '../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css'
+import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css';
+import FileExplorerIcons from './Icons';
 
 export default class FileExplorer extends React.Component {
     state = {
@@ -52,6 +53,7 @@ export default class FileExplorer extends React.Component {
       })
     }
 
+    // handleCreateFiles initializes the state of files.
     handleCreateFiles = (files, prefix) => {
       this.setState(state => {
         const newFiles = files.map((file) => {
@@ -152,17 +154,9 @@ export default class FileExplorer extends React.Component {
       return (
         <FileBrowser
           files={this.state.files}
-          // // TODO: use material design icons
-          // icons={{
-          //   File: <i className="file" aria-hidden="true" />,
-          //   Image: <i className="file-image" aria-hidden="true" />,
-          //   PDF: <i className="file-pdf" aria-hidden="true" />,
-          //   Rename: <i className="i-cursor" aria-hidden="true" />,
-          //   Folder: <i className="folder" aria-hidden="true" />,
-          //   FolderOpen: <i className="folder-open" aria-hidden="true" />,
-          //   Delete: <i className="trash" aria-hidden="true" />,
-          //   Loading: <i className="circle-notch spin" aria-hidden="true" />,
-          // }}
+          icons={FileExplorerIcons}
+
+          // Handlers
           onCreateFolder={this.handleCreateFolder}
           onCreateFiles={this.handleCreateFiles}
           onMoveFolder={this.handleRenameFolder}
