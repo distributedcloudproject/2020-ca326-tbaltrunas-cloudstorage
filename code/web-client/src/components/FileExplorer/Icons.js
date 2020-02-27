@@ -11,8 +11,8 @@ import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 const FileExporerIcons = {
     // We use DescriptionIcon (a "document") to represent a File.
     File: <DescriptionIcon />,
-    Folder: <FolderIcon style={{ color: 'blue' }} />,
-    FolderOpen: <FolderOpenIcon style={{ color: 'blue' }}/>,
+    Folder: <FolderIcon />,
+    FolderOpen: <FolderOpenIcon />,
     // We use CreateIcon (a pencil) to represent Rename.
     Rename: <CreateIcon />,
     Delete: <DeleteIcon />,

@@ -57,7 +57,7 @@ export default function Login(props) {
         <Container className='p-5 col-md-4'>
                 <Form className='d-flex flex-column justify-content-center'>
                     <Form.Group controlId='formGroupNetworkAddress' className='mb-4'>
-                        <Form.Label>Network Address</Form.Label>
+                        <Form.Label className='text-white'>Network Address</Form.Label>
                         <Form.Control 
                             type='text' 
                             placeholder='Network Address' 

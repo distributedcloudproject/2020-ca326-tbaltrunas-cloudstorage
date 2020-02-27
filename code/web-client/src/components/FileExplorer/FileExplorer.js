@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import FileBrowser from 'react-keyed-file-browser';
 import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css';
 import FileExplorerIcons from './Icons';
+import './FileExplorer.css';
 
 export default class FileExplorer extends React.Component {
     state = {
