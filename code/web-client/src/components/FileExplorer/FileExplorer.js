@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import FileBrowser from 'react-keyed-file-browser';
 import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css';
 import FileExplorerIcons from './Icons';

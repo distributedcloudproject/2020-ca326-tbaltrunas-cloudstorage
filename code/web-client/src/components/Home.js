@@ -13,10 +13,10 @@ export default function Home(props) {
                 <Logout />
             </Row>
             <Container className='d-flex flex-wrap border border-primary rounded'>
-                <Col className='m-1 p-1'>
+                {/* <Col className='m-1 p-1'>
                     <p>Controls</p>
-                </Col>
-                <Col className='m-1 p-1' xs={10}>
+                </Col> */}
+                <Col className='m-1 p-1'>
                     <FileExplorer />
                 </Col>
             </Container>
