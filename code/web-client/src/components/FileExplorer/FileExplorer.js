@@ -45,14 +45,7 @@ export default class FileExplorer extends React.Component {
       ],
     }
   
-    handleCreateFolder = (key) => {
-      this.setState(state => {
-        state.files = state.files.concat([{
-          key: key,
-        }])
-        return state
-      })
-    }
+    // The handlers have been attempted from https://github.com/uptick/react-keyed-file-browser.
 
     // handleCreateFiles initializes the state of files.
     handleCreateFiles = (files, prefix) => {
@@ -87,25 +80,7 @@ export default class FileExplorer extends React.Component {
       })
     }
 
-    handleRenameFolder = (oldKey, newKey) => {
-      this.setState(state => {
-        const newFiles = []
-        state.files.map((file) => {
-          if (file.key.substr(0, oldKey.length) === oldKey) {
-            newFiles.push({
-              ...file,
-              key: file.key.replace(oldKey, newKey),
-            //   modified: +Moment(),
-            })
-          } else {
-            newFiles.push(file)
-          }
-        })
-        state.files = newFiles
-        return state
-      })
-    }
-
+    // handleRenameFile renames an existing file.
     handleRenameFile = (oldKey, newKey) => {
       this.setState(state => {
         const newFiles = []
@@ -125,11 +100,12 @@ export default class FileExplorer extends React.Component {
       })
     }
 
-    handleDeleteFolder = (folderKey) => {
+    // handleDeleteFile deletes an existing file.
+    handleDeleteFile = (fileKey) => {
       this.setState(state => {
         const newFiles = []
         state.files.map((file) => {
-          if (file.key.substr(0, folderKey.length) !== folderKey) {
+          if (file.key !== fileKey) {
             newFiles.push(file)
           }
         })
@@ -138,11 +114,43 @@ export default class FileExplorer extends React.Component {
       })
     }
 
-    handleDeleteFile = (fileKey) => {
+    // handleCreateFolder creates a new folder.
+    handleCreateFolder = (key) => {
+      console.log("Creating folder: " + key)
+      this.setState(state => {
+        state.files = state.files.concat([{
+          key: key,
+        }])
+        return state
+      })
+    }
+
+    // handleRenameFolder renames an existing folder.
+    handleRenameFolder = (oldKey, newKey) => {
       this.setState(state => {
         const newFiles = []
         state.files.map((file) => {
-          if (file.key !== fileKey) {
+          if (file.key.substr(0, oldKey.length) === oldKey) {
+            newFiles.push({
+              ...file,
+              key: file.key.replace(oldKey, newKey),
+            //   modified: +Moment(),
+            })
+          } else {
+            newFiles.push(file)
+          }
+        })
+        state.files = newFiles
+        return state
+      })
+    }
+
+    // handleDeleteFolder deletes an existing folder.
+    handleDeleteFolder = (folderKey) => {
+      this.setState(state => {
+        const newFiles = []
+        state.files.map((file) => {
+          if (file.key.substr(0, folderKey.length) !== folderKey) {
             newFiles.push(file)
           }
         })
