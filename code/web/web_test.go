@@ -6,10 +6,9 @@ import (
 )
 
 func TestWebPing(t *testing.T) {
-	handlers := make(HandlersMap)
-	handlers["/ping"] = PingHandler
-	go Serve(":9001", handlers)
-	resp, err := http.Get("<h>																																																																																																																																																																																																																																																																						</h>ttp://localhost:9001/ping")
+	http.HandleFunc("/ping", PingHandler)
+	go Serve(":9001", nil)
+	resp, err := http.Get("http://localhost:9001/")
 	if err != nil {
 		t.Error(err)
 	}
