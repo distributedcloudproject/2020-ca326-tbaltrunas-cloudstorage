@@ -2,3 +2,9 @@
 .rendered-file-browser th,a,a:hover,td,h2,dl {
     color: white;
 }
+
+.icon-button * {
+    padding: 3%;
+}
+
+/* TODO: "Confirm" button style. */

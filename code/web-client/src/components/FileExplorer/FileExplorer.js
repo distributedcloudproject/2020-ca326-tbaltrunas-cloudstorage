@@ -1,9 +1,13 @@
 import React from 'react';
+import Container from 'react-bootstrap/Container';
+import Button from 'react-bootstrap/Button';
 import FileBrowser from 'react-keyed-file-browser';
 import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css';
-import FileExplorerIcons from './Icons';
+import * as FileExplorerIcons from './Icons';
 import './FileExplorer.css';
-import { FilesAPI } from '../../api'
+import { FilesAPI } from '../../api';
+// import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+
 
 export default class FileExplorer extends React.Component {
     state = {
@@ -20,6 +24,9 @@ export default class FileExplorer extends React.Component {
 
     // handleCreateFiles adds new files to existing files.
     handleCreateFiles = (files, prefix) => {
+      // TODO: upload button
+      // TODO: Upload folder or multiple selected files vs. upload single file?
+      FilesAPI.CreateFile()
       this.setState(state => {
         const newFiles = files.map((file) => {
           let newKey = prefix
@@ -33,7 +40,6 @@ export default class FileExplorer extends React.Component {
             // modified: +Moment(),
           }
         })
-  
         const uniqueNewFiles = []
         newFiles.map((newFile) => {
           let exists = false
@@ -53,6 +59,7 @@ export default class FileExplorer extends React.Component {
 
     // handleRenameFile renames an existing file.
     handleRenameFile = (oldKey, newKey) => {
+      FilesAPI.UpdateFile()
       this.setState(state => {
         const newFiles = []
         state.files.map((file) => {
@@ -73,6 +80,7 @@ export default class FileExplorer extends React.Component {
 
     // handleDeleteFile deletes an existing file.
     handleDeleteFile = (fileKey) => {
+      FilesAPI.DeleteFile()
       this.setState(state => {
         const newFiles = []
         state.files.map((file) => {
@@ -87,7 +95,7 @@ export default class FileExplorer extends React.Component {
 
     // handleCreateFolder creates a new folder.
     handleCreateFolder = (key) => {
-      console.log("Creating folder: " + key)
+      FilesAPI.CreateFolder()
       this.setState(state => {
         state.files = state.files.concat([{
           key: key,
@@ -98,6 +106,7 @@ export default class FileExplorer extends React.Component {
 
     // handleRenameFolder renames an existing folder.
     handleRenameFolder = (oldKey, newKey) => {
+      FilesAPI.UpdateFolder()
       this.setState(state => {
         const newFiles = []
         state.files.map((file) => {
@@ -118,6 +127,7 @@ export default class FileExplorer extends React.Component {
 
     // handleDeleteFolder deletes an existing folder.
     handleDeleteFolder = (folderKey) => {
+      FilesAPI.DeleteFolder()
       this.setState(state => {
         const newFiles = []
         state.files.map((file) => {
@@ -132,20 +142,30 @@ export default class FileExplorer extends React.Component {
   
     render() {
       return (
-        <FileBrowser
-          files={this.state.files}
-          icons={FileExplorerIcons}
+        <Container>
+          <Button className="icon-button">
+            < FileExplorerIcons.Upload />Upload
+          </Button>
+      
+          <Button className="icon-button">
+            < FileExplorerIcons.Download/>Download
+          </Button>
 
-          // Handlers
-          onCreateFolder={this.handleCreateFolder}
-          onCreateFiles={this.handleCreateFiles}
-          onMoveFolder={this.handleRenameFolder}
-          onMoveFile={this.handleRenameFile}
-          onRenameFolder={this.handleRenameFolder}
-          onRenameFile={this.handleRenameFile}
-          onDeleteFolder={this.handleDeleteFolder}
-          onDeleteFile={this.handleDeleteFile}
-        />
+          <FileBrowser
+            files={this.state.files}
+            icons={FileExplorerIcons.IconObjects}
+
+            // Handlers
+            onCreateFolder={this.handleCreateFolder}
+            onCreateFiles={this.handleCreateFiles}
+            onMoveFolder={this.handleRenameFolder}
+            onMoveFile={this.handleRenameFile}
+            onRenameFolder={this.handleRenameFolder}
+            onRenameFile={this.handleRenameFile}
+            onDeleteFolder={this.handleDeleteFolder}
+            onDeleteFile={this.handleDeleteFile}
+          />
+        </Container>
       )
     }
 }

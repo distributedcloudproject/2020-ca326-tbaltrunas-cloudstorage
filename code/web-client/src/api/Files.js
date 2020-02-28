@@ -1,10 +1,13 @@
 import axios from 'axios';
+import urljoin from 'url-join';
 import * as Constants from './Constants';
 
 // Perform a GET request for all files.
 function GetFiles(callback) {
     console.log("Called API method: GetFiles")
-    axios.get('http://127.0.0.1:9001/files')
+    const url = urljoin(Constants.GetBase(), '/files')
+    console.log('Computed URL: ' + url)
+    axios.get(url)
         .then(response => {
             if (response.status = 200) {
                 callback(response.data)
@@ -17,9 +20,18 @@ function GetFiles(callback) {
         })
 }
 
-// Perform a GET request for a file.
+// Perform a GET request for a file's metadata.
 function GetFile(fileID, callback) {
     console.log("Called API method: GetFile")
+    const url = urljoin(Constants.GetBase(), '/files/`${fileID}`')
+    console.log('Computed URL: ' + url)
+}
+
+// Perform a GET request for a file's contents.
+function GetFileContents(fileID, callback) {
+    console.log("Called API method: GetFileContents")
+    const url = urljoin(Constants.GetBase(), '/files/`${fileID}`', '?type=contents')
+    console.log('Computed URL: ' + url)
 }
 
 // Perform a POST request with a file.

@@ -1,11 +1,13 @@
 import url from 'url';
 
 // TODO: environment variables?
-let base = url.format({
-    protocol: 'http',
-    hostname: '127.0.0.1',
-    port: '9001',
-});
+// let base = url.format({
+//     protocol: 'http',
+//     hostname: '127.0.0.1',
+//     port: '9001',
+// });
+
+let base = 'http://localhost:9001/'
 
 let endpointVersion = 'api/v1';
 
