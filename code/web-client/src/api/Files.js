@@ -9,7 +9,7 @@ function GetFiles(callback) {
     console.log('Computed URL: ' + url)
     axios.get(url)
         .then(response => {
-            if (response.status = 200) {
+            if (response.status === 200) {
                 callback(response.data)
             } else {
                 console.log(response.status)
@@ -35,8 +35,52 @@ function GetFileContents(fileID, callback) {
 }
 
 // Perform a POST request with a file.
-function CreateFile(fileID, file, callback) {
+function CreateFile(file, callback) {
     console.log("Called API method: CreateFile")
+    // const reader = file.stream().getReader();
+    // const contents = Uint8Array();
+    // const numRead = 0;
+    // reader.read()
+    //     .then(res => {
+    //         const {value, done} = res;
+    //         console.log(value)
+    //         console.log(done)
+            
+    //         if (done) {
+    //             return;
+    //         }
+
+    //         numRead += value.length;
+    //     })
+    //     .catch(error => {
+    //         console.error(error)
+    //     })
+    
+    // if (file.size != numRead) {
+    //     console.error('File size does not match the number of bytes read: ' + numRead)
+    // }
+
+    const formData = new FormData();
+    formData.append('file', file)
+
+    axios.post(urljoin(Constants.GetBase(), 
+                       '/files', 
+                       `?name=${file.name}`,
+                       `&size=${file.size}`,
+                       `&type=${file.type}`,
+                       `&lastModified=${file.lastModified}`
+    ), formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        }
+    }
+    ).then(response => {
+        if (response.status !== 200) {
+            console.warn(response.status)
+        }
+    }).catch(error => {
+        console.error(error)
+    })
 }
 
 // Perform a PUT request on a file.

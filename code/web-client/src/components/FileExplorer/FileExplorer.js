@@ -23,7 +23,11 @@ export default class FileExplorer extends React.Component {
     // handleCreateFiles adds new files to existing files.
     // files is an Array of DOM File objects (created by input[type=file]).
     handleCreateFiles = (files) => {
-      FilesAPI.CreateFile()
+      console.log(files)
+      files.forEach(file => {
+        FilesAPI.CreateFile(file)
+      });
+      
       const prefix = ''; // TODO: handle prefix
       this.setState({state: UpdateUI.UpdateUICreateFiles(this.state, files, prefix)})
     }

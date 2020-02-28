@@ -18,6 +18,8 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 	r.HandleFunc("/auth", c.WebAuthenticationHandler)
 	r.HandleFunc("/netinfo", c.NetworkInfoHandler)
 	r.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
+	r.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
+	r.HandleFunc("/files", c.PreflightFile).Methods(http.MethodOptions)
 
 	utils.GetLogger().Printf("[INFO] HTTP backend listening on address: %s.", address)
 	http.Handle("/", r)
@@ -90,4 +92,20 @@ func (c *cloud) GetFiles(w http.ResponseWriter, req *http.Request) {
 		// TODO: respond with status code (internal server error?)
 	}
 	w.Write(data)
+}
+
+func (c *cloud) CreateFile(w http.ResponseWriter, req *http.Request) {
+	utils.GetLogger().Println("[INFO] CreateFile called.")
+	w.WriteHeader(http.StatusOK)
+
+	file, _, _ := req.FormFile("file")
+	buffermeta := make([]byte, 100)
+	file.Read(buffermeta)
+	utils.GetLogger().Printf("[DEBUG] %v", string(buffermeta))
+}
+
+func (c *cloud) PreflightFile(w http.ResponseWriter, req *http.Request) {
+	utils.GetLogger().Println("[INFO] PreflightFile called.")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(http.StatusOK)
 }
