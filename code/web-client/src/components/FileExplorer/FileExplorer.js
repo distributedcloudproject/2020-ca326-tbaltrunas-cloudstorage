@@ -5,7 +5,9 @@ import FileBrowser from 'react-keyed-file-browser';
 import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css';
 import * as FileExplorerIcons from './Icons';
 import './FileExplorer.css';
+import Upload from './Upload';
 import { FilesAPI } from '../../api';
+
 // import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
 
@@ -23,9 +25,9 @@ export default class FileExplorer extends React.Component {
     // The handlers have been attempted from https://github.com/uptick/react-keyed-file-browser.
 
     // handleCreateFiles adds new files to existing files.
-    handleCreateFiles = (files, prefix) => {
-      // TODO: upload button
-      // TODO: Upload folder or multiple selected files vs. upload single file?
+    // files is an Array of DOM File objects (created by input[type=file]).
+    handleCreateFiles = (files) => {
+      const prefix = ''; // TODO: handle prefix
       FilesAPI.CreateFile()
       this.setState(state => {
         const newFiles = files.map((file) => {
@@ -143,10 +145,9 @@ export default class FileExplorer extends React.Component {
     render() {
       return (
         <Container>
-          <Button className="icon-button">
-            < FileExplorerIcons.Upload />Upload
-          </Button>
-      
+
+          <Upload callback={this.handleCreateFiles} />
+
           <Button className="icon-button">
             < FileExplorerIcons.Download/>Download
           </Button>

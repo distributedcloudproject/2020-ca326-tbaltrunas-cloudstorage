@@ -26,6 +26,7 @@ export default function App() {
 
   return (
       <AuthContext.Provider value={{ authTokens, setAuthTokensCallback: setAuthTokensCallback }}>
+        {/* TODO: header and footer with logo and info/links */}
         <Router>
           <Route path='/login' component={Login} />
           <PrivateRoute exact path='/' component={Home} />

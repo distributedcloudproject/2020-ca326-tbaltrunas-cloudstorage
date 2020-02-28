@@ -15,7 +15,11 @@ a:hover {
   text-decoration: none;
 }
 
-.App-logo {
+.icon-button svg {
+  padding: 3%;
+}
+
+/* .App-logo {
   height: 40vmin;
   pointer-events: none;
 }
@@ -33,4 +37,4 @@ a:hover {
 
 .App-link {
   color: #61dafb;
-}
+} */
