@@ -23,46 +23,22 @@ function GetFiles(callback) {
 // Perform a GET request for a file's metadata.
 function GetFile(fileID, callback) {
     console.log("Called API method: GetFile")
-    const url = urljoin(Constants.GetBase(), '/files/`${fileID}`')
+    const url = urljoin(Constants.GetBase(), '/files', `?id=${fileID}`)
     console.log('Computed URL: ' + url)
 }
 
 // Perform a GET request for a file's contents.
 function GetFileContents(fileID, callback) {
     console.log("Called API method: GetFileContents")
-    const url = urljoin(Constants.GetBase(), '/files/`${fileID}`', '?type=contents')
+    const url = urljoin(Constants.GetBase(), '/files', `?id=${fileID}`, '&filter=contents')
     console.log('Computed URL: ' + url)
 }
 
 // Perform a POST request with a file.
 function CreateFile(file, callback) {
     console.log("Called API method: CreateFile")
-    // const reader = file.stream().getReader();
-    // const contents = Uint8Array();
-    // const numRead = 0;
-    // reader.read()
-    //     .then(res => {
-    //         const {value, done} = res;
-    //         console.log(value)
-    //         console.log(done)
-            
-    //         if (done) {
-    //             return;
-    //         }
-
-    //         numRead += value.length;
-    //     })
-    //     .catch(error => {
-    //         console.error(error)
-    //     })
-    
-    // if (file.size != numRead) {
-    //     console.error('File size does not match the number of bytes read: ' + numRead)
-    // }
-
     const formData = new FormData();
     formData.append('file', file)
-
     axios.post(urljoin(Constants.GetBase(), 
                        '/files', 
                        `?name=${file.name}`,

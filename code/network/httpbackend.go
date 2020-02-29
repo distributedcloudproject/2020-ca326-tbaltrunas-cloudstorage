@@ -1,6 +1,7 @@
 package network
 
 import (
+	// "cloud/datastore"
 	"cloud/utils"
 	"net/http"
 	"strconv"
@@ -94,14 +95,38 @@ func (c *cloud) GetFiles(w http.ResponseWriter, req *http.Request) {
 	w.Write(data)
 }
 
+// Required Body:
+// Required Query Params:
+// Optional Query Params:
 func (c *cloud) CreateFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] CreateFile called.")
 	w.WriteHeader(http.StatusOK)
 
+	utils.GetLogger().Printf("[DEBUG] URL: %v", req.URL)
+	qs := req.URL.Query()
+	utils.GetLogger().Printf("[DEBUG] Querystring parameters: %v", qs)
+	names, ok := qs["name"]
+	if ok {
+		utils.GetLogger().Printf("[DEBUG] Name: %v", names)
+	}
+	sizes, ok := qs["size"]
+	if ok {
+		utils.GetLogger().Printf("[DEBUG] Size: %v", sizes)
+	}
+	var size int
+	if len(sizes) != 0 {
+		// TODO: check that only 1 param
+		size, _ = strconv.Atoi(sizes[0])
+	}
+	// TODO: validation.
+	// Param exists or not -> switch flow.
+	// Only 1 value of param.
+
+	// f := datastore.NewFile(file, path, size)
 	file, _, _ := req.FormFile("file")
-	buffermeta := make([]byte, 100)
-	file.Read(buffermeta)
-	utils.GetLogger().Printf("[DEBUG] %v", string(buffermeta))
+	buffer := make([]byte, size)
+	file.Read(buffer)
+	utils.GetLogger().Printf("[DEBUG] %v", string(buffer))
 }
 
 func (c *cloud) PreflightFile(w http.ResponseWriter, req *http.Request) {
