@@ -2,7 +2,9 @@ package screens
 
 import (
 	"cloud/datastore"
+	"cloud/desktop/resources"
 	"cloud/network"
+	"errors"
 	"fyne.io/fyne"
 	fdialog "fyne.io/fyne/dialog"
 	"fyne.io/fyne/layout"
@@ -78,24 +80,6 @@ func FileListScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), addFile))
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, hbox, nil, nil), hbox, scroll)
-
-	//return fyne.NewContainerWithLayout(layout.NewGridLayoutWithRows(3), scroll, scroll2,
-	//	widget.NewHBox(
-	//		widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), func() {
-	//			updateList()
-	//		}),
-	//		widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), addFile),
-	//	))
-
-	//return widget.NewVBox(
-	//	fyne.NewContainerWithLayout(layout.NewBorderLayout(scroll, nil, nil, nil), scroll, scroll2),
-	//	widget.NewHBox(
-	//		widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), func() {
-	//			updateList()
-	//		}),
-	//		widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), addFile),
-	//	),
-	//)
 }
 
 func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
@@ -107,27 +91,48 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		list.Children = []fyne.CanvasObject{}
 		list.Append(widget.NewLabel(folderPath))
 		if folderPath != "/" && folderPath != "" {
-			list.Append(widget.NewHBox(widget.NewButtonWithIcon("..", theme.FolderIcon(), func() {
+			list.Append(NewFileWidget(theme.FolderIcon(), "..", func() {
 				folderPaths := strings.Split(folderPath, "/")
 				folderPath = "/" + path.Join(folderPaths[:len(folderPaths)-1]...)
 				redraw()
-			})))
+			}))
 		}
 
 		folder, _ := c.GetFolder(folderPath)
 		for i := range folder.SubFolders {
 			p := folder.SubFolders[i].Name
-			list.Append(widget.NewHBox(widget.NewButtonWithIcon(p, theme.FolderIcon(), func() {
+			list.Append(NewFileWidget(theme.FolderIcon(), p, func() {
 				folderPath = path.Join(folderPath, p)
+				redraw()
+			}, widget.NewToolbarAction(theme.DeleteIcon(), func() {
+				err := c.DeleteDirectory(folderPath + "/" + p)
+				if err != nil {
+					fdialog.ShowError(err, w)
+				}
 				redraw()
 			})))
 		}
 
 		for i := range folder.Files.Files {
 			file := folder.Files.Files[i]
-			list.Append(widget.NewHBox(widget.NewButtonWithIcon(path.Base(file.Name), theme.ContentPasteIcon(), func() {
-				// Nothing
-			})))
+
+			list.Append(NewFileWidget(fileIcon(file.Name), file.Name, nil,
+				&toolbarWidget{w: widget.NewLabel("24 KB")},
+				widget.NewToolbarSpacer(),
+				widget.NewToolbarAction(theme.DeleteIcon(), func() {
+					fullpath := folderPath + "/" + file.Name
+					if !c.LockFile(fullpath) {
+						fdialog.ShowError(errors.New("Could not acquire lock on the file"), w)
+						return
+					}
+					defer c.UnlockFile(fullpath)
+
+					err := c.DeleteFile(folderPath + "/" + file.Name)
+					if err != nil {
+						fdialog.ShowError(err, w)
+					}
+					redraw()
+				})))
 		}
 
 		list.Refresh()
@@ -164,9 +169,12 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 	addFolder := func() {
 		content := widget.NewEntry()
 		content.SetPlaceHolder("folder")
-		fdialog.ShowCustomConfirm("Enter folder name", "Create", "Cancel", content, func(bool) {
-			c.GetFolder(folderPath + "/" + content.Text)
-			updateList()
+		fdialog.ShowCustomConfirm("Enter folder name", "Create", "Cancel", content, func(s bool) {
+			//c.GetFolder(folderPath + "/" + content.Text)
+			if s {
+				c.CreateDirectory(folderPath + "/" + content.Text)
+				updateList()
+			}
 		}, w)
 	}
 	updateList()
@@ -178,4 +186,18 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		widget.NewButtonWithIcon("Add Folder", theme.ContentAddIcon(), addFolder))
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, hbox, nil, nil), hbox, scroll)
+}
+
+func fileIcon(filename string) *theme.ThemedResource {
+	s := strings.Split(filename, ".")
+	if len(s) <= 1 {
+		return resources.FileIcons["file"]
+	}
+	ext := s[len(s)-1]
+	t, ok := resources.FileIcons[ext]
+	if ok {
+		return t
+	}
+
+	return resources.FileIcons["file"]
 }
