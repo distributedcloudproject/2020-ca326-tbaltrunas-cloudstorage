@@ -19,12 +19,12 @@ type Client interface {
 	HandleConnection() error
 	Close() error
 }
- */
+*/
 
 type localClient struct {
-	requests map[string]interface{}
+	requests         map[string]interface{}
 	requestsHandlers []RequestHandler
-	requestsMutex sync.RWMutex
+	requestsMutex    sync.RWMutex
 }
 
 func NewLocalClient() Client {
@@ -88,10 +88,29 @@ func (c *localClient) SendMessage(msg string, data ...interface{}) ([]interface{
 	}
 	returnVars := reflect.ValueOf(request).Call(vars)
 
+	if len(returnVars) > 0 && returnVars[len(returnVars)-1].Type().Implements(errorInterface) {
+		if !returnVars[len(returnVars)-1].IsNil() {
+			err := returnVars[len(returnVars)-1].Interface().(error)
+			returnVars[len(returnVars)-1] = reflect.ValueOf(commError{err.Error()})
+		} else {
+			returnVars[len(returnVars)-1] = reflect.ValueOf(commError{""})
+		}
+	}
+
 	returnVarsInterface := make([]interface{}, len(returnVars))
 	for i := range returnVars {
 		returnVarsInterface[i] = returnVars[i].Interface()
 	}
 
-	return returnVarsInterface, nil
+	var err error
+	if len(returnVarsInterface) > 0 {
+		if e, ok := returnVarsInterface[len(returnVarsInterface)-1].(commError); ok {
+			returnVarsInterface = returnVarsInterface[:len(returnVarsInterface)-1]
+			if e.Error != "" {
+				err = errors.New(e.Error)
+			}
+		}
+	}
+
+	return returnVarsInterface, err
 }
