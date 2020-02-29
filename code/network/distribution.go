@@ -118,6 +118,12 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 		scheme[nodeID] = sequenceNumbers
 	}
 	return scheme, nil
+
+	// FIXME: Don't save a replica multiple times on the same node when anti-affinity is off.
+	// Have a count of how many replicas were made, and return that count.
+	// See thread at:
+	// https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage/merge_requests/18#note_12130
+	// Implementation detail: Would probably need a "distributionAlgoChunk(chunk, numReplicas)" function.
 }
 
 func filterNodes(availableNodes []*cloudNode, benchmarks []NodeBenchmark) ([]*cloudNode, []NodeBenchmark) {
