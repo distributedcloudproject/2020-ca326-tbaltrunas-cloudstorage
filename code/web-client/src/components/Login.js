@@ -5,6 +5,7 @@ import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import { useAuthContext} from '../context/Authentication';
+import { AuthenticationAPI } from '../api';
 
 export default function Login(props) {
     // Add state to our Login component.
@@ -20,31 +21,23 @@ export default function Login(props) {
     const referer = '/';
 
     // Methods (closures)
-    function postLogin(e) {
-        console.log('Post login called')
+    async function postLogin(e) {
+        console.log('postLogin called')
         e.preventDefault();
 
-        // POST request
-        // if result successful
-        const path = 'http://127.0.0.1:9001/auth'
-        console.log('Getting: ' + path)
-        axios.get(path)
-            .then(response => {
-                console.log(response)
-                console.log(response.status)
-                console.log(response.data)
-                if (response.status === 200) {
-                    setAuthTokensCallback(response.data)
-                    setIsLoggedIn(true);            
-                } else {
-                    console.log(response.status)
-                    setIsError(true)
-                }
-            })
-            .catch(error => {
-                console.log(error)
-                setIsError(true)
-            })
+        try {
+            const response = await AuthenticationAPI.Login();
+            if (response.status === 200) {
+                setAuthTokensCallback(response.data);
+                setIsLoggedIn(true);            
+            } else {
+                console.log(response.status);
+                setIsError(true);
+            }
+        } catch (error) {
+            console.log(error);
+            setIsError(true);
+        }
     }
 
     console.log("Error: " + isError)
@@ -67,7 +60,7 @@ export default function Login(props) {
                             }}
                         />
                     </Form.Group>
-                    <Button variant='primary' type='submit' onClick={e => {postLogin(e)}} >Connect</Button>
+                    <Button variant='primary' type='submit' onClick={postLogin} >Connect</Button>
                 </Form>
         </Container>
     );

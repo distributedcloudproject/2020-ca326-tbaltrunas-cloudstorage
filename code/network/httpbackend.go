@@ -34,9 +34,14 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 	return http.ListenAndServe(address, r)
 }
 
+func (c *cloud) PreflightFile(w http.ResponseWriter, req *http.Request) {
+	utils.GetLogger().Println("[INFO] PreflightFile called.")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(http.StatusOK)
+}
+
 func (c *cloud) WebAuthenticationHandler(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] WebAuthenticationHandler called.")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write([]byte(`{"access_token": FAKETOKEN"}`))
 }
 
@@ -45,12 +50,6 @@ func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	networkName := c.Network().Name
 	w.Write([]byte(fmt.Sprintf(`{"name": "%s"}`, networkName)))
-}
-
-func (c *cloud) PreflightFile(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] PreflightFile called.")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(http.StatusOK)
 }
 
 // Required Body:
