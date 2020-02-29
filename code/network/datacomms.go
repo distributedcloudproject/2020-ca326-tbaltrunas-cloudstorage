@@ -5,10 +5,7 @@ import (
 	"cloud/utils"
 	"encoding/gob"
 	"errors"
-	"os"
 	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -27,17 +24,6 @@ const (
 	LockFileMsg   = "LockFile"
 	UnlockFileMsg = "UnlockFile"
 )
-
-type SaveChunkRequest struct {
-	// CloudPath is the filepath for the chunk on the cloud.
-	// The path should be rooted at "/" (without drive letter on Windows).
-	// The actual storage path will depedend on the node's configuration.
-	CloudPath string
-
-	Chunk datastore.Chunk // chunk metadata
-
-	Contents []byte // chunk bytes
-}
 
 func init() {
 	gob.Register(&datastore.File{})
@@ -112,14 +98,23 @@ func (r request) OnDeleteDirectory(folderPath string) error {
 	return errors.New("directory not found")
 }
 
-// AddFile adds a file to the Network's datastore.
-// It does not add the actual chunks.
+// AddFile adds a file to the Network. It distributes the file automatically.
 // TODO: might want to do the actual distribution here, so that the file gets saved with this call.
-func (c *cloud) AddFile(file *datastore.File, path string) error {
+func (c *cloud) AddFile(file *datastore.File, cloudPath string, reader io.Reader) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
-	_, err := c.SendMessageToMe(AddFileMsg, file, path)
-	c.SendMessageAllOthers(AddFileMsg, file, path)
+	_, err := c.SendMessageToMe(AddFileMsg, file, cloudPath)
+	c.SendMessageAllOthers(AddFileMsg, file, cloudPath)
 	utils.GetLogger().Printf("[DEBUG] Completed AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
+
+	// TODO: move this to another function.
+	for _, chunk := range file.Chunks.Chunks {
+		c.DistributeChunk(datastore.ChunkStore{
+			Chunk:        chunk,
+			FileID:       file.ID,
+			StoredAsFile: true,
+			FilePath:     localPath,
+		})
+	}
 	return err
 }
 
@@ -141,20 +136,9 @@ func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 
 	c.networkMutex.Lock()
 	folder.Files.Add(file)
-	c.network.DataStore.Add(file)
 	c.networkMutex.Unlock()
 
 	return nil
-}
-
-func (c *cloud) DistributeFile(file *datastore.File) {
-	for i := 0; i < file.Chunks.NumChunks; i++ {
-		c.NodesMutex.RLock()
-		for j := range c.Nodes {
-			c.Nodes[j].SaveChunk(file, i)
-		}
-		c.NodesMutex.RUnlock()
-	}
 }
 
 // UpdateFile updates a file on the network's data store.
@@ -208,7 +192,7 @@ func (r request) OnUpdateFileRequest(file *datastore.File, filepath string) erro
 }
 
 // DeleteFile deletes a file on the network's data store.
-// Does not delete the actual chunks. File lock must be acquired for given path before.
+// Will delete stored chunks as well. File lock must be acquired for given path before.
 func (c *cloud) DeleteFile(path string) error {
 	_, err := c.SendMessageToMe(DeleteFileMsg, path)
 	if err != nil {
@@ -253,8 +237,22 @@ func (r request) OnDeleteFileRequest(filepath string) error {
 	if found == -1 {
 		return errors.New("file " + filename + " was not found")
 	}
+
+	var errs error
+	for _, chunk := range folder.Files.Files[found].Chunks.Chunks {
+		err = c.deleteStoredFileChunk(folder.Files.Files[found].ID, chunk.ID)
+		if err != nil {
+			if errs == nil {
+				errs = errors.New("")
+			}
+			errs = errors.New(errs.Error() + err.Error() + ";")
+		}
+	}
+	if errs != nil {
+		utils.GetLogger().Printf("[WARNING] Failed to Delete chunks for %v: %v", filepath, errs)
+	}
 	folder.Files.Files = append(folder.Files.Files[:found], folder.Files.Files[found+1:]...)
-	return nil
+	return errs
 }
 
 // MoveFile moves a file from old path to new path.
@@ -322,17 +320,21 @@ func (r request) OnMoveFileRequest(filepath string, newfilepath string) error {
 	return nil
 }
 
+type SaveChunkRequest struct {
+	FileID datastore.FileID
+	Chunk  datastore.Chunk // chunk metadata
+
+	Contents []byte // chunk bytes
+}
+
 // SaveChunk persistently stores the chunkNum chunk on the node, using metadata from the file the chunk belongs to.
-func (n *cloudNode) SaveChunk(file *datastore.File, chunkNum int) error {
+func (n *cloudNode) SaveChunk(fileID datastore.FileID, chunk datastore.Chunk, contents []byte) error {
 	utils.GetLogger().Printf("[INFO] Sending SaveChunk request for file: %v, chunk number: %d, on node: %v.",
-		file.Name, chunkNum, n.ID)
-	chunk := file.Chunks.Chunks[chunkNum]
-	contents, _, err := file.GetChunk(chunkNum)
-	cloudPath := filepath.Base(file.Name) + "-" + strconv.Itoa(chunk.SequenceNumber)
-	_, err = n.client.SendMessage(SaveChunkMsg, SaveChunkRequest{
-		CloudPath: cloudPath,
-		Chunk:     chunk,
-		Contents:  contents,
+		fileID, chunk.SequenceNumber, n.ID)
+	_, err := n.client.SendMessage(SaveChunkMsg, SaveChunkRequest{
+		FileID:   fileID,
+		Chunk:    chunk,
+		Contents: contents,
 	})
 	return err
 }
@@ -340,45 +342,18 @@ func (n *cloudNode) SaveChunk(file *datastore.File, chunkNum int) error {
 // OnSaveChunkRequest persistently stores a chunk given by its contents, as the given cloud path.
 func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	utils.GetLogger().Printf("[INFO] Node: %v, received SaveChunk request.", r.Cloud.MyNode().ID)
-	cloudPath := sr.CloudPath
-	chunk := sr.Chunk
-	contents := sr.Contents
-	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest with path: %v, chunk: %v.", cloudPath, chunk)
+	utils.GetLogger().Printf("[DEBUG] Got SaveChunkRequest chunk: %v.", sr.Chunk)
 
 	// TODO: verify chunk ID
-	// chunkID := chunk.ID
-
-	// persistently store chunk
-	c := r.Cloud
-	c.Mutex.Lock()
-
-	localPath := filepath.Join(c.config.FileStorageDir, cloudPath)
-	utils.GetLogger().Printf("[DEBUG] Computed path where to store chunk: %s.", localPath)
-
-	// TODO: maybe this should be done when setting up the node
-	err := os.MkdirAll(filepath.Dir(localPath), os.ModeDir)
-	if err != nil {
-		c.Mutex.Unlock()
-		return err
-	}
 
 	utils.GetLogger().Println("[DEBUG] Created/verified existence of path directories.")
-	w, err := os.Create(localPath)
-	if err != nil {
-		c.Mutex.Unlock()
+	if err := r.Cloud.storeChunk(sr.FileID, sr.Chunk, sr.Contents); err != nil {
 		return err
 	}
-	defer w.Close()
 
-	utils.GetLogger().Printf("[DEBUG] Saving chunk to writer: %v.", w)
-	err = datastore.SaveChunk(w, contents)
-	c.Mutex.Unlock()
-	if err != nil {
-		return err
-	}
-	utils.GetLogger().Printf("[DEBUG] Finished saving chunk to writer: %v.", w)
+	utils.GetLogger().Printf("[DEBUG] Finished saving chunk.")
 
-	err = c.updateChunkNodes(chunk.ID, c.MyNode().ID)
+	err := r.Cloud.updateChunkNodes(sr.Chunk.ID, r.Cloud.MyNode().ID)
 	return err
 }
 

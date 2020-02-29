@@ -4,6 +4,7 @@ import (
 	"cloud/datastore"
 	"crypto/rsa"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -86,6 +87,10 @@ type cloud struct {
 	// Mutex is used for any other cloud variable.
 	Mutex sync.RWMutex
 
+	// Local storage.
+	chunkStorage      map[string][]datastore.ChunkStore
+	chunkStorageMutex sync.RWMutex
+
 	// Non-authorized connections.
 	PendingNodes []*cloudNode
 
@@ -107,6 +112,7 @@ func (c *cloud) Config() CloudConfig {
 
 func (c *cloud) SetConfig(config CloudConfig) {
 	c.config = config
+	os.MkdirAll(c.config.FileStorageDir, os.ModeDir)
 }
 
 func (c *cloud) Events() *CloudEvents {

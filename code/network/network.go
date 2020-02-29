@@ -7,6 +7,8 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
+	"errors"
+	"path"
 	"strings"
 )
 
@@ -40,12 +42,9 @@ type Network struct {
 
 	RootFolder *NetworkFolder
 
-	// DataStore is a list of all the user files on the cloud.
-	DataStore datastore.DataStore
-
 	// ChunkNodes maps chunk ID's to the Nodes (Node ID's) that contain that chunk.
 	// This way we can keep track of which nodes contain which chunks.
-	// And make decisions about the chunk requets to perform.
+	// And make decisions about the chunk requests to perform.
 	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
 	ChunkNodes ChunkNodes
 }
@@ -54,6 +53,27 @@ func (c *cloud) GetFolder(folder string) (*NetworkFolder, error) {
 	c.networkMutex.RLock()
 	defer c.networkMutex.RUnlock()
 	return c.network.GetFolder(folder)
+}
+
+func (c *cloud) GetFile(folder string) (*datastore.File, error) {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	return c.network.GetFile(folder)
+}
+
+func (n *Network) GetFile(file string) (*datastore.File, error) {
+	dir, base := path.Split(file)
+	folder, err := n.GetFolder(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range folder.Files.Files {
+		if f.Name == base {
+			return f, nil
+		}
+	}
+	return nil, errors.New("file not found")
 }
 
 func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
