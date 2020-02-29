@@ -36,12 +36,17 @@ type Cloud interface {
 
 	// File
 	AddFile(file *datastore.File) error
+	Distribute(file datastore.File, numReplicas int, antiAffinity bool) error
 
 	// Events.
 	Events() *CloudEvents
 
 	// Saving.
 	SavedNetworkState() SavedNetworkState
+
+	// Benchmark state for this cloud's node.
+	BenchmarkState() CloudBenchmarkState
+	SetBenchmarkState(benchmarkState CloudBenchmarkState)
 }
 
 type CloudEvents struct {
@@ -84,6 +89,8 @@ type cloud struct {
 	Port     int
 
 	config CloudConfig
+
+	benchmarkState CloudBenchmarkState
 }
 
 func (c *cloud) Config() CloudConfig {

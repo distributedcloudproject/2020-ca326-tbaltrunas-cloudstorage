@@ -25,12 +25,12 @@ func ComputeChunkID(buffer []byte) ChunkID {
 }
 
 // ComputeFileSize calculates the combined size of all chunks (the expected "file size").
-func (chunks *Chunks) ComputeFileSize() FileSize {
-	fileSize := 0
+func (chunks *Chunks) ComputeFileSize() uint64 {
+	var fileSize uint64 = 0
 	for _, chunk := range chunks.Chunks {
 		fileSize += chunk.ContentSize
 	}
-	return FileSize(fileSize)
+	return fileSize
 }
 
 // SaveChunk writes a bytes buffer through a writer, until the buffer is fully written.

@@ -2,18 +2,28 @@ package network
 
 import (
 	"cloud/datastore"
-	"os"
+	"cloud/utils"
 	"reflect"
 	"testing"
 )
 
 func TestNode_AddFileSaveChunk(t *testing.T) {
 	numNodes := 4
-	clouds, tmpStorageDirs, err := CreateTestClouds(numNodes)
+	clouds, err := CreateTestClouds(numNodes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer RemoveDirs(tmpStorageDirs)
+	tmpStorageDirs, err := utils.GetTestDirs("cloud_test_node_data_", numNodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer utils.GetTestDirsCleanup(tmpStorageDirs)
+
+	for i, cloud := range clouds {
+		cloud.SetConfig(CloudConfig{
+			FileStorageDir: tmpStorageDirs[i],
+		})
+	}
 
 	t.Logf("Test clouds: %v.", clouds)
 	t.Logf("Storage locations for clouds: %v.", tmpStorageDirs)
@@ -27,12 +37,14 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 		t.Logf("Node %d: %v.", i, nodes[i])
 	}
 
-	tmpfile, err := GetTestFile("hellothere i see you are a fan of bytes?") // 40 bytes
+	content := "hellothere i see you are a fan of bytes?"  // 40 bytes
+	contentBytes := []byte(content)
+	tmpfile, err := utils.GetTestFile("cloud_test_file_*", contentBytes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
-	defer tmpfile.Close()
+	defer utils.GetTestFileCleanup(tmpfile)
+
 	chunkSize := 10 // will give 4 chunks
 	file, err := datastore.NewFile(tmpfile, tmpfile.Name(), chunkSize)
 	if err != nil {
@@ -128,5 +140,12 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 		if !reflect.DeepEqual(chunkLocations, chunkLocationsOther) {
 			t.Error("ChunkNodes not matching across cloud representations.")
 		}
+	}
+	
+	// Check that the storage benchmark state has been updated.
+	spaceUsed := cloud.BenchmarkState().StorageSpaceUsed
+	if spaceUsed != chunks[0].ContentSize {
+		t.Errorf("Invalid benchmark state. Expected StorageSpaceUsed: %v. Got: %v.", 
+				 len(contentBytes), spaceUsed)
 	}
 }

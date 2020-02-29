@@ -114,6 +114,10 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	utils.GetLogger().Printf("[DEBUG] Saving chunk to writer: %v.", w)
 	err = datastore.SaveChunk(w, contents)
 	c.Mutex.Unlock()
+	benchmarkState := c.BenchmarkState()
+	benchmarkState.StorageSpaceUsed += uint64(len(contents))
+	c.SetBenchmarkState(benchmarkState)
+
 	if err != nil {
 		return err
 	}
