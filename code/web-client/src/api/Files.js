@@ -21,10 +21,24 @@ function GetFiles(callback) {
 }
 
 // Perform a GET request for a file's metadata.
+// See FilesDownload.GetFileContentsLink for a file's contents.
 function GetFile(fileID, callback) {
     console.log("Called API method: GetFile")
-    const url = urljoin(Constants.GetBase(), '/files', `?id=${fileID}`)
+    const url = urljoin(Constants.GetBase(), `/files/${fileID}`)
     console.log('Computed URL: ' + url)
+    axios.get(url, {
+        responseType: 'blob',
+    }).then(response => {
+        if (response.status === 200) {
+            
+            // callback(response.data)
+        } else {
+            console.log(response.status)
+        }
+    })
+    .catch(error => {
+        console.log(error)
+    })
 }
 
 // Perform a GET request for a file's contents.

@@ -6,12 +6,14 @@ import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-bro
 import * as FileExplorerIcons from './Icons';
 import './FileExplorer.css';
 import Upload from './Upload';
+import Download from './Download';
 import { FilesAPI } from '../../api';
 import * as UpdateUI from './UpdateUI';
 
 export default class FileExplorer extends React.Component {
     state = {
       files: [],
+      selectedFile: 'test',
     }
 
     componentDidMount() {
@@ -69,10 +71,7 @@ export default class FileExplorer extends React.Component {
         <Container>
 
           <Upload callback={this.handleCreateFiles} />
-
-          <Button className="icon-button">
-            < FileExplorerIcons.Download/>Download
-          </Button>
+          <Download file={this.state.selectedFile} />
 
           <FileBrowser
             files={this.state.files}
