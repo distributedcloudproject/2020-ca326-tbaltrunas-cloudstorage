@@ -16,6 +16,9 @@ import (
 	"github.com/gorilla/mux"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/dgrijalva/jwt-go"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 const (
@@ -38,6 +41,11 @@ type AuthClaims struct {
 type Credentials struct {
 	Username string `json:"username`
 	Password string `json:"password"`
+}
+
+type Account struct {
+	gorm.Model
+	Credentials
 }
 
 // ListenAndServeHTTP starts a HTTP server and routes requests to the cloud.
@@ -139,25 +147,29 @@ func (c *cloud) AuthLoginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	utils.GetLogger().Printf("[DEBUG] %v", creds)
 
-	// create fake DB
-	storedUsername := "root"
-	// TODO: get password via username
-	storedHashedPassword, err := bcrypt.GenerateFromPassword([]byte("12345"), 8)
+	db, err := ConnectDB()
+	defer db.Close()
 	if err != nil {
 		utils.GetLogger().Printf("[ERROR] %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	// Verify username somehow, i.e. username doesn't exist in database.
-	if storedUsername != creds.Username {
+	utils.GetLogger().Printf("[DEBUG] %v", db)
+	
+	var storedAccount Account
+	err = db.Where("username = ?", creds.Username).First(&storedAccount).Error
+	if err != nil {
+		// Record not found.
+		utils.GetLogger().Printf("[ERROR] %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	utils.GetLogger().Printf("[DEBUG] %s, %v", storedAccount.Password, []byte(storedAccount.Password))
 
-	// TODO: query DB with username
-	// compare 
-	err = bcrypt.CompareHashAndPassword(storedHashedPassword, []byte(creds.Password))
+	// Check password
+	err = bcrypt.CompareHashAndPassword([]byte(storedAccount.Password), []byte(creds.Password))
 	if err != nil {
-		// comparison failed
+		// Comparison failed
 		utils.GetLogger().Printf("[ERROR] %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -246,6 +258,24 @@ func (c *cloud) AuthRefreshHandler(w http.ResponseWriter, req *http.Request) {
 
 func jwtKeyFunc(token *jwt.Token) (interface{}, error) {
 	return jwtKey, nil
+}
+
+// Adapted from: https://blog.usejournal.com/authentication-in-golang-c0677bcce1a8
+func ConnectDB() (*gorm.DB, error) {
+	databaseUser := os.Getenv("DB_USER")
+	databasePassword := os.Getenv("DB_PASSWORD")
+	databaseName := os.Getenv("DB_NAME")
+	databaseHost := os.Getenv("DB_HOST")
+	databaseType := os.Getenv("DB_TYPE")
+	dbURI := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s", 
+						 databaseHost, databaseUser, databaseName, databasePassword)
+	
+	db, err := gorm.Open(databaseType, dbURI)
+	if err != nil {
+		return nil, err
+	}
+	db.AutoMigrate(&Account{})
+	return db, nil
 }
 
 func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
