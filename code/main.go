@@ -191,8 +191,8 @@ func main() {
 					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
 				if *verbosePtr {
-					fmt.Printf("DataStore: %v | ChunkNodes: %v\n",
-						network.DataStore, network.ChunkNodes)
+					fmt.Printf("ChunkNodes: %v\n",
+						network.ChunkNodes)
 					fmt.Printf("My node: %v.", c.MyNode())
 				}
 			}
@@ -213,12 +213,11 @@ func main() {
 			return
 		}
 
-		err = c.AddFile(file)
+		err = c.AddFile(file, "/"+file.Name, *filePtr)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		err = network.Distribute(file, c)
 		if err != nil {
 			fmt.Println(err)
 			return

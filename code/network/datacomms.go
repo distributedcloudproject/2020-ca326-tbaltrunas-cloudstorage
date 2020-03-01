@@ -5,6 +5,7 @@ import (
 	"cloud/utils"
 	"encoding/gob"
 	"errors"
+	"os"
 	"path"
 	"strings"
 )
@@ -19,6 +20,7 @@ const (
 	MoveFileMsg   = "MoveFile"
 
 	SaveChunkMsg        = "SaveChunk"
+	GetChunkMsg         = "GetChunk"
 	updateChunkNodesMsg = "updateChunkNodes"
 
 	LockFileMsg   = "LockFile"
@@ -100,7 +102,8 @@ func (r request) OnDeleteDirectory(folderPath string) error {
 
 // AddFile adds a file to the Network. It distributes the file automatically.
 // TODO: might want to do the actual distribution here, so that the file gets saved with this call.
-func (c *cloud) AddFile(file *datastore.File, cloudPath string, reader io.Reader) error {
+// TODO: Use reader instead of localPath.
+func (c *cloud) AddFile(file *datastore.File, cloudPath string, localPath string) error {
 	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
 	_, err := c.SendMessageToMe(AddFileMsg, file, cloudPath)
 	c.SendMessageAllOthers(AddFileMsg, file, cloudPath)
@@ -143,12 +146,12 @@ func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 
 // UpdateFile updates a file on the network's data store.
 // Does not update the actual chunks. File lock must be acquired for given path before.
-func (c *cloud) UpdateFile(file *datastore.File, path string) error {
-	_, err := c.SendMessageToMe(UpdateFileMsg, file, path)
+func (c *cloud) UpdateFile(file *datastore.File, cloudPath string) error {
+	_, err := c.SendMessageToMe(UpdateFileMsg, file, cloudPath)
 	if err != nil {
 		return err
 	}
-	res := c.SendMessageAllOthers(UpdateFileMsg, file, path)
+	res := c.SendMessageAllOthers(UpdateFileMsg, file, cloudPath)
 	for _, r := range res {
 		if r.Error != nil {
 			return r.Error
@@ -187,7 +190,56 @@ func (r request) OnUpdateFileRequest(file *datastore.File, filepath string) erro
 	if found == -1 {
 		return errors.New("file " + filename + " was not found")
 	}
+	oldFile := folder.Files.Files[found]
 	folder.Files.Files[found] = file
+
+	go func() {
+		// Compute the difference in chunks.
+		mb := make(map[string]struct{}, len(oldFile.Chunks.Chunks))
+		for _, x := range oldFile.Chunks.Chunks {
+			mb[string(x.ID)] = struct{}{}
+		}
+		var newChunks []datastore.Chunk
+		var oldChunks []string
+		for _, x := range file.Chunks.Chunks {
+			if _, found := mb[string(x.ID)]; !found {
+				newChunks = append(newChunks, x)
+			} else {
+				delete(mb, string(x.ID))
+			}
+		}
+		for k := range mb {
+			oldChunks = append(oldChunks, k)
+		}
+		// Delete old chunks.
+		for _, chunk := range oldChunks {
+			c.deleteStoredFileChunk(oldFile.ID, datastore.ChunkID(chunk))
+		}
+		// Download new chunks from the node.
+		for _, chunk := range newChunks {
+			res, err := r.FromNode.client.SendMessage(GetChunkMsg, string(chunk.ID))
+			if err == nil {
+				content := res[0].([]byte)
+				c.storeChunk(file.ID, chunk, content)
+			}
+		}
+
+		for _, fs := range c.fileSyncs {
+			if fs.cloudPath == filepath {
+				if c.watcher != nil {
+					c.watcher.Remove(fs.localPath)
+				}
+				f, err := os.Create(fs.localPath)
+				if err == nil {
+					c.DownloadFile(*file, f)
+				}
+				f.Close()
+				if c.watcher != nil {
+					c.watcher.Add(fs.localPath)
+				}
+			}
+		}
+	}()
 	return nil
 }
 
@@ -357,6 +409,36 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 	return err
 }
 
+func (c *cloud) GetChunk(chunkID datastore.ChunkID) (content []byte, err error) {
+	c.networkMutex.RLock()
+	nodes := c.network.ChunkNodes[chunkID]
+	c.networkMutex.RUnlock()
+
+	for _, n := range nodes {
+		cnode := c.GetCloudNode(n)
+		if cnode != nil {
+			res, err := cnode.client.SendMessage(GetChunkMsg, chunkID)
+			if err == nil {
+				return res[0].([]byte), nil
+			}
+		}
+	}
+	return nil, errors.New("could not download chunk")
+}
+
+func (r request) OnGetChunkRequest(chunkID datastore.ChunkID) (content []byte, err error) {
+	c := r.Cloud
+
+	c.chunkStorageMutex.RLock()
+	storage := c.chunkStorage[string(chunkID)]
+	c.chunkStorageMutex.RUnlock()
+
+	if storage == nil || len(storage) == 0 {
+		return nil, errors.New("chunk is not stored")
+	}
+	return c.readChunk(storage[0])
+}
+
 // updateChunkNodes updates the node's ChunkNodes data structure.
 // It maps the chunkID key and appends the nodeID value.
 // updateChunkNodes recursively sends out the update to other nodes.
@@ -482,6 +564,8 @@ func createDataStoreRequestHandler(node *cloudNode, cloud *cloud) func(string) i
 			return r.OnAddFileRequest
 		case SaveChunkMsg:
 			return r.OnSaveChunkRequest
+		case GetChunkMsg:
+			return r.OnGetChunkRequest
 		case updateChunkNodesMsg:
 			return r.onUpdateChunkNodes
 		case LockFileMsg:

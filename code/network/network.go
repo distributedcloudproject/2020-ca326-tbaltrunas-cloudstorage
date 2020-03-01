@@ -12,6 +12,14 @@ import (
 	"strings"
 )
 
+type ChunkNodes map[datastore.ChunkID][]string
+type FileNodes map[datastore.FileID][]string
+
+type request struct {
+	Cloud    *cloud
+	FromNode *cloudNode
+}
+
 type NetworkFolder struct {
 	Name       string
 	SubFolders []*NetworkFolder
@@ -47,6 +55,10 @@ type Network struct {
 	// And make decisions about the chunk requests to perform.
 	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
 	ChunkNodes ChunkNodes
+
+	// FileNodes maps file ID's to the Nodes that contain the whole file. Those nodes are syncing the whole file all the
+	// time.
+	FileNodes FileNodes
 }
 
 func (c *cloud) GetFolder(folder string) (*NetworkFolder, error) {
@@ -55,10 +67,10 @@ func (c *cloud) GetFolder(folder string) (*NetworkFolder, error) {
 	return c.network.GetFolder(folder)
 }
 
-func (c *cloud) GetFile(folder string) (*datastore.File, error) {
+func (c *cloud) GetFile(file string) (*datastore.File, error) {
 	c.networkMutex.RLock()
 	defer c.networkMutex.RUnlock()
-	return c.network.GetFile(folder)
+	return c.network.GetFile(file)
 }
 
 func (n *Network) GetFile(file string) (*datastore.File, error) {
@@ -108,13 +120,6 @@ func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 		}
 	}
 	return f, nil
-}
-
-type ChunkNodes map[datastore.ChunkID][]string
-
-type request struct {
-	Cloud    *cloud
-	FromNode *cloudNode
 }
 
 func (c *cloud) NodeByID(ID string) (node Node, found bool) {

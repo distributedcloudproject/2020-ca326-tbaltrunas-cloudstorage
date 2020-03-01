@@ -2,7 +2,10 @@ package network
 
 import (
 	"cloud/datastore"
+	"cloud/utils"
 	"errors"
+	"github.com/fsnotify/fsnotify"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -105,6 +108,42 @@ func (c *cloud) deleteStoredFileChunk(FileID datastore.FileID, ChunkID datastore
 	return nil
 }
 
+func (c *cloud) DownloadFile(file datastore.File, w io.Writer) error {
+	for _, chunk := range file.Chunks.Chunks {
+		content, err := c.readChunk(datastore.ChunkStore{
+			Chunk:        chunk,
+			FileID:       file.ID,
+			StoredAsFile: false,
+		})
+		if err != nil {
+			content, err = c.GetChunk(chunk.ID)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = w.Write(content)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *cloud) storeChunksOfFile(file *datastore.File, pathToFile string) {
+	c.chunkStorageMutex.RLock()
+	defer c.chunkStorageMutex.RUnlock()
+	for _, chunk := range file.Chunks.Chunks {
+		chunkID := string(chunk.ID)
+		cs := datastore.ChunkStore{
+			Chunk:        chunk,
+			FileID:       file.ID,
+			StoredAsFile: true,
+			FilePath:     pathToFile,
+		}
+		c.chunkStorage[chunkID] = append(c.chunkStorage[chunkID], cs)
+	}
+}
+
 // SyncFile syncs a cloud and local file. The local path will be uploaded to the cloud at provided path, and any changes
 // to either will reflect upon the other, the sync is constant.
 // If cloud path exists but local path does not, the file will be downloaded.
@@ -113,7 +152,8 @@ func (c *cloud) deleteStoredFileChunk(FileID datastore.FileID, ChunkID datastore
 // If neither exist, an error will be thrown.
 // This function returns before download/upload is completed. TODO: another function to check status.
 func (c *cloud) SyncFile(cloudPath string, localPath string) error {
-	dir, name := path.Split(cloudPath)
+	cloudPath = path.Clean(cloudPath)
+	_, name := path.Split(cloudPath)
 	var localFile *datastore.File
 
 	if f, err := os.Open(localPath); err == nil {
@@ -124,16 +164,82 @@ func (c *cloud) SyncFile(cloudPath string, localPath string) error {
 		f.Close()
 	}
 
-	f, err := c.GetFile(cloudPath)
+	cloudFile, err := c.GetFile(cloudPath)
 	if err != nil && localFile == nil {
 		return errors.New("file does not exist on the cloud nor locally")
 	}
 
-	if f != nil && localFile != nil {
-		if f.ID != localFile.ID {
+	if cloudFile != nil && localFile != nil {
+		if cloudFile.ID != localFile.ID {
 			return errors.New("local file and cloud file are not the same")
 		}
 	}
+
+	if cloudFile == nil {
+		go func() {
+			c.AddFile(localFile, cloudPath, localPath)
+			c.storeChunksOfFile(localFile, localPath)
+			c.watchLocalFile(localPath)
+		}()
+	} else if localFile == nil {
+		osFile, err := os.Create(localPath)
+		if err != nil {
+			return err
+		}
+		go func(f datastore.File, osFile *os.File) {
+			err = c.DownloadFile(f, osFile)
+			osFile.Close()
+			c.storeChunksOfFile(&f, localPath)
+			c.watchLocalFile(localPath)
+		}(*cloudFile, osFile)
+	} else {
+		c.storeChunksOfFile(localFile, localPath)
+		c.watchLocalFile(localPath)
+	}
+	c.fileSyncs = append(c.fileSyncs, fileSync{
+		localPath: localPath,
+		cloudPath: cloudPath,
+	})
+	return nil
+}
+
+func (c *cloud) watchLocalFile(localPath string) error {
+	if c.watcher == nil {
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			return err
+		}
+		c.watcher = watcher
+
+		go func() {
+			for {
+				select {
+				case event, ok := <-c.watcher.Events:
+					if !ok {
+						return
+					}
+					if event.Op&fsnotify.Write == fsnotify.Write {
+						utils.GetLogger().Println("[INFO] modified file:", event.Name)
+
+						for _, fs := range c.fileSyncs {
+							if fs.localPath == event.Name {
+								f, err := c.GetFile(fs.cloudPath)
+								if err == nil {
+									c.UpdateFile(f, fs.cloudPath)
+								}
+							}
+						}
+					}
+				case err, ok := <-c.watcher.Errors:
+					if !ok {
+						return
+					}
+					utils.GetLogger().Println("[INFO] error:", err)
+				}
+			}
+		}()
+	}
+	return c.watcher.Add(localPath)
 }
 
 func (c *cloud) RemoveSync(localPath string) {

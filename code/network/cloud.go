@@ -3,6 +3,7 @@ package network
 import (
 	"cloud/datastore"
 	"crypto/rsa"
+	"github.com/fsnotify/fsnotify"
 	"net"
 	"os"
 	"sync"
@@ -38,15 +39,16 @@ type Cloud interface {
 
 	// File
 	GetFolder(path string) (*NetworkFolder, error)
-	DistributeFile(file *datastore.File)
+	DistributeChunk(chunk datastore.ChunkStore) error
 	CreateDirectory(folderPath string) error
 	DeleteDirectory(folderPath string) error
-	AddFile(file *datastore.File, filepath string) error
+	AddFile(file *datastore.File, filepath string, localpath string) error
 	UpdateFile(file *datastore.File, filepath string) error
 	DeleteFile(filepath string) error
 	MoveFile(filepath string, newFilepath string) error
 	LockFile(path string) bool
 	UnlockFile(path string)
+	SyncFile(cloudPath string, localPath string) error
 
 	// Events.
 	Events() *CloudEvents
@@ -65,6 +67,12 @@ type CloudEvents struct {
 
 	WhitelistAdded   func(ID string)
 	WhitelistRemoved func(ID string)
+}
+
+// TODO: move this
+type fileSync struct {
+	cloudPath string
+	localPath string
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
@@ -90,6 +98,9 @@ type cloud struct {
 	// Local storage.
 	chunkStorage      map[string][]datastore.ChunkStore
 	chunkStorageMutex sync.RWMutex
+
+	fileSyncs []fileSync
+	watcher   *fsnotify.Watcher
 
 	// Non-authorized connections.
 	PendingNodes []*cloudNode
