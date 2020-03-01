@@ -40,6 +40,7 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 	r := mux.NewRouter()
 
 	// Do not need auth
+	r.HandleFunc("/ping", c.PingHandler)
 	r.HandleFunc("/auth", c.WebAuthenticationHandler)
 
 	// Need auth
@@ -59,8 +60,9 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"http://localhost"})
 	methodsOk := gorillaHandlers.AllowedMethods([]string{http.MethodOptions, http.MethodGet, http.MethodPost})
 
+	utils.GetLogger().Printf("[DEBUG] Cert and key: %s, %s", os.Getenv("SSL_CRT_FILE"), os.Getenv("SSL_KEY_FILE"))
 	utils.GetLogger().Printf("[INFO] HTTP backend listening on address: %s.", address)
-	return http.ListenAndServe(address, 
+	return http.ListenAndServeTLS(address, os.Getenv("SSL_CRT_FILE"), os.Getenv("SSL_KEY_FILE"), 
 			gorillaHandlers.LoggingHandler(os.Stdout, 
 				gorillaHandlers.CORS(originsOk, methodsOk)(r)))
 	// TODO: use utils.GetLogger() writer
@@ -329,4 +331,10 @@ func (c *cloud) GetFile(w http.ResponseWriter, req *http.Request) {
 		utils.GetLogger().Printf("[WARN] Written file length does not match: %d (want %d)", n, fileLength)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+// PingHandler for /ping.
+func (c *cloud) PingHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "pong"}`))
 }

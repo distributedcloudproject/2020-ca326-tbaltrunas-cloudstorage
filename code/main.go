@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	_ "github.com/joho/godotenv/autoload" // automatically load environment variables from .env file
 )
 
 func readKey(file string) (*rsa.PrivateKey, error) {
@@ -62,7 +63,7 @@ func main() {
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
 
 	httpBackendPtr := flag.Bool("http-backend", false, "Enable web HTTP backend on this node.")
-	httpBackendPortPtr := flag.Int("http-backend-port", 9001, "Port to listen on for HTTP requests.")
+	httpBackendPortPtr := flag.Int("http-backend-port", 9443, "Port to listen on for HTTP requests.")
 
 	flag.Parse()
 
