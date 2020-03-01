@@ -10,7 +10,8 @@ export default function Login(props) {
     // Add state to our Login component.
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isError, setIsError] = useState(false);
-    const [networkAddr, setNetworkAddr] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
 
     // Get callback variable from context.
     const { setIsAuthenticatedCallback } = useAuthContext();
@@ -25,7 +26,7 @@ export default function Login(props) {
         e.preventDefault();
 
         try {
-            const response = await AuthenticationAPI.Login();
+            const response = await AuthenticationAPI.Login(username, password);
             if (response.status === 200) {
                 setIsAuthenticatedCallback(true);
                 setIsLoggedIn(true);
@@ -45,17 +46,29 @@ export default function Login(props) {
         return <Redirect to={referer} />
     }
 
+    // TODO: form validation
     return (
         <Container className='p-5 col-md-4'>
                 <Form className='d-flex flex-column justify-content-center'>
-                    <Form.Group controlId='formGroupNetworkAddress' className='mb-4'>
-                        <Form.Label className='text-white'>Network Address</Form.Label>
+                    <Form.Group controlId='formGroupUsername' className='mb-4'>
+                        <Form.Label className='text-white'>Username</Form.Label>
                         <Form.Control 
                             type='text' 
-                            placeholder='Network Address' 
-                            value={networkAddr}
+                            placeholder='Username' 
+                            value={username}
                             onChange={e => {
-                                setNetworkAddr(e.target.value)
+                                setUsername(e.target.value)
+                            }}
+                        />
+                    </Form.Group>
+                    <Form.Group controlId='formGroupPassword' className='mb-4'>
+                        <Form.Label className='text-white'>Password</Form.Label>
+                        <Form.Control 
+                            type='password' 
+                            placeholder='Password' 
+                            value={password}
+                            onChange={e => {
+                                setPassword(e.target.value)
                             }}
                         />
                     </Form.Group>

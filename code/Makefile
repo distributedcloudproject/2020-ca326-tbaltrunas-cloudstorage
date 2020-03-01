@@ -19,6 +19,7 @@ deps:
 	go get github.com/gorilla/handlers
 	go get github.com/dgrijalva/jwt-go
 	go get github.com/joho/godotenv
+	go get golang.org/x/crypto/bcrypt
 
 
 clean:

@@ -11,6 +11,8 @@ import (
 	"time"
 	"os"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/gorilla/mux"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/dgrijalva/jwt-go"
@@ -33,6 +35,11 @@ type AuthClaims struct {
 	jwt.StandardClaims  // includes expiry time
 }
 
+type Credentials struct {
+	Username string `json:"username`
+	Password string `json:"password"`
+}
+
 // ListenAndServeHTTP starts a HTTP server and routes requests to the cloud.
 func (c *cloud) ListenAndServeHTTP(port int) error {
 	address := ":" + strconv.Itoa(port)
@@ -41,7 +48,7 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 
 	// Do not need auth
 	r.HandleFunc("/ping", c.PingHandler)
-	r.HandleFunc("/auth", c.WebAuthenticationHandler)
+	r.HandleFunc("/auth/login", c.AuthLoginHandler).Methods(http.MethodPost)
 
 	// Need auth
 	s := r.PathPrefix("/").Subrouter()
@@ -120,10 +127,43 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (c *cloud) WebAuthenticationHandler(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] WebAuthenticationHandler called.")
-
+func (c *cloud) AuthLoginHandler(w http.ResponseWriter, req *http.Request) {
 	// TODO: verify sent request, i.e. username and password
+	var creds Credentials
+
+	err := json.NewDecoder(req.Body).Decode(&creds)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	utils.GetLogger().Printf("[DEBUG] %v", creds)
+
+	// create fake DB
+	storedUsername := "root"
+	// TODO: get password via username
+	storedHashedPassword, err := bcrypt.GenerateFromPassword([]byte("12345"), 8)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	// Verify username somehow, i.e. username doesn't exist in database.
+	if storedUsername != creds.Username {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// TODO: query DB with username
+	// compare 
+	err = bcrypt.CompareHashAndPassword(storedHashedPassword, []byte(creds.Password))
+	if err != nil {
+		// comparison failed
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	// Success
+	// Generate token
 
 	// expires in 5 minutes
 	expirationTime := time.Now().Add(accessTokenExpirationTime)
@@ -215,9 +255,12 @@ func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(fmt.Sprintf(`{"name": "%s"}`, networkName)))
 }
 
+// Endpoint
+// Method
 // Required Body:
 // Required Query Params:
 // Optional Query Params:
+// Response
 func (c *cloud) CreateFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] CreateFile called.")
 	w.WriteHeader(http.StatusOK)
