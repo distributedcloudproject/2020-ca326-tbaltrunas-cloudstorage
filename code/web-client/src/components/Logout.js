@@ -3,10 +3,10 @@ import Button from 'react-bootstrap/Button';
 import { useAuthContext } from '../context/Authentication';
 
 export default function Logout(props) {
-    const { setAuthTokensCallback } = useAuthContext();
+    const { setIsAuthenticatedCallback } = useAuthContext();
 
     function logOut() {
-        setAuthTokensCallback(false)
+        setIsAuthenticatedCallback(false)
     }
 
     return (

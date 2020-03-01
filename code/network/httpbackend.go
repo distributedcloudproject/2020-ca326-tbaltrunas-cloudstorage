@@ -7,12 +7,23 @@ import (
 	"strconv"
 	"fmt"
 	"encoding/json"
+	"time"
 
 	"github.com/gorilla/mux"
+	gorillaHandlers "github.com/gorilla/handlers"
+	"github.com/dgrijalva/jwt-go"
 )
+
+var jwtSecret = []byte("bigsecret")
 
 type File struct {
 	Key		string   `json:"key"`
+}
+
+// AuthClaims is sent as part of a JWT for standard user claims.
+type AuthClaims struct {
+	Username string  `json:"username"` // Unique username for this token.
+	jwt.StandardClaims  // includes expiry time
 }
 
 // ListenAndServeHTTP starts a HTTP server and routes requests to the cloud.
@@ -21,28 +32,52 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/auth", c.WebAuthenticationHandler)
+
 	r.HandleFunc("/netinfo", c.NetworkInfoHandler)
 	r.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
 	r.HandleFunc("/files/{fileID}", c.GetFile).
 		Methods(http.MethodGet).
 		Queries("filter", "contents")
 	r.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
-	r.HandleFunc("/files", c.PreflightFile).Methods(http.MethodOptions)
+
+
+	http.Handle("/", r)
+
+	// Set up CORS middleware for local development.
+	originsOk := gorillaHandlers.AllowedOrigins([]string{"http://localhost"})
+	methodsOk := gorillaHandlers.AllowedMethods([]string{http.MethodOptions, http.MethodGet, http.MethodPost})
 
 	utils.GetLogger().Printf("[INFO] HTTP backend listening on address: %s.", address)
-	http.Handle("/", r)
-	return http.ListenAndServe(address, r)
-}
-
-func (c *cloud) PreflightFile(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] PreflightFile called.")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(http.StatusOK)
+	return http.ListenAndServe(address, gorillaHandlers.CORS(originsOk, methodsOk)(r))
 }
 
 func (c *cloud) WebAuthenticationHandler(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] WebAuthenticationHandler called.")
-	w.Write([]byte(`{"access_token": FAKETOKEN"}`))
+
+	// TODO: verify sent request, i.e. username and password
+
+	// expires in 5 minutes
+	expirationTime := time.Now().Add(1 * time.Minute)
+	authClaims := AuthClaims{
+		Username: "admin", // TODO: roles based on username
+		StandardClaims: jwt.StandardClaims {
+			ExpiresAt: expirationTime.Unix(), // represent expiration time as Unix milliseconds
+		},
+	}
+	// TODO: decide on the signing method, i.e. use ssh key
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, authClaims)
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name: "access_token",
+		Value: tokenString,
+		Expires: expirationTime,
+	})
 }
 
 func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {

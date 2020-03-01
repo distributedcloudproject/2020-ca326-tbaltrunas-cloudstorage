@@ -7,5 +7,5 @@ export function Login() {
     console.log("Called API method: Login");
     const url = urljoin(Constants.GetBase(), '/auth');
     // TODO: add username/password query params
-    return axios.get(url)
+    return axios.get(url, {withCredentials: true})
 }

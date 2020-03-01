@@ -4,6 +4,7 @@ import {
   Route 
 } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Cookies from 'js-cookie';
 import './App.css';
 import Login from './components/Login';
 import Home from './components/Home';
@@ -13,24 +14,20 @@ import { AuthContext } from './context/Authentication';
 export default function App() {
   // Add state to our App component.
   // Returns the value and a setter.
-  const [authTokens, setAuthTokens] = useState(localStorage.getItem('tokens' || undefined));
+  const [isAuthenticated, setIsAuthenticated] = useState(Cookies.get('access_token') !== undefined ? true : false);
 
-  const setAuthTokensCallback = (data) => {
+  const setIsAuthenticatedCallback = (authed) => {
     // Callback updates both app state and storage state
     console.log('auth tokens callback called')
 		
-    if (data) {
-      // TODO: try cookies instead of localStorage
-      localStorage.setItem('tokens', JSON.stringify(data));
-    } else {
-			localStorage.removeItem('tokens');
+    if (!authed) {
+      Cookies.remove('access_token');
     }
-    setAuthTokens(data);
-    console.log('new auth tokens: ' + authTokens);
+    setIsAuthenticated(authed);
   }
 
   return (
-      <AuthContext.Provider value={{ authTokens, setAuthTokensCallback: setAuthTokensCallback }}>
+      <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticatedCallback: setIsAuthenticatedCallback }}>
         {/* TODO: header and footer with logo and info/links */}
         <Router>
           <Route path='/login' component={Login} />

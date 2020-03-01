@@ -14,7 +14,7 @@ export default function Login(props) {
     const [networkAddr, setNetworkAddr] = useState('');
 
     // Get callback variable from context.
-    const { setAuthTokensCallback } = useAuthContext();
+    const { setIsAuthenticatedCallback } = useAuthContext();
 
     // Get referer if available (to go back to the page that the user wanted to access).
     // const referer = props.location.state.referer || '/';
@@ -28,8 +28,8 @@ export default function Login(props) {
         try {
             const response = await AuthenticationAPI.Login();
             if (response.status === 200) {
-                setAuthTokensCallback(response.data);
-                setIsLoggedIn(true);            
+                setIsAuthenticatedCallback(true);
+                setIsLoggedIn(true);
             } else {
                 console.log(response.status);
                 setIsError(true);
