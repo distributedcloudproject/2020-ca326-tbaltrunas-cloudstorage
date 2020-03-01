@@ -17,7 +17,6 @@ func Navigation(w fyne.Window, c network.Cloud) {
 		widget.NewTabItemWithIcon("Home", theme.HomeIcon(), HomeScreen(w, c)),
 		widget.NewTabItemWithIcon("Nodes", theme.ContentCopyIcon(), NodesScreen(w, c)),
 		widget.NewTabItemWithIcon("Whitelist", theme.ContentClearIcon(), WhitelistScreen(w, c)),
-		widget.NewTabItemWithIcon("File List", theme.FolderIcon(), FileListScreen(w, c)),
 		widget.NewTabItemWithIcon("File Explorer", theme.FolderIcon(), FileExplorerScreen(w, c)),
 		widget.NewTabItemWithIcon("Settings", theme.SettingsIcon(), SettingScreen(w, c)),
 	)
