@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"fmt"
+	"strings"
 	"encoding/json"
 	"time"
 	"os"
@@ -37,15 +38,20 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 	address := ":" + strconv.Itoa(port)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/auth", c.WebAuthenticationHandler)
-	r.HandleFunc("/auth/refresh", c.AuthRefreshHandler)
 
-	r.HandleFunc("/netinfo", c.NetworkInfoHandler)
-	r.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
-	r.HandleFunc("/files/{fileID}", c.GetFile).
+	// Do not need auth
+	r.HandleFunc("/auth", c.WebAuthenticationHandler)
+
+	// Need auth
+	s := r.PathPrefix("/").Subrouter()
+	s.Use(AuthenticationMiddleware)
+	s.HandleFunc("/auth/refresh", c.AuthRefreshHandler)
+	s.HandleFunc("/netinfo", c.NetworkInfoHandler)
+	s.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
+	s.HandleFunc("/files/{fileID}", c.GetFile).
 		Methods(http.MethodGet).
 		Queries("filter", "contents")
-	r.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
+	s.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
 
 	http.Handle("/", r)
 
@@ -58,6 +64,58 @@ func (c *cloud) ListenAndServeHTTP(port int) error {
 			gorillaHandlers.LoggingHandler(os.Stdout, 
 				gorillaHandlers.CORS(originsOk, methodsOk)(r)))
 	// TODO: use utils.GetLogger() writer
+}
+
+// Adapted from: https://blog.usejournal.com/authentication-in-golang-c0677bcce1a8
+func AuthenticationMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get token from the header
+		authorization := r.Header.Get("Authorization")
+		if authorization == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		splitRes := strings.Split(authorization, ":")
+		if len(splitRes) != 2 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		tokenType, tokenString := splitRes[0], splitRes[1]
+		if tokenType != "Bearer" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		tokenString = strings.TrimSpace(tokenString)
+
+		if tokenString == "" {
+			//Token is missing, returns with error code 403 Unauthorized
+			w.WriteHeader(http.StatusUnauthorized)
+			// json.NewEncoder(w).Encode(Exception{Message: "Missing auth token"})
+			return
+		}
+
+
+		claims := &AuthClaims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, jwtKeyFunc)
+		if err != nil {
+			utils.GetLogger().Printf("[ERROR] %v", err)
+			// json.NewEncoder(w).Encode(Exception{Message: err.Error()})
+			if err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !token.Valid {
+			utils.GetLogger().Printf("[ERROR] %v", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			// json.NewEncoder(w).Encode(Exception{Message: err.Error()})
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (c *cloud) WebAuthenticationHandler(w http.ResponseWriter, req *http.Request) {
@@ -108,22 +166,13 @@ func (c *cloud) AuthRefreshHandler(w http.ResponseWriter, req *http.Request) {
 	tokenString := cookie.Value
 
 	claims := &AuthClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, jwtKeyFunc)
+	_, err = jwt.ParseWithClaims(tokenString, claims, jwtKeyFunc)
 	if err != nil {
 		utils.GetLogger().Printf("[ERROR] %v", err)
-		if err == jwt.ErrSignatureInvalid {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if !token.Valid {
-		utils.GetLogger().Printf("[ERROR] %v", err)
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	// (END) The code up-till this point is the same as the first part of the `Welcome` route
+	// Token is already verified by the authentication middleware.
 
 	// New token is only issued if the current token will expire in less than 30 seconds.
 	throttle := 30 * time.Second
@@ -136,6 +185,7 @@ func (c *cloud) AuthRefreshHandler(w http.ResponseWriter, req *http.Request) {
 	expirationTime := time.Now().Add(accessTokenExpirationTime)
 	claims.ExpiresAt = expirationTime.Unix()
 
+	// FIXME: consider creating a completely new token, as opposed to returning the same token.
 	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	newTokenString, err := newToken.SignedString(jwtKey)
 	if err != nil {
