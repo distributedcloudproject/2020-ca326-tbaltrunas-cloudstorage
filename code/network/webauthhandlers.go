@@ -63,6 +63,7 @@ func (c *cloud) AuthLoginHandler(w http.ResponseWriter, req *http.Request) {
 		Name: accessTokenKey,
 		Value: token,
 		Expires: expires,
+		Path: "/",
 	})
 }
 
@@ -93,9 +94,11 @@ func (c *cloud) AuthRefreshHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	// FIXME: expiration time doesn't actually do anything (doesn't expire)
 
+	// TODO: Delete old cookie.
 	http.SetCookie(w, &http.Cookie{
 		Name:    accessTokenKey,
 		Value:   newToken,
 		Expires: expires,
+		Path: "/",
 	})
 }

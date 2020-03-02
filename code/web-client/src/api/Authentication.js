@@ -9,5 +9,6 @@ export function Login(username, password) {
     return axios.post(url, {
         username: username,
         password: password,
-    }, { withCredentials: true })
+    }, { withCredentials: true } // for cookies
+    )
 }

@@ -13,6 +13,10 @@ import (
 	gorillaHandlers "github.com/gorilla/handlers"
 )
 
+const (
+	apiVersion = "v1"
+)
+
 type File struct {
 	Key		string   `json:"key"`
 }
@@ -23,19 +27,22 @@ func (c *cloud) ServeWebApp(port int) error {
 
 	r := mux.NewRouter()
 
+	// Add API version as path prefix
+	r = r.PathPrefix(fmt.Sprintf("/api/%s/", apiVersion)).Subrouter()
+
 	// Do not need auth
 	r.HandleFunc("/ping", c.PingHandler)
 	r.HandleFunc("/auth/login", c.AuthLoginHandler).Methods(http.MethodPost)
 
-	// Need auth
+	// "Secret" subroutes.
+	// Require authentication.
 	s := r.PathPrefix("/").Subrouter()
 	s.Use(AuthenticationMiddleware)
 	s.HandleFunc("/auth/refresh", c.AuthRefreshHandler)
 	s.HandleFunc("/netinfo", c.NetworkInfoHandler)
 	s.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
-	s.HandleFunc("/files/{fileID}", c.GetFile).
-		Methods(http.MethodGet).
-		Queries("filter", "contents")
+	s.HandleFunc("/files/{fileID}", c.GetFile).Methods(http.MethodGet).
+											   Queries("filter", "contents")
 	s.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
 
 	http.Handle("/", r)

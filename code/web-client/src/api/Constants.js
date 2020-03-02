@@ -1,7 +1,9 @@
-// We use a proxy for the backend and absolute URL's in code
-let base = '/'
+import urljoin from 'url-join';
 
-let endpointVersion = 'api/v1';
+// We use a proxy for the backend and absolute URL's in code
+
+let endpointVersion = 'v1';
+let base = urljoin('/api/', endpointVersion)
 
 function GetBase() {
     return base
