@@ -62,8 +62,8 @@ func main() {
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
 
-	httpBackendPtr := flag.Bool("http-backend", false, "Enable web HTTP backend on this node.")
-	httpBackendPortPtr := flag.Int("http-backend-port", 9443, "Port to listen on for HTTP requests.")
+	webBackendPtr := flag.Bool("web-backend", false, "Enable web backend on this node.")
+	webBackendPortPtr := flag.Int("web-backend-port", 9443, "Port to listen on for web API requests.")
 
 	flag.Parse()
 
@@ -78,8 +78,11 @@ func main() {
 	fmt.Println("Test file to back up to the cloud:", *filePtr)
 	fmt.Println("Directory for user file storage:", *fileStorageDirPtr)
 
-	fmt.Println("HTTP backend: ", *httpBackendPtr)
-	fmt.Println("HTTP backend port: ", *httpBackendPortPtr)
+	fmt.Println("Log directory:", *logDirPtr)
+	fmt.Println("Log level:", *logLevelPtr)
+
+	fmt.Println("Web backend: ", *webBackendPtr)
+	fmt.Println("Web backend port: ", *webBackendPortPtr)
 
 	if *networkPtr == "new" {
 		fmt.Println("Network Name:", *networkNamePtr)
@@ -97,8 +100,6 @@ func main() {
 		return
 	}
 	fmt.Println("ID:", id)
-	fmt.Println("Log directory:", *logDirPtr)
-	fmt.Println("Log level:", *logLevelPtr)
 
 	if *logDirPtr != "" {
 		err := os.MkdirAll(*logDirPtr, os.ModeDir)
@@ -232,9 +233,9 @@ func main() {
 		}
 	}
 
-	if *httpBackendPtr {
-		fmt.Println("HTTP backend enabled. Listening on: ", *httpBackendPortPtr)
-		go c.ListenAndServeHTTP(*httpBackendPortPtr)
+	if *webBackendPtr {
+		fmt.Println("Web backend enabled. Listening on: ", *webBackendPortPtr)
+		go c.ServeWebApp(*webBackendPortPtr)
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")

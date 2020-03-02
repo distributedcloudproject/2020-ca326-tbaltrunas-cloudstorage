@@ -16,7 +16,7 @@ type Cloud interface {
 	ListenAndAccept() error
 
 	// HTTP.
-	ListenAndServeHTTP(port int) error
+	ServeWebApp(port int) error
 
 	// Config.
 	Config() CloudConfig
