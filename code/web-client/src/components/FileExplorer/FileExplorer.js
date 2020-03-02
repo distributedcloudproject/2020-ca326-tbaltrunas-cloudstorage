@@ -13,11 +13,11 @@ import * as UpdateUI from './UpdateUI';
 export default class FileExplorer extends React.Component {
     state = {
       files: [],
-      selectedFile: 'test',
+      selectedFile: {key: 'test'},
     }
 
     componentDidMount() {
-      const files = FilesAPI.GetFiles((files) => {
+      FilesAPI.GetFiles((files) => {
         this.setState({ files: files })
       })
     }
@@ -32,6 +32,15 @@ export default class FileExplorer extends React.Component {
       
       const prefix = ''; // TODO: handle prefix
       this.setState({state: UpdateUI.UpdateUICreateFiles(this.state, files, prefix)})
+    }
+
+    // handleSelectFile updates component state with the current file.
+    // This allows the user to download the file, etc.
+    handleSelectFile = (file) => {
+      console.log('Select: ' + file.key);
+
+      this.setState({selectedFile: {key: file.key}})
+
     }
 
     // handleRenameFile renames an existing file.
@@ -70,12 +79,16 @@ export default class FileExplorer extends React.Component {
       return (
         <Container>
 
+          {/* Can also drag and drop into the FileBrowser to upload. */}
           <Upload callback={this.handleCreateFiles} />
+
           <Download file={this.state.selectedFile} />
 
           <FileBrowser
             files={this.state.files}
             icons={FileExplorerIcons.IconObjects}
+
+            // TODO: buttons to specify sort order
 
             // Handlers
             onCreateFolder={this.handleCreateFolder}
@@ -86,6 +99,22 @@ export default class FileExplorer extends React.Component {
             onRenameFile={this.handleRenameFile}
             onDeleteFolder={this.handleDeleteFolder}
             onDeleteFile={this.handleDeleteFile}
+
+            onDownloadFile={(keys) => {
+              console.log('Download: ' + keys);
+            }}
+
+            // onSelect: PropTypes.func,
+            onSelectFile={this.handleSelectFile}
+            // onSelectFolder: PropTypes.func,
+        
+            onPreviewOpen={(file) => {
+              console.log('Preview: ' + file);
+            }}
+            onPreviewClose={(file) => {
+              console.log('Preview close: ' + file);
+            }}
+        
           />
         </Container>
       )
