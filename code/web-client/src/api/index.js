@@ -1,4 +1,6 @@
+import * as APIConstants from './Constants';
 import * as FilesAPI from './Files';
+import * as FilesDownloadAPI from './FilesDownload';
 import * as AuthenticationAPI from './Authentication';
 import Cookies from 'js-cookie';
 import axios from 'axios';
@@ -15,6 +17,8 @@ axios.defaults.headers.common['Authorization'] = `Bearer ${Cookies.get('access_t
 // })
 
 export {
+    APIConstants,
     FilesAPI,
+    FilesDownloadAPI,
     AuthenticationAPI,
 }

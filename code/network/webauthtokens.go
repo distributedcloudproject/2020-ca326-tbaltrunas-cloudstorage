@@ -11,6 +11,7 @@ import (
 const (
 	accessTokenExpirationTime = 60 * time.Minute
 	refreshMinTimeLeft = 30 * time.Second
+	downloadTokenExpirationTime = 2 * time.Second
 )
 
 var (
@@ -21,6 +22,11 @@ var (
 type authClaims struct {
 	Username string  `json:"username"` // Unique username for this token.
 	jwt.StandardClaims  // includes expiry time
+}
+
+type downloadClaims struct {
+	FileID string `json:"fileid"`
+	jwt.StandardClaims
 }
 
 func jwtKeyFunc(token *jwt.Token) (interface{}, error) {
@@ -64,6 +70,20 @@ func RefreshToken(token string) (string, time.Time, error) {
 
 	// Generate a completely new token.
 	return GenerateToken(claims.Username)
+}
+
+func GenerateDownloadToken(fileID string) (string, error) {
+	expirationTime := time.Now().Add(downloadTokenExpirationTime)
+	claims := downloadClaims{
+		FileID: fileID,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenSigned, err := token.SignedString(jwtKey)
+	return tokenSigned, err
 }
 
 func ValidateToken(token string) error {
