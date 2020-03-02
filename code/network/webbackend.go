@@ -25,38 +25,39 @@ type File struct {
 func (c *cloud) ServeWebApp(port int) error {
 	address := ":" + strconv.Itoa(port)
 
+	// New gorilla router
 	r := mux.NewRouter()
 
 	// Add API version as path prefix
 	r = r.PathPrefix(fmt.Sprintf("/api/%s/", apiVersion)).Subrouter()
 
-	// Do not need auth
+	// Add public routes.
+	// Do not require authentication.
 	r.HandleFunc("/ping", c.PingHandler)
 	r.HandleFunc("/auth/login", c.AuthLoginHandler).Methods(http.MethodPost)
 
-	// "Secret" subroutes.
+	// Add "secret" routes.
 	// Require authentication.
 	s := r.PathPrefix("/").Subrouter()
 	s.Use(AuthenticationMiddleware)
-	s.HandleFunc("/auth/refresh", c.AuthRefreshHandler)
-	s.HandleFunc("/netinfo", c.NetworkInfoHandler)
+	s.HandleFunc("/auth/refresh", c.AuthRefreshHandler).Methods(http.MethodGet)
+	s.HandleFunc("/netinfo", c.NetworkInfoHandler).Methods(http.MethodGet)
 	s.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
 	s.HandleFunc("/files/{fileID}", c.GetFile).Methods(http.MethodGet).
 											   Queries("filter", "contents")
 	s.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
 
+	// Add gorilla router as handler for all routes.
 	http.Handle("/", r)
 
-	// Set up CORS middleware for local development.
-	originsOk := gorillaHandlers.AllowedOrigins([]string{"http://localhost"})
-	methodsOk := gorillaHandlers.AllowedMethods([]string{http.MethodOptions, http.MethodGet, http.MethodPost})
+	// Apply gorilla middleware handlers.
+	// FIXME: use utils.GetLogger() writer, not stdout
+	h := gorillaHandlers.LoggingHandler(os.Stdout, r)
 
 	utils.GetLogger().Printf("[DEBUG] Cert and key: %s, %s", os.Getenv("SSL_CRT_FILE"), os.Getenv("SSL_KEY_FILE"))
 	utils.GetLogger().Printf("[INFO] Web backend listening on address: %s.", address)
-	return http.ListenAndServeTLS(address, os.Getenv("SSL_CRT_FILE"), os.Getenv("SSL_KEY_FILE"), 
-			gorillaHandlers.LoggingHandler(os.Stdout, 
-				gorillaHandlers.CORS(originsOk, methodsOk)(r)))
-	// TODO: use utils.GetLogger() writer
+	return http.ListenAndServeTLS(address, os.Getenv("SSL_CRT_FILE"), os.Getenv("SSL_KEY_FILE"), h)
+	// TODO: set up server with read and write timeouts.
 }
 
 func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
