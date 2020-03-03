@@ -28,7 +28,9 @@ export default function Login(props) {
         try {
             const response = await AuthenticationAPI.Login(username, password);
             if (response.status === 200) {
-                setIsAuthenticatedCallback(true);
+                await setIsAuthenticatedCallback(true);
+                // FIXME: problem with access_token cookie remaining undefined / not being updated in time
+                // user needs to refresh home page for the request with the updated authorization to be sent
                 setIsLoggedIn(true);
             } else {
                 console.log(response.status);
