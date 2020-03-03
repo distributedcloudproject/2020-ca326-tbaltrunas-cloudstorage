@@ -38,9 +38,9 @@ func (c *cloud) ServeWebApp(port int) error {
 
 	// Public route with query string token verification.
 	d := r.PathPrefix("/downloadfile").Subrouter()
+	d.Use(DownloadTokenMiddleware)
 	d.HandleFunc("/{fileID}", c.GetFileDownload).Methods(http.MethodGet).
 														 Queries("token", "")
-	d.Use(DownloadTokenMiddleware)
 
 	// Add "secret" routes.
 	// Require authentication.
@@ -195,7 +195,7 @@ func DownloadTokenMiddleware(next http.Handler) http.Handler {
 		token := tokens[0]
 
 		// TODO: when verifying token, check that token fileID is same as passed fileID
-		err := ValidateToken(token)
+		err := ValidateDownloadToken(token)
 		if err != nil {
 			utils.GetLogger().Printf("[ERROR] %v", err)
 			if err.Error() == "Signature invalid" {

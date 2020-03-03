@@ -29,7 +29,7 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		err = ValidateToken(token)
+		err = ValidateAccessToken(token)
 		if err != nil {
 			utils.GetLogger().Printf("[ERROR] %v", err)
 			if err.Error() == "Signature invalid" {

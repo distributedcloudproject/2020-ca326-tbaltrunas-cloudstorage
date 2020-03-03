@@ -53,7 +53,7 @@ func (c *cloud) AuthLoginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Success. Generate an access token.
-	token, expires, err := GenerateToken(creds.Username)
+	token, expires, err := GenerateAccessToken(creds.Username)
 	if err != nil {
 		utils.GetLogger().Printf("[ERROR] %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

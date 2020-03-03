@@ -33,7 +33,7 @@ func jwtKeyFunc(token *jwt.Token) (interface{}, error) {
 	return jwtKey, nil
 }
 
-func GenerateToken(username string) (string, time.Time, error) {
+func GenerateAccessToken(username string) (string, time.Time, error) {
 	expirationTime := time.Now().Add(accessTokenExpirationTime)
 
 	claims := authClaims{
@@ -69,7 +69,7 @@ func RefreshToken(token string) (string, time.Time, error) {
 	}
 
 	// Generate a completely new token.
-	return GenerateToken(claims.Username)
+	return GenerateAccessToken(claims.Username)
 }
 
 func GenerateDownloadToken(fileID string) (string, error) {
@@ -86,8 +86,24 @@ func GenerateDownloadToken(fileID string) (string, error) {
 	return tokenSigned, err
 }
 
-func ValidateToken(token string) error {
+func ValidateAccessToken(token string) error {
 	claims := &authClaims{}
+	parsedToken, err := jwt.ParseWithClaims(token, claims, jwtKeyFunc)
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return errors.New("Signature invalid")
+		} else {
+			return err
+		}
+	}
+	if !parsedToken.Valid {
+		return errors.New("Signature invalid")
+	}
+	return nil
+}
+
+func ValidateDownloadToken(token string) error {
+	claims := &downloadClaims{}
 	parsedToken, err := jwt.ParseWithClaims(token, claims, jwtKeyFunc)
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
