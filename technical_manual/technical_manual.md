@@ -50,7 +50,11 @@ This section should include a description of any major problems encountered duri
 
 Data structure design (files, network).
 
-Distribution algorithm (Calculating node benchmaks)
+Distribution algorithm (Calculating node benchmaks).
+
+Auth - JWT.
+
+Testing.
 
 ## 5. Installation Guide
 This is a 1 to 2 page section which contains a step by step software installation guide. It should include a detailed description of the steps necessary to install the software, a list of all required software, components, versions, hardware, etc.
