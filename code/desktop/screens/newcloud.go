@@ -305,12 +305,11 @@ func connectingToNetworkScreen(win fyne.Window) fyne.CanvasObject {
 			}
 			win.SetContent(connectedToNetwork(win, c))
 		} else {
-			c, err := network.BootstrapToNetwork(newCloudForm.networkIP.Text, me, key)
+			c, err := network.BootstrapToNetwork(newCloudForm.networkIP.Text, me, key, config)
 			if err != nil {
 				displayError(err)
 				return
 			}
-			c.SetConfig(config)
 			err = c.ListenOnPort(port)
 			if err != nil {
 				displayError(err)

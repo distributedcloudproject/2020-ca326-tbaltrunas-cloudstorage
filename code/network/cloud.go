@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 )
 
 type Cloud interface {
@@ -39,7 +40,7 @@ type Cloud interface {
 
 	// File
 	GetFolder(path string) (*NetworkFolder, error)
-	DistributeChunk(chunk datastore.ChunkStore) error
+	DistributeChunk(cloudPath string, store datastore.FileStore, chunkID datastore.ChunkID) error
 	CreateDirectory(folderPath string) error
 	DeleteDirectory(folderPath string) error
 	AddFile(file *datastore.File, filepath string, localpath string) error
@@ -49,6 +50,7 @@ type Cloud interface {
 	LockFile(path string) bool
 	UnlockFile(path string)
 	SyncFile(cloudPath string, localPath string) error
+	SyncFolder(cloudPath string, localPath string) error
 
 	// Events.
 	Events() *CloudEvents
@@ -71,8 +73,9 @@ type CloudEvents struct {
 
 // TODO: move this
 type fileSync struct {
-	cloudPath string
-	localPath string
+	CloudPath    string
+	LocalPath    string
+	LastEditTime time.Time
 }
 
 // Cloud is the client's view of the Network. Contains client-specific information.
@@ -95,12 +98,15 @@ type cloud struct {
 	// Mutex is used for any other cloud variable.
 	Mutex sync.RWMutex
 
-	// Local storage.
-	chunkStorage      map[string][]datastore.ChunkStore
-	chunkStorageMutex sync.RWMutex
+	// Local storage. Maps file path to the store.
+	fileStorage      map[string]datastore.FileStore
+	fileStorageMutex sync.RWMutex
 
-	fileSyncs []fileSync
-	watcher   *fsnotify.Watcher
+	downloadManager *DownloadManager
+
+	fileSyncs   []fileSync
+	folderSyncs []fileSync
+	watcher     *fsnotify.Watcher
 
 	// Non-authorized connections.
 	PendingNodes []*cloudNode
@@ -115,6 +121,12 @@ type cloud struct {
 	Port     int
 
 	config CloudConfig
+}
+
+func (c *cloud) FileStore(cloudPath string) datastore.FileStore {
+	c.fileStorageMutex.RLock()
+	defer c.fileStorageMutex.RUnlock()
+	return c.fileStorage[cloudPath]
 }
 
 func (c *cloud) Config() CloudConfig {

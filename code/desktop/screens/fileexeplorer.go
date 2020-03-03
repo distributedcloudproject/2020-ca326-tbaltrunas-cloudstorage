@@ -5,17 +5,29 @@ import (
 	"cloud/desktop/resources"
 	"cloud/network"
 	"errors"
+	"fmt"
 	"fyne.io/fyne"
 	fdialog "fyne.io/fyne/dialog"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 	"github.com/sqweek/dialog"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 )
+
+func fancySizePrint(num float64, suffix string) string {
+	for _, unit := range []string{"", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"} {
+		if math.Abs(num) < 1024.0 {
+			return fmt.Sprintf("%3.1f %s%s", num, unit, suffix)
+		}
+		num /= 1024.0
+	}
+	return fmt.Sprintf("%.1f %s%s", num, "Yi", suffix)
+}
 
 func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 	list := widget.NewVBox()
@@ -39,20 +51,33 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 			list.Append(NewFileWidget(theme.FolderIcon(), p, func() {
 				folderPath = path.Join(folderPath, p)
 				redraw()
-			}, widget.NewToolbarAction(theme.DeleteIcon(), func() {
-				err := c.DeleteDirectory(folderPath + "/" + p)
-				if err != nil {
-					fdialog.ShowError(err, w)
-				}
-				redraw()
-			})))
+			},
+				widget.NewToolbarAction(theme.ViewRefreshIcon(), func() {
+					filename, err := dialog.Directory().Browse()
+					if err != nil {
+						fdialog.ShowError(err, w)
+						return
+					}
+
+					fullpath := folderPath + "/" + p
+					if err := c.SyncFolder(fullpath, filename); err != nil {
+						fdialog.ShowError(err, w)
+					}
+				}),
+				widget.NewToolbarAction(theme.DeleteIcon(), func() {
+					err := c.DeleteDirectory(folderPath + "/" + p)
+					if err != nil {
+						fdialog.ShowError(err, w)
+					}
+					redraw()
+				})))
 		}
 
 		for i := range folder.Files.Files {
 			file := folder.Files.Files[i]
 
 			list.Append(NewFileWidget(fileIcon(file.Name), file.Name, nil,
-				&toolbarWidget{w: widget.NewLabel("24 KB")},
+				&toolbarWidget{w: widget.NewLabel(fancySizePrint(float64(file.Size), "B"))},
 				widget.NewToolbarSpacer(),
 				widget.NewToolbarAction(theme.ViewRefreshIcon(), func() {
 					filename, err := dialog.File().Save()
@@ -100,7 +125,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		}
 
 		_, fname := filepath.Split(filename)
-		f, err := datastore.NewFile(reader, fname, 1024*32)
+		f, err := datastore.NewFile(reader, fname, 1024*1024*4)
 		reader.Close()
 		if err != nil {
 			fdialog.ShowError(err, w)

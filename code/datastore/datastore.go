@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"cloud/utils"
+	"encoding/gob"
 	"errors"
 	"io"
 )
@@ -17,6 +18,13 @@ type ChunkID string
 type ChunkContents []byte
 
 type FileIOReader io.ReaderAt
+
+func init() {
+	gob.Register(BaseFileStore{})
+	gob.Register(FullFileStore{})
+	gob.Register(SyncFileStore{})
+	gob.Register(PartialFileStore{})
+}
 
 // File represents a user's file stored on the cloud.
 type File struct {
@@ -42,11 +50,11 @@ type Chunks struct {
 // Chunk represents a "chunk" of a file, a sequential part of a file.
 // Each chunk has an ID and a sequence number.
 type Chunk struct {
-	ID ChunkID // Unique ID of the chunk (hash value of the contents).
+	ID             ChunkID // Unique ID of the chunk (hash value of the contents).
+	SequenceNumber int     // Chunk sequence used to place the chunk in the correct position in the file.
 
-	SequenceNumber int   // Chunk sequence used to place the chunk in the correct position in the file.
-	ContentSize    int   // Number of bytes of actual content.
-	ChunkOffset    int64 // The offset of the chunk of the file. (e.g, if offset is 1024, the chunk is contained at
+	ContentSize int   // Number of bytes of actual content.
+	ChunkOffset int64 // The offset of the chunk of the file. (e.g, if offset is 1024, the chunk is contained at
 	// position 1024 of the file.
 }
 

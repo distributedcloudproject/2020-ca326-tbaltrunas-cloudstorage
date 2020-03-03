@@ -137,13 +137,12 @@ func main() {
 		utils.GetLogger().Println("[INFO] Bootstrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
-		n, err := network.BootstrapToNetwork(ip, me, key)
+		n, err := network.BootstrapToNetwork(ip, me, key, network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		c = n
-		c.SetConfig(network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
 

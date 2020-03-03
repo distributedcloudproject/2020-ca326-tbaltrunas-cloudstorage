@@ -61,6 +61,23 @@ type Network struct {
 	FileNodes FileNodes
 }
 
+func CleanNetworkPath(networkPath string) string {
+	networkPath = path.Clean(networkPath)
+	if len(networkPath) == 0 {
+		return "/"
+	}
+	if len(networkPath) == 1 && networkPath[0] == '.' {
+		return "/"
+	}
+	if len(networkPath) > 1 && networkPath[0] == '.' && networkPath[1] == '/' {
+		return networkPath[1:]
+	}
+	if networkPath[0] != '/' {
+		return "/" + networkPath
+	}
+	return networkPath
+}
+
 func (c *cloud) GetFolder(folder string) (*NetworkFolder, error) {
 	c.networkMutex.RLock()
 	defer c.networkMutex.RUnlock()
