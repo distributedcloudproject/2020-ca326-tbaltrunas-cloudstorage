@@ -52,9 +52,9 @@ Data structure design (files, network).
 
 Distribution algorithm (Calculating node benchmaks).
 
-Auth - JWT.
+Auth - JWT. Download. Auth middleware.
 
-Testing.
+Secure comms - HTTPS certs.
 
 ## 5. Installation Guide
 This is a 1 to 2 page section which contains a step by step software installation guide. It should include a detailed description of the steps necessary to install the software, a list of all required software, components, versions, hardware, etc.
@@ -68,3 +68,11 @@ Optional: Makefile, Ansible.
 Any OS.
 
 Need own servers to make a cloud.
+
+## 6. Testing
+
+Unit and integration tests.
+
+System tests.
+
+User testing.
