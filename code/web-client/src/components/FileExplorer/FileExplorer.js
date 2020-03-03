@@ -1,6 +1,7 @@
 import React from 'react';
 import Container from 'react-bootstrap/Container';
-import Button from 'react-bootstrap/Button';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import FileBrowser from 'react-keyed-file-browser';
 import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-browser.css';
 import * as FileExplorerIcons from './Icons';
@@ -80,42 +81,52 @@ export default class FileExplorer extends React.Component {
         <Container>
 
           {/* Can also drag and drop into the FileBrowser to upload. */}
-          <Upload callback={this.handleCreateFiles} />
+          <Row className='m-2'>
+            <Col>
+              <Upload callback={this.handleCreateFiles} />
+            </Col>
+            <Col>
+              <Download file={this.state.selectedFile} />
+            </Col>
+          </Row>
 
-          <Download file={this.state.selectedFile} />
+          <Row className='m-2'>
+            <Col>
+            <FileBrowser
+              files={this.state.files}
+              icons={FileExplorerIcons.IconObjects}
 
-          <FileBrowser
-            files={this.state.files}
-            icons={FileExplorerIcons.IconObjects}
+              // TODO: buttons to specify sort order
 
-            // TODO: buttons to specify sort order
+              // Handlers
+              onCreateFolder={this.handleCreateFolder}
+              onCreateFiles={this.handleCreateFiles}
+              onMoveFolder={this.handleRenameFolder}
+              onMoveFile={this.handleRenameFile}
+              onRenameFolder={this.handleRenameFolder}
+              onRenameFile={this.handleRenameFile}
+              onDeleteFolder={this.handleDeleteFolder}
+              onDeleteFile={this.handleDeleteFile}
 
-            // Handlers
-            onCreateFolder={this.handleCreateFolder}
-            onCreateFiles={this.handleCreateFiles}
-            onMoveFolder={this.handleRenameFolder}
-            onMoveFile={this.handleRenameFile}
-            onRenameFolder={this.handleRenameFolder}
-            onRenameFile={this.handleRenameFile}
-            onDeleteFolder={this.handleDeleteFolder}
-            onDeleteFile={this.handleDeleteFile}
+              onDownloadFile={(keys) => {
+                console.log('Download: ' + keys);
+              }}
 
-            onDownloadFile={(keys) => {
-              console.log('Download: ' + keys);
-            }}
-
-            // onSelect: PropTypes.func,
-            onSelectFile={this.handleSelectFile}
-            // onSelectFolder: PropTypes.func,
-        
-            onPreviewOpen={(file) => {
-              console.log('Preview: ' + file);
-            }}
-            onPreviewClose={(file) => {
-              console.log('Preview close: ' + file);
-            }}
-        
-          />
+              // onSelect: PropTypes.func,
+              onSelectFile={this.handleSelectFile}
+              // onSelectFolder: PropTypes.func,
+          
+              onPreviewOpen={(file) => {
+                console.log('Preview: ' + file);
+              }}
+              onPreviewClose={(file) => {
+                console.log('Preview close: ' + file);
+              }}
+          
+              // detailRenderer={() => {}}
+            />
+            </Col>
+          </Row>
         </Container>
       )
     }
