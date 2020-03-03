@@ -2,14 +2,33 @@ package network
 
 import (
 	"cloud/utils"
+	"time"
 )
 
 const (
 	StorageSpaceRemainingMsg = "StorageSpaceRemaining"
+	NetworkLatencyMsg = "NetworkLatency"
 )
 
 func init() {
 	handlers = append(handlers, createBenchmarkRequestHandler)
+}
+
+func createBenchmarkRequestHandler(node *cloudNode, cloud *cloud) func(string) interface{} {
+	r := request{
+		Cloud:    cloud,
+		FromNode: node,
+	}
+
+	return func(message string) interface{} {
+		switch message {
+		case StorageSpaceRemainingMsg:
+			return r.OnStorageSpaceRemaining
+		case NetworkLatencyMsg:
+			return r.OnNetworkLatency
+		}
+		return nil
+	}
 }
 
 // StorageSpaceRemaining returns the amount of storage space in bytes that remains for user data on the node.
@@ -47,17 +66,15 @@ func (r request) OnStorageSpaceRemaining() (uint64, error) {
 	}
 }
 
-func createBenchmarkRequestHandler(node *cloudNode, cloud *cloud) func(string) interface{} {
-	r := request{
-		Cloud:    cloud,
-		FromNode: node,
-	}
-
-	return func(message string) interface{} {
-		switch message {
-		case StorageSpaceRemainingMsg:
-			return r.OnStorageSpaceRemaining
-		}
-		return nil
-	}
+// NetworkLatency calculates the round-trip time of a request.
+func (n *cloudNode) NetworkLatency() (time.Duration, error) {
+	var latency time.Duration
+	before := time.Now()
+	_, err := n.client.SendMessage(NetworkLatencyMsg)
+	latency = time.Since(before)
+	return latency, err
 }
+
+func (r request) OnNetworkLatency() {}
+
+// TODO: network bandwidth
