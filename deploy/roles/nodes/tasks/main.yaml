@@ -1,0 +1,19 @@
+---
+- name: Copy cloud binary to bin and make it executable.
+  copy:
+    src: "{{ playbook_dir }}/cloud"
+    dest: /usr/bin/cloud
+    mode: u=rx,g=r,o=r
+
+- name: Create a directory for cloud-related files.
+  file:
+    path: /opt/cloud
+    state: directory
+
+# We use shell instead of openssh_keypair because we need the "-m PEM" format flag.
+# https://stackoverflow.com/questions/43235179/how-to-execute-ssh-keygen-without-prompt/45031320
+- name: Generate key for the node.
+  shell: ssh-keygen -f /opt/cloud/id_rsa -m PEM -q -N "" <<< n
+  args:
+    executable: /bin/bash
+  ignore_errors: yes
