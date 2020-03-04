@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-	"github.com/sqweek/dialog"
 	"math"
 	"os"
 	"path"
@@ -53,7 +52,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 				redraw()
 			},
 				widget.NewToolbarAction(theme.ViewRefreshIcon(), func() {
-					filename, err := dialog.Directory().Browse()
+					filename, err := BrowseDirDialog()
 					if err != nil {
 						fdialog.ShowError(err, w)
 						return
@@ -80,7 +79,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 				&toolbarWidget{w: widget.NewLabel(fancySizePrint(float64(file.Size), "B"))},
 				widget.NewToolbarSpacer(),
 				widget.NewToolbarAction(theme.ViewRefreshIcon(), func() {
-					filename, err := dialog.File().Save()
+					filename, err := SaveFileDialog()
 					if err != nil {
 						fdialog.ShowError(err, w)
 						return
@@ -113,7 +112,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 	// Temp hack
 	redraw = updateList
 	addFile := func() {
-		filename, err := dialog.File().Load()
+		filename, err := LoadFileDialog()
 		if err != nil {
 			fdialog.ShowError(err, w)
 			return
@@ -140,7 +139,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		updateList()
 	}
 	syncFile := func() {
-		filename, err := dialog.File().Load()
+		filename, err := LoadFileDialog()
 		if err != nil {
 			fdialog.ShowError(err, w)
 			return

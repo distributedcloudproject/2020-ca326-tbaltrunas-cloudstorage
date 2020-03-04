@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-	"github.com/sqweek/dialog"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -104,7 +103,7 @@ func NewCloudScreen(win fyne.Window) fyne.CanvasObject {
 		layout.NewSpacer(),
 		&widget.Box{},
 		widget.NewButton("Load from file", func() {
-			filename, err := dialog.File().Load()
+			filename, err := LoadFileDialog()
 			if err == nil {
 				r, err := os.Open(filename)
 				if err == nil {
@@ -185,13 +184,13 @@ func joinCloudScreen(win fyne.Window) fyne.CanvasObject {
 func createNodeScreen(win fyne.Window) fyne.CanvasObject {
 	go setProgressBarAnimated(50.0, time.Millisecond*300)
 	browseButton := widget.NewButton("Browse", func() {
-		filename, err := dialog.File().Load()
+		filename, err := LoadFileDialog()
 		if err == nil {
 			newCloudForm.nodePrivateKeyPath.SetText(filename)
 		}
 	})
 	browseFileStorageButton := widget.NewButton("Browse", func() {
-		filename, err := dialog.Directory().Browse()
+		filename, err := BrowseDirDialog()
 		if err == nil {
 			newCloudForm.nodeFileStorageDir.SetText(filename)
 		}

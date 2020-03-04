@@ -7,14 +7,13 @@ import (
 	"fyne.io/fyne/dialog"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-	sdialog "github.com/sqweek/dialog"
 	"os"
 )
 
 func SettingScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 	return widget.NewVBox(
 		widget.NewButtonWithIcon("Save", theme.DocumentSaveIcon(), func() {
-			filename, err := sdialog.File().Save()
+			filename, err := SaveFileDialog()
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
