@@ -8,8 +8,10 @@ import * as FileExplorerIcons from './Icons';
 import './FileExplorer.css';
 import Upload from './Upload';
 import Download from './Download';
-import { FilesAPI } from '../../api';
+import { FilesAPI, FilesDownloadAPI, APIConstants } from '../../api';
 import * as UpdateUI from './UpdateUI';
+import urljoin from 'url-join';
+import { ActionRenderer } from './fileBrowserCustom';
 
 export default class FileExplorer extends React.Component {
     state = {
@@ -33,6 +35,25 @@ export default class FileExplorer extends React.Component {
       
       const prefix = ''; // TODO: handle prefix
       this.setState({state: UpdateUI.UpdateUICreateFiles(this.state, files, prefix)})
+    }
+
+    handleReadFiles = async (files) => {
+      console.log(files)
+      const file = files[0]
+      try {
+        const fileURL = await FilesDownloadAPI.GetFileDownloadLink(file);
+        console.log('Computed temporary file URL: ', fileURL);
+
+        // Create a temporary hidden link and click it.
+        const link = document.createElement('a');
+        document.body.appendChild(link);
+        link.href = fileURL;
+        link.setAttribute('type', 'hidden')
+        link.download = true;
+        // link.click()
+      } catch (error) {
+          console.error(error)
+      }
     }
 
     // handleSelectFile updates component state with the current file.
@@ -81,16 +102,13 @@ export default class FileExplorer extends React.Component {
         <Container>
 
           {/* Can also drag and drop into the FileBrowser to upload. */}
-          <Row className='m-2'>
+          <Row className='m-3'>
             <Col>
               <Upload callback={this.handleCreateFiles} />
             </Col>
-            <Col>
-              <Download file={this.state.selectedFile} />
-            </Col>
           </Row>
 
-          <Row className='m-2'>
+          <Row className='m-3'>
             <Col>
             <FileBrowser
               files={this.state.files}
@@ -107,10 +125,7 @@ export default class FileExplorer extends React.Component {
               onRenameFile={this.handleRenameFile}
               onDeleteFolder={this.handleDeleteFolder}
               onDeleteFile={this.handleDeleteFile}
-
-              onDownloadFile={(keys) => {
-                console.log('Download: ' + keys);
-              }}
+              onDownloadFile={this.handleReadFiles}
 
               // onSelect: PropTypes.func,
               onSelectFile={this.handleSelectFile}
@@ -122,9 +137,9 @@ export default class FileExplorer extends React.Component {
               onPreviewClose={(file) => {
                 console.log('Preview close: ' + file);
               }}
-          
-              // detailRenderer={() => {}}
-            />
+              
+              actionRenderer={ActionRenderer}
+          />
             </Col>
           </Row>
         </Container>

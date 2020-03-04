@@ -9,12 +9,7 @@ export default function Download(props) {
         // FIXME: No page refresh when download link is clicked.
         // e.preventDefault();
         try {
-            const response = await FilesDownloadAPI.GetFileDownloadLink(props.file);
-            if (response.status !== 200) {
-                console.error(response.status);
-            }
-            const endpointURL = response.data; // represents file download link without the backend address
-            const fileURL = urljoin(APIConstants.GetBackendAddress(), APIConstants.GetBase(), endpointURL);
+            const fileURL = await FilesDownloadAPI.GetFileDownloadLink(props.file);
             console.log('Computed temporary file URL: ', fileURL);
 
             // Create a temporary hidden link and click it.
