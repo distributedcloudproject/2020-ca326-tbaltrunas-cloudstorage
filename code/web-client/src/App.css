@@ -1,5 +1,8 @@
 body {
   background-color: #424242ff;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
 }
 
 p {
@@ -15,8 +18,8 @@ a:hover {
   text-decoration: none;
 }
 
-.icon-button svg {
-  padding: 3%;
+.icon-button {
+  padding: 2%;
 }
 
 /* .App-logo {

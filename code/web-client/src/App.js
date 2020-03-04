@@ -6,6 +6,9 @@ import {
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Cookies from 'js-cookie';
 import './App.css';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import About from './components/About';
 import Login from './components/Login';
 import Home from './components/Home';
 import PrivateRoute from './components/PrivateRoute';
@@ -29,10 +32,13 @@ export default function App() {
   return (
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticatedCallback: setIsAuthenticatedCallback }}>
         {/* TODO: header and footer with logo and info/links */}
-        <Router>
-          <Route path='/login' component={Login} />
-          <PrivateRoute exact path='/' component={Home} />
-        </Router>
+        <Header />
+          <Router>
+            <Route path='/login' component={Login} />
+            <Route path='/about' component={About} />
+            <PrivateRoute exact path='/' component={Home} />
+          </Router>
+        <Footer />
       </AuthContext.Provider>
     );
 }
