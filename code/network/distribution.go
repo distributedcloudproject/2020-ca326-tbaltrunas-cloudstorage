@@ -96,6 +96,8 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 	utils.GetLogger().Printf("[DEBUG] Got available nodes: %v.", availableNodes)
 
 	// Get node benchmarks once to not block the network.
+	// FIXME: Don't measure benchmarks for each file to be distributed. Instead measure them at some other event.
+	// i.e. node joins the network/comes online (and calcualate the measurement only for that node).
 	nodeBenchmarks := make([]NodeBenchmark, 0)
 	for _, cnode := range availableNodes {
 		benchmark, err := cnode.Benchmark()
@@ -196,18 +198,37 @@ func (c *cloud) Score(cnode *cloudNode, benchmark NodeBenchmark, currentScheme d
 	chunkSequenceNumber int, file datastore.File, antiAffinity bool) (int, error) {
 	score := 0
 
+	utils.GetLogger().Printf("[DEBUG] Calculating score for node with bechmarks: %v.", benchmark)
+	// FIXME: refactor the way all these scores are calculated
+	// Right now the score scale is random and probably explodes due to nanosecond and byte values in benchmarks
+	// Perhaps instead of using score, sort the nodes by multiple keys
+	// Some contraints may be conficting, i.e. which one to prefer, optimizing for storage, or optimizing for network?
+	// How to combine those constraints?
+
+	// Storage space remaining
 	storageSpaceRemaining := benchmark.StorageSpaceRemaining
 	// Note that we do not distribute the current chunks until the distributionScheme is fully constructed.
 	expectedOccupation := expectedOccupation(cnode.ID, currentScheme, file)
 	expectedStorageRemaining := storageSpaceRemaining - expectedOccupation
 	score += int(expectedStorageRemaining)
-	// TODO: proper handling of big numbers
+	// TODO: proper handling of big numbers (instead of int64 to int)
 
+	// Optimal network
+	latency := benchmark.Latency
+	// FIXME: big problem - nanosecond scale explodes
+	// taking the reciprocal makes the values very small. Need to scale up.
+	score += 1 / int(latency)
+
+	// Anti affinity
 	if antiAffinity {
 		antiAffine := upholdsAntiAffinity(cnode.ID, chunkSequenceNumber, currentScheme) // does not contain the chunk already
-		score += 1
 		if !antiAffine {
-			score *= -1
+			if 0 < score {
+				score += 1
+				score *= -1	
+			} else {
+				score -= 100
+			}	
 		}
 	}
 	return score, nil

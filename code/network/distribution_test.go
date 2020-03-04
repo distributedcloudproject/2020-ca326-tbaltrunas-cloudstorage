@@ -13,6 +13,8 @@ import (
 // node indices are in terms of the first cloud.
 type testCaseDistribution map[int][]int
 
+// TODO: might want to split multiple tests into multiple functions, to be able to rerun only 1 test case when needed
+
 func TestDistribution(t *testing.T) {
 	numNodes := 2
 	chunkSize := 5
@@ -192,3 +194,6 @@ func TestDistributionError(t *testing.T) {
 		t.Fatalf("Got err: %v. Expected non-nil err.", err)
 	}
 }
+
+// TODO: tests that measure optimal network balancing
+// For now test in system test (real node tests).
