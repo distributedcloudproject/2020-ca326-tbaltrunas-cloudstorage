@@ -26,7 +26,7 @@ class DetailRenderer extends React.Component {
     name = name.length ? name[name.length - 1] : ''
 
     return (
-      <Container className='border rounded border-secondary p-2 pl-3'>
+      <Container className='border rounded border-secondary p-3 pl-3'>
         <h2>Item Detail</h2>
         <dl>
           <dt>Key</dt>

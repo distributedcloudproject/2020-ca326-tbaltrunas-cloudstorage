@@ -9,7 +9,8 @@ import FileExplorer from './FileExplorer';
 export default function Home(props) {
     return (
         <Container className='d-flex flex-column p-2'>
-            <Container className='border rounded border-primary m-2 p-2 d-flex justify-content-around'>
+            {/* TODO: reuse container "styling" */}
+            <Container className='border rounded border-primary shadow-sm m-2 p-2 d-flex justify-content-around'>
                 <Col className='col-md-10 d-flex justify-content-center'>
                     <CloudInfo />
                 </Col>
@@ -17,7 +18,7 @@ export default function Home(props) {
                     <Logout />
                 </Col>
             </Container>
-            <Container className='m-2 p-2 d-flex flex-wrap border border-primary rounded'>
+            <Container className='border border-primary rounded shadow-sm m-2 p-2 d-flex flex-wrap'>
                 <Col className='m-1 p-1'>
                     <FileExplorer />
                 </Col>
