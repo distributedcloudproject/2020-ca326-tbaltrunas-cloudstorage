@@ -50,7 +50,7 @@ export default class FileExplorer extends React.Component {
         link.href = fileURL;
         link.setAttribute('type', 'hidden')
         link.download = true;
-        // link.click()
+        link.click()
       } catch (error) {
           console.error(error)
       }
@@ -140,6 +140,7 @@ export default class FileExplorer extends React.Component {
               
               actionRenderer={CustomRenderers.ActionRenderer}
               filterRenderer={CustomRenderers.FilterRenderer}
+              detailRenderer={CustomRenderers.DetailRenderer}
           />
             </Col>
           </Row>
