@@ -27,3 +27,5 @@ deploy:
   stage: deploy
   script:
     - make deploy
+
+# FIXME: build once, then pass the build to further stages of the pipeline
