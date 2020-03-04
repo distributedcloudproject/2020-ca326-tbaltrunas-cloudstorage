@@ -72,10 +72,11 @@ export default class FileExplorer extends React.Component {
     }
 
     // handleDeleteFile deletes an existing file.
-    handleDeleteFile = (fileKey) => {
-      FilesAPI.DeleteFile()
-      // FIXME: doesn't get deleted.
-      this.setState({state : UpdateUI.UpdateUIDeleteFile(this.state, fileKey)})
+    handleDeleteFile = (fileKeys) => {
+      fileKeys.forEach(fileKey => {
+        FilesAPI.DeleteFile()
+        this.setState({state : UpdateUI.UpdateUIDeleteFile(this.state, fileKey)})
+      });
     }
 
     // handleCreateFolder creates a new folder.
@@ -91,10 +92,11 @@ export default class FileExplorer extends React.Component {
     }
 
     // handleDeleteFolder deletes an existing folder.
-    handleDeleteFolder = (folderKey) => {
-      FilesAPI.DeleteFolder()
-      // FIXME: doesn't get deleted.
-      this.setState({state: UpdateUI.UpdateUIDeleteFolder(this.state, folderKey)})
+    handleDeleteFolder = (folderKeys) => {
+      folderKeys.forEach(folderKey => {
+        FilesAPI.DeleteFolder()
+        this.setState({state: UpdateUI.UpdateUIDeleteFolder(this.state, folderKey)})  
+      });
     }
   
     render() {
