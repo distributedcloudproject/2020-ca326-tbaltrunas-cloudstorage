@@ -155,6 +155,9 @@ func BootstrapToNetwork(bootstrapIP string, myNode Node, privateKey *rsa.Private
 	// Create stores for any files.
 	var createStorage func(folderpath string, nw *NetworkFolder)
 	createStorage = func(folderpath string, nw *NetworkFolder) {
+		if nw == nil {
+			return
+		}
 		for _, f := range nw.Files.Files {
 			fpath := CleanNetworkPath(path.Join(folderpath, f.Name))
 			if storage := cloud.fileStorage[fpath]; storage == nil {

@@ -96,6 +96,10 @@ func TestDistribution(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Logf("File: %v", file)
+		err = cloud.AddFile(file, "cloud_test_file_*", tmpfile.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		tmpStorageDirs, err := utils.GetTestDirs("cloud_test_node_data_", numNodes)
 		if err != nil {

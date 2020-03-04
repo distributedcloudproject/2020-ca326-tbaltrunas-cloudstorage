@@ -51,7 +51,7 @@ func CreateTestClouds(numNodes int) ([]Cloud, error) {
 			ID:   nID,
 			Name: "Node " + snum,
 		}
-		n, err := BootstrapToNetwork(cloud.MyNode().IP, node, key)
+		n, err := BootstrapToNetwork(cloud.MyNode().IP, node, key, CloudConfig{})
 		if err != nil {
 			return nil, err
 		}

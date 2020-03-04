@@ -27,7 +27,7 @@ func TestNetworkPing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2)
+	n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2, CloudConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestNetworkBootstrap(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "Node " + strconv.Itoa(i+1)}, key2)
+		n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "Node " + strconv.Itoa(i+1)}, key2, CloudConfig{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -116,7 +116,7 @@ func TestNetworkAddNode(t *testing.T) {
 		n, err := BootstrapToNetwork(cloud.MyNode().IP, Node{
 			Name: "Node " + strconv.Itoa(i+1),
 			IP:   listener.Addr().String(),
-		}, key2)
+		}, key2, CloudConfig{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -153,7 +153,7 @@ func TestNetworkWhitelist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2)
+	_, err = BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2, CloudConfig{})
 	if err == nil {
 		t.Error("Node2 connected to whitelisted network.")
 	}
@@ -172,7 +172,7 @@ func TestNetworkWhitelist(t *testing.T) {
 		t.Fatal(err)
 	}
 	cloud.AddToWhitelist(nID3)
-	_, err = BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test3"}, key3)
+	_, err = BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test3"}, key3, CloudConfig{})
 	if err != nil {
 		t.Error("Node3 failed to connect to network: ", err)
 	}

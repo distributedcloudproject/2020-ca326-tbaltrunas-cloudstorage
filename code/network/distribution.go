@@ -55,6 +55,9 @@ func (c *cloud) Distribute(cloudPath string, file datastore.File, numReplicas in
 				utils.GetLogger().Printf("[INFO] Saving chunk: %v on node %v.", sequenceNumber, nodeID)
 				//err := cnode.SaveChunk(&file, sequenceNumber)
 				store := c.FileStore(cloudPath)
+				if store == nil {
+					return errors.New("file is not stored")
+				}
 				content, err := store.ReadChunk(file.Chunks.Chunks[sequenceNumber].ID)
 				if err != nil {
 					return err
