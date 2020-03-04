@@ -7,16 +7,13 @@ import (
 	"io"
 )
 
-type FileSize int
-
 // FileID is a hash as a string of bytes.
 type FileID string
 
 // ChunkID is a hash as a string of bytes.
 type ChunkID string
 
-type ChunkContents []byte
-
+// FileIOReader is the type used by the File reader.
 type FileIOReader io.ReaderAt
 
 func init() {
@@ -32,7 +29,9 @@ type File struct {
 
 	Name string // The name of the file.
 
-	Size FileSize // File size.
+	Path string // Path of the user's file.
+
+	Size uint64 // File size in bytes.
 
 	Chunks Chunks // List of the file's chunk ID's.
 
@@ -53,8 +52,8 @@ type Chunk struct {
 	ID             ChunkID // Unique ID of the chunk (hash value of the contents).
 	SequenceNumber int     // Chunk sequence used to place the chunk in the correct position in the file.
 
-	ContentSize int   // Number of bytes of actual content.
-	ChunkOffset int64 // The offset of the chunk of the file. (e.g, if offset is 1024, the chunk is contained at
+	ContentSize uint64 // Number of bytes of actual content.
+	ChunkOffset int64  // The offset of the chunk of the file. (e.g, if offset is 1024, the chunk is contained at
 	// position 1024 of the file.
 }
 
@@ -67,6 +66,7 @@ type ChunkStore struct {
 	// of the file, then the location of the chunk in that file needs to be located before reading.
 	StoredAsFile bool
 	FilePath     string
+	ContentSize  uint64 // In bytes, actual content size.
 }
 
 // DataStore represents a collection of files.
@@ -111,7 +111,7 @@ func NewFile(reader FileIOReader, name string, chunkSize int) (*File, error) {
 			ID:             chunkID,
 			SequenceNumber: i,
 			ChunkOffset:    offset,
-			ContentSize:    numRead,
+			ContentSize:    uint64(numRead),
 		}
 		allContents = append(allContents, buffer[:chunk.ContentSize]...)
 		chunks.Chunks = append(chunks.Chunks, chunk)
@@ -132,9 +132,20 @@ func NewFile(reader FileIOReader, name string, chunkSize int) (*File, error) {
 		ID:     FileID(id),
 		reader: reader,
 		Name:   name,
-		Size:   FileSize(fileSize),
+		Size:   uint64(fileSize),
 		Chunks: chunks,
 	}, nil
+}
+
+// GetChunkByID returns a chunk belonging to the file by its ID.
+// Returns nil if the chunk can not be found.
+func (file *File) GetChunkByID(chunkID ChunkID) *Chunk {
+	for _, chunk := range file.Chunks.Chunks {
+		if chunk.ID == chunkID {
+			return &chunk
+		}
+	}
+	return nil
 }
 
 // Contains returns whether the datastore contains the specified file.
@@ -167,4 +178,16 @@ func generateFileID(chunks []Chunk) string {
 		buffer = append(buffer, c.ID...)
 	}
 	return utils.HashFile(buffer)
+}
+
+// GetChunkByID searches for the chunk with the given ID and the file the chunk belongs to.
+// Returns nil if the chunk can not be found.
+func (ds *DataStore) GetChunkByID(chunkID ChunkID) (*Chunk, *File) {
+	for _, file := range ds.Files {
+		chunk := file.GetChunkByID(chunkID)
+		if chunk != nil {
+			return chunk, file
+		}
+	}
+	return nil, nil
 }

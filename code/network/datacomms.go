@@ -379,6 +379,7 @@ func (r request) OnMoveFileRequest(filepath string, newfilepath string) error {
 	c.networkMutex.Lock()
 	defer c.networkMutex.Unlock()
 	folder, err := c.network.GetFolder(folderName)
+
 	if err != nil {
 		return err
 	}
@@ -450,6 +451,10 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 		return err
 	}
 	utils.GetLogger().Printf("[DEBUG] Finished saving chunk.")
+
+	benchmarkState := r.Cloud.BenchmarkState()
+	benchmarkState.StorageSpaceUsed += uint64(len(sr.Contents))
+	r.Cloud.SetBenchmarkState(benchmarkState)
 
 	err := r.Cloud.updateChunkNodes(sr.Chunk.ID, r.Cloud.MyNode().ID)
 	return err
