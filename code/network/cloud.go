@@ -51,7 +51,7 @@ type Cloud interface {
 	UnlockFile(path string)
 	SyncFile(cloudPath string, localPath string) error
 	SyncFolder(cloudPath string, localPath string) error
-	Distribute(file datastore.File, numReplicas int, antiAffinity bool) error
+	Distribute(cloudPath string, file datastore.File, numReplicas int, antiAffinity bool) error
 
 	// Events.
 	Events() *CloudEvents

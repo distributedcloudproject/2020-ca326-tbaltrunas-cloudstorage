@@ -38,7 +38,7 @@ type distributionScheme map[string][]int
 // if numReplicas is -1, then a copy of the file is stored on each node in the cloud.
 // Distribute acts with two goals in mind: reliability (redundancy) and efficiency.
 // The function uses node benchmarking to achieve best efficiency (load balanced storage, optimized network, etc).
-func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bool) error {
+func (c *cloud) Distribute(cloudPath string, file datastore.File, numReplicas int, antiAffinity bool) error {
 	// Distribute computes a distributionScheme, a mapping telling which nodes should contain which chunks.
 	// It then acts on the distributionScheme to perform the actual requests for saving the chunks.
 	distributionScheme, err := c.distributionAlgorithm(file, numReplicas, antiAffinity)
@@ -53,7 +53,13 @@ func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bo
 			cnode := c.GetCloudNode(nodeID)
 			if cnode != nil {
 				utils.GetLogger().Printf("[INFO] Saving chunk: %v on node %v.", sequenceNumber, nodeID)
-				err := cnode.SaveChunk(&file, sequenceNumber)
+				//err := cnode.SaveChunk(&file, sequenceNumber)
+				store := c.FileStore(cloudPath)
+				content, err := store.ReadChunk(file.Chunks.Chunks[sequenceNumber].ID)
+				if err != nil {
+					return err
+				}
+				err = cnode.SaveChunk(cloudPath, file.Chunks.Chunks[sequenceNumber], content)
 				if err != nil {
 					return err
 				}

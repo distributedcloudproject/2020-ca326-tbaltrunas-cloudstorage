@@ -111,7 +111,7 @@ func TestDistribution(t *testing.T) {
 			})
 		}
 
-		err = cloud.Distribute(*file, testCase.NumReplicas, testCase.AntiAffinity)
+		err = cloud.Distribute("cloud_test_file_*", *file, testCase.NumReplicas, testCase.AntiAffinity)
 		if err != nil {
 			t.Error(err)
 		}
@@ -166,7 +166,7 @@ func TestDistributionNoStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = cloud.Distribute(*file, 0, true)
+	err = cloud.Distribute("cloud_test_file_*", *file, 0, true)
 	if err == nil {
 		t.Errorf("Expected error. Got: %v.", err)
 	} else if err.Error() != "No nodes available" {
@@ -181,7 +181,7 @@ func TestDistributionError(t *testing.T) {
 	}
 	cloud := clouds[0]
 	var file datastore.File
-	err = cloud.Distribute(file, -2, true)
+	err = cloud.Distribute("", file, -2, true)
 	if err == nil {
 		t.Fatalf("Got err: %v. Expected non-nil err.", err)
 	}
