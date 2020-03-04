@@ -3,7 +3,7 @@ package network
 import (
 	"cloud/datastore"
 	"cloud/utils"
-	"reflect"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -58,31 +58,11 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 	n := nodes[0]
 	t.Logf("Node: %v.", n)
 
-	err = cloud.AddFile(file, "/", "")
+	err = cloud.AddFile(file, "/test", tmpfile.Name())
 	if err != nil {
 		t.Error(err)
 	}
 	t.Logf("Network with added file: %v.", cloud.Network())
-	//t.Logf("Updated datastore: %v.", cloud.Network().DataStore)
-	// Check that we have a required DataStore
-	//if !(len(cloud.Network().DataStore.Files) == 1 && cloud.Network().DataStore.Files[0].ID == file.ID) {
-	//	t.Error("DataStore does not have the expected contents (the required file).")
-	//}
-
-	// Check that all clouds have same DataStore
-	//ds := cloud.Network().DataStore
-	//for _, c := range clouds {
-	//	dsOther := c.Network().DataStore
-	//	t.Logf("DataStore in another cloud representation: %v.", dsOther)
-	//	if len(dsOther.Files) == 0 {
-	//		t.Error("DataStore is empty.")
-	//		continue
-	//	}
-	//	t.Logf("File in another cloud representation: %v.", dsOther.Files[0])
-	//	if ds.Files[0].ID != dsOther.Files[0].ID {
-	//		t.Error("DataStores not matching across cloud representations.")
-	//	}
-	//}
 
 	//t.Log("Distributing chunks.")
 	//// TODO: move to a function on its own
@@ -98,13 +78,15 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 	t.Logf("Updated chunk-node locations: %v.", cloud.Network().ChunkNodes)
 	chunks := file.Chunks.Chunks
 	actualChunkNodes := cloud.Network().ChunkNodes
+	allNodes := []string{cloud.Network().Nodes[0].ID, cloud.Network().Nodes[1].ID, cloud.Network().Nodes[2].ID, cloud.Network().Nodes[3].ID}
 	expectedChunkNodes := ChunkNodes{
-		chunks[0].ID: []string{cloud.Network().Nodes[0].ID},
-		chunks[1].ID: []string{cloud.Network().Nodes[1].ID},
-		chunks[2].ID: []string{cloud.Network().Nodes[2].ID},
-		chunks[3].ID: []string{cloud.Network().Nodes[3].ID},
+		chunks[0].ID: allNodes,
+		chunks[1].ID: allNodes,
+		chunks[2].ID: allNodes,
+		chunks[3].ID: allNodes,
 	}
 	t.Logf("Expected ChunkNodes: %v.", expectedChunkNodes)
+	t.Logf("Actial ChunkNodes: %v.", actualChunkNodes)
 	// Note that DeepEqual has arguments against using it.
 	// https://stackoverflow.com/a/45222521
 	// An alternative struct comparison method may be needed in the future.
@@ -114,11 +96,13 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 	// FIXME: DeepEqual returns false. Need a better method.
 	// Quick fix down below:
 	if len(actualChunkNodes) != len(expectedChunkNodes) {
-		t.Error("Actual and expected ChunkNodes do not match.")
+		t.Fatal("Actual and expected ChunkNodes do not match.", len(actualChunkNodes), len(expectedChunkNodes))
 	}
 	for k := range expectedChunkNodes {
 		v := expectedChunkNodes[k]
 		va := actualChunkNodes[k]
+		sort.Strings(v)
+		sort.Strings(va)
 		for i, _ := range v {
 			if v[i] != va[i] {
 				t.Errorf("Element mismatch: %v, %v.", v[i], va[i])
@@ -128,6 +112,8 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 	for k := range actualChunkNodes {
 		v := actualChunkNodes[k]
 		va := expectedChunkNodes[k]
+		sort.Strings(v)
+		sort.Strings(va)
 		for i, _ := range v {
 			if v[i] != va[i] {
 				t.Errorf("Element mismatch: %v, %v.", v[i], va[i])
@@ -137,17 +123,26 @@ func TestNode_AddFileSaveChunk(t *testing.T) {
 
 	// Check that all clouds have same ChunkNodes
 	chunkLocations := cloud.Network().ChunkNodes
+	t.Logf("ChunkNodes in main cloud representation: %v", chunkLocations)
 	for _, c := range clouds {
 		chunkLocationsOther := c.Network().ChunkNodes
 		t.Logf("ChunkNodes in another cloud representation: %v.", chunkLocationsOther)
-		if !reflect.DeepEqual(chunkLocations, chunkLocationsOther) {
-			t.Error("ChunkNodes not matching across cloud representations.")
+		for k := range chunkLocations {
+			v := chunkLocations[k]
+			va := chunkLocationsOther[k]
+			sort.Strings(v)
+			sort.Strings(va)
+			for i, _ := range v {
+				if v[i] != va[i] {
+					t.Errorf("ChunkNodes mismatch %v %v", v[i], va[i])
+				}
+			}
 		}
 	}
 
 	// Check that the storage benchmark state has been updated.
 	spaceUsed := cloud.BenchmarkState().StorageSpaceUsed
-	if spaceUsed != chunks[0].ContentSize {
+	if spaceUsed != uint64(len(contentBytes)) {
 		t.Errorf("Invalid benchmark state. Expected StorageSpaceUsed: %v. Got: %v.",
 			len(contentBytes), spaceUsed)
 	}

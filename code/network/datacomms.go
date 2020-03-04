@@ -130,6 +130,25 @@ func (c *cloud) AddFile(file *datastore.File, cloudPath string, localPath string
 	return err
 }
 
+func (c *cloud) AddFileMetadata(file *datastore.File, cloudPath string) error {
+	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
+	_, err := c.SendMessageToMe(AddFileMsg, file, cloudPath)
+	if err != nil {
+		return err
+	}
+	res := c.SendMessageAllOthers(AddFileMsg, file, cloudPath)
+	for _, r := range res {
+		if r.Error != nil {
+			err = r.Error
+		}
+	}
+	utils.GetLogger().Printf("[DEBUG] Completed AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
+
+	// TODO: move this to another function.
+
+	return err
+}
+
 func (c *cloud) AddFileSync(file *datastore.File, cloudPath string, localPath string) error {
 	var err error
 	fs := c.FileStore(cloudPath)
@@ -159,10 +178,29 @@ func (c *cloud) AddFileSync(file *datastore.File, cloudPath string, localPath st
 	return err
 }
 
+func (c *cloud) AddFileInPlace(file *datastore.File, cloudPath string, localPath string) error {
+	var err error
+	fs := c.FileStore(cloudPath)
+	if fs == nil {
+		fs = &datastore.FullFileStore{
+			BaseFileStore: datastore.BaseFileStore{
+				FileID: file.ID,
+				Chunks: file.Chunks.Chunks,
+			},
+			FilePath: localPath,
+		}
+		c.fileStorage[cloudPath] = fs
+	}
+	utils.GetLogger().Printf("[INFO] Sending AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
+	_, err = c.SendMessageToMe(AddFileMsg, file, cloudPath)
+	c.SendMessageAllOthers(AddFileMsg, file, cloudPath)
+	utils.GetLogger().Printf("[DEBUG] Completed AddFile request for file: %v, on node: %v.", file, c.MyNode().ID)
+	return err
+}
+
 func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 	filepath = CleanNetworkPath(filepath)
 	utils.GetLogger().Printf("[INFO] Node: %v, received AddFile request for file: %v.", r.Cloud.MyNode().ID, file)
-	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAA", filepath, r.Cloud.fileStorage)
 
 	c := r.Cloud
 	c.networkMutex.RLock()

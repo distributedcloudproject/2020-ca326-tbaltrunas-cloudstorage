@@ -44,6 +44,8 @@ type Cloud interface {
 	CreateDirectory(folderPath string) error
 	DeleteDirectory(folderPath string) error
 	AddFile(file *datastore.File, filepath string, localpath string) error
+	AddFileInPlace(file *datastore.File, filepath string, localpath string) error
+	AddFileMetadata(file *datastore.File, filepath string) error
 	UpdateFile(file *datastore.File, filepath string) error
 	DeleteFile(filepath string) error
 	MoveFile(filepath string, newFilepath string) error

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 )
 
 // map from node indices to a slice of chunk indices (sequence number)
@@ -74,6 +75,7 @@ func TestDistribution(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
+
 		t.Logf("Case: %d.", i)
 		// FIXME: optimize by not creating a new cloud each time, i.e. reset ChunkNodes
 		clouds, err := CreateTestClouds(numNodes)
@@ -95,12 +97,6 @@ func TestDistribution(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("File: %v", file)
-		err = cloud.AddFile(file, "cloud_test_file_*", tmpfile.Name())
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		tmpStorageDirs, err := utils.GetTestDirs("cloud_test_node_data_", numNodes)
 		if err != nil {
 			t.Fatal(err)
@@ -114,10 +110,15 @@ func TestDistribution(t *testing.T) {
 				FileStorageCapacity: testCase.StorageCapacities[i],
 			})
 		}
-
-		err = cloud.Distribute("cloud_test_file_*", *file, testCase.NumReplicas, testCase.AntiAffinity)
+		t.Logf("File: %v", file)
+		err = cloud.AddFileInPlace(file, "/cloud_test_file_*", tmpfile.Name())
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
+		}
+
+		err = cloud.Distribute("/cloud_test_file_*", *file, testCase.NumReplicas, testCase.AntiAffinity)
+		if err != nil {
+			t.Fatal(err)
 		}
 
 		// Create a ChunkNodes object from the test case map
@@ -135,6 +136,7 @@ func TestDistribution(t *testing.T) {
 				expectedChunkNodes[chunkID] = nodeIDs
 			}
 		}
+		time.Sleep(time.Second)
 
 		// sort for working comparison
 		for _, nodeIDs := range expectedChunkNodes {
