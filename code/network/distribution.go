@@ -6,6 +6,27 @@ import (
 	"errors"
 )
 
+// Distribute computes how to distribute a chunk and calls the requests.
+func (c *cloud) DistributeChunk(cloudPath string, store datastore.FileStore, chunkID datastore.ChunkID) error {
+	// TODO: Actual distribution algorithm. For now we copy all chunks to each node.
+	cloudPath = CleanNetworkPath(cloudPath)
+
+	content, err := store.ReadChunk(chunkID)
+	if err != nil {
+		return err
+	}
+	c.NodesMutex.RLock()
+	defer c.NodesMutex.RUnlock()
+	for _, n := range c.Nodes {
+		utils.GetLogger().Printf("[INFO] Saving chunk: %v on node %v.", chunkID, n.ID)
+		chunk, _ := store.Chunk(chunkID)
+		if err := n.SaveChunk(cloudPath, chunk, content); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Mapping from Node ID's to a slice of Chunk SequenceNumber's.
 type distributionScheme map[string][]int
 
@@ -17,7 +38,8 @@ type distributionScheme map[string][]int
 // if numReplicas is -1, then a copy of the file is stored on each node in the cloud.
 // Distribute acts with two goals in mind: reliability (redundancy) and efficiency.
 // The function uses node benchmarking to achieve best efficiency (load balanced storage, optimized network, etc).
-func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bool) error {
+func (c *cloud) Distribute(cloudPath string, file datastore.File, numReplicas int, antiAffinity bool) error {
+	cloudPath = CleanNetworkPath(cloudPath)
 	// Distribute computes a distributionScheme, a mapping telling which nodes should contain which chunks.
 	// It then acts on the distributionScheme to perform the actual requests for saving the chunks.
 	distributionScheme, err := c.distributionAlgorithm(file, numReplicas, antiAffinity)
@@ -32,7 +54,16 @@ func (c *cloud) Distribute(file datastore.File, numReplicas int, antiAffinity bo
 			cnode := c.GetCloudNode(nodeID)
 			if cnode != nil {
 				utils.GetLogger().Printf("[INFO] Saving chunk: %v on node %v.", sequenceNumber, nodeID)
-				err := cnode.SaveChunk(&file, sequenceNumber)
+				//err := cnode.SaveChunk(&file, sequenceNumber)
+				store := c.FileStore(cloudPath)
+				if store == nil {
+					return errors.New("file is not stored")
+				}
+				content, err := store.ReadChunk(file.Chunks.Chunks[sequenceNumber].ID)
+				if err != nil {
+					return err
+				}
+				err = cnode.SaveChunk(cloudPath, file.Chunks.Chunks[sequenceNumber], content)
 				if err != nil {
 					return err
 				}
@@ -77,7 +108,7 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 		nodeBenchmarks = append(nodeBenchmarks, benchmark)
 	}
 
-	// Apply hard constraints (must be met) on nodes.	
+	// Apply hard constraints (must be met) on nodes.
 	availableNodes, nodeBenchmarks = filterNodes(availableNodes, nodeBenchmarks)
 	if len(availableNodes) == 0 {
 		return nil, errors.New("No nodes available")
@@ -97,8 +128,8 @@ func (c *cloud) distributionAlgorithm(file datastore.File, numReplicas int, anti
 
 	// numReplicas is >= 0
 	// We use a loop and the modulus operator to iterate over chunks multiple times (creating replicas this way).
-	for i := 0; i < file.Chunks.NumChunks * (numReplicas + 1); i++ {
-		chunk := file.Chunks.Chunks[i % file.Chunks.NumChunks]
+	for i := 0; i < file.Chunks.NumChunks*(numReplicas+1); i++ {
+		chunk := file.Chunks.Chunks[i%file.Chunks.NumChunks]
 		sequenceNumber := chunk.SequenceNumber
 		utils.GetLogger().Printf("[DEBUG] Working with Chunk (SequenceNumber): %d.", chunk.SequenceNumber)
 
@@ -133,7 +164,7 @@ func filterNodes(availableNodes []*cloudNode, benchmarks []NodeBenchmark) ([]*cl
 	var newBenchmarks []NodeBenchmark
 	for i, n := range availableNodes {
 		benchmark := benchmarks[i]
-		
+
 		if benchmark.StorageSpaceRemaining == 0 {
 			// node not allowed to store data
 			continue
@@ -144,28 +175,29 @@ func filterNodes(availableNodes []*cloudNode, benchmarks []NodeBenchmark) ([]*cl
 	return newAvailableNodes, newBenchmarks
 }
 
-func (c *cloud) bestNode(availableNodes []*cloudNode, currentScheme distributionScheme, chunkSequenceNumber int, 
-						 file datastore.File, antiAffinity bool, benchmarks []NodeBenchmark) (*cloudNode, error) {
-		scores := make([]int, 0)
-		for i, n := range availableNodes {
-			score, err := c.Score(n, benchmarks[i], currentScheme, chunkSequenceNumber, file, antiAffinity)
-			if err != nil {
-				return nil, err
-			}
-			scores = append(scores, score)
-		}
-		utils.GetLogger().Printf("[DEBUG] Got scores for each node: %v.", scores)
-
-		_, idx, err := utils.MaxInt(scores)
+func (c *cloud) bestNode(availableNodes []*cloudNode, currentScheme distributionScheme, chunkSequenceNumber int,
+	file datastore.File, antiAffinity bool, benchmarks []NodeBenchmark) (*cloudNode, error) {
+	scores := make([]int, 0)
+	for i, n := range availableNodes {
+		score, err := c.Score(n, benchmarks[i], currentScheme, chunkSequenceNumber, file, antiAffinity)
 		if err != nil {
 			return nil, err
 		}
-		return availableNodes[idx], nil
+		scores = append(scores, score)
+	}
+	utils.GetLogger().Printf("[DEBUG] Got scores for each node: %v.", scores)
+
+	_, idx, err := utils.MaxInt(scores)
+	if err != nil {
+		return nil, err
+	}
+	return availableNodes[idx], nil
 }
 
-func (c *cloud) Score(cnode *cloudNode, benchmark NodeBenchmark, currentScheme distributionScheme, 
-					  chunkSequenceNumber int, file datastore.File, antiAffinity bool) (int, error) {
+func (c *cloud) Score(cnode *cloudNode, benchmark NodeBenchmark, currentScheme distributionScheme,
+	chunkSequenceNumber int, file datastore.File, antiAffinity bool) (int, error) {
 	score := 0
+
 	utils.GetLogger().Printf("[DEBUG] Calculating score for node with bechmarks: %v.", benchmark)
 	// FIXME: refactor the way all these scores are calculated
 	// Right now the score scale is random and probably explodes due to nanosecond and byte values in benchmarks

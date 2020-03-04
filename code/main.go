@@ -137,14 +137,14 @@ func main() {
 		utils.GetLogger().Println("[INFO] Bootstrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
-		n, err := network.BootstrapToNetwork(ip, me, key)
+		n, err := network.BootstrapToNetwork(ip, me, key, network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		c = n
 		c.SetConfig(network.CloudConfig{
-			FileStorageDir: *fileStorageDirPtr, 
+			FileStorageDir:      *fileStorageDirPtr,
 			FileStorageCapacity: *fileStorageCapacityPtr,
 		})
 		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
@@ -194,8 +194,8 @@ func main() {
 					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
 				if *verbosePtr {
-					fmt.Printf("DataStore: %v | ChunkNodes: %v\n",
-						network.DataStore, network.ChunkNodes)
+					fmt.Printf("ChunkNodes: %v\n",
+						network.ChunkNodes)
 					fmt.Printf("My node: %v.", c.MyNode())
 				}
 			}
@@ -217,14 +217,15 @@ func main() {
 			return
 		}
 
-		err = c.AddFile(file)
+		err = c.AddFile(file, "/"+file.Name, *filePtr)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+
 		numReplicas := -1
 		antiAffinity := true
-		err = c.Distribute(*file, numReplicas, antiAffinity)
+		err = c.Distribute("/"+file.Name, *file, numReplicas, antiAffinity)
 		if err != nil {
 			fmt.Println(err)
 			return

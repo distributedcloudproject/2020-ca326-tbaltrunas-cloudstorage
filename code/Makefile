@@ -6,16 +6,10 @@
 
 PROJECT_NAME=cloud
 PROJECT_BINARY=cloud
-LOGS_DIRNAME=logs
 
 
-make: deps
+make:
 	go build $(PROJECT_NAME)
-
-
-deps:
-	go get github.com/hashicorp/logutils
-	go get github.com/ricochet2200/go-disk-usage/du
 
 
 clean:
@@ -23,10 +17,7 @@ clean:
 
 
 fclean: clean
-	go clean $(PROJECT_NAME)
-	rm -f "Save File"
-	rm -rf $(LOGS_DIRNAME)
-	rm -rf **/$(LOGS_DIRNAME)
+	go clean $(PROJECT_BINARY)
 
 
 re: fclean make
@@ -42,8 +33,4 @@ test: make
 	# "-v" for verbose mode
 	# "-run TestFunctionName" to only run the test function TestFunctionName
 	# add environment variables in form "make test ... KEY1=VALUE1 KEY2=VALUE2 ..."
-	@go test ./... $(ARGS)
-
-
-deploy: make
-	mv cloud /bin
+	go test ./... $(ARGS)

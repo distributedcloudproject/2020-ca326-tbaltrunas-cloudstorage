@@ -7,7 +7,32 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
+	"errors"
+	"path"
+	"strings"
 )
+
+type ChunkNodes map[datastore.ChunkID][]string
+type FileNodes map[datastore.FileID][]string
+
+type request struct {
+	Cloud    *cloud
+	FromNode *cloudNode
+}
+
+type NetworkFolder struct {
+	Name       string
+	SubFolders []*NetworkFolder
+
+	// Files is a list of files in current folder on the Cloud.
+	Files datastore.DataStore
+
+	// ChunkNodes maps chunk ID's to the Nodes (Node ID's) that contain that chunk.
+	// This way we can keep track of which nodes contain which chunks.
+	// And make decisions about the chunk requests to perform.
+	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
+	// ChunkNodes ChunkNodes
+}
 
 // Network is the general info of the network. Each node would have the same presentation of Network.
 type Network struct {
@@ -23,21 +48,95 @@ type Network struct {
 	// List of node IDs that are permitted to enter the network.
 	WhitelistIDs []string
 
-	// DataStore is a list of all the user files on the cloud.
-	DataStore datastore.DataStore
+	RootFolder *NetworkFolder
 
 	// ChunkNodes maps chunk ID's to the Nodes (Node ID's) that contain that chunk.
 	// This way we can keep track of which nodes contain which chunks.
-	// And make decisions about the chunk requets to perform.
+	// And make decisions about the chunk requests to perform.
 	// In the future this scheme might change, for example, with each node knowing only about its own chunks.
 	ChunkNodes ChunkNodes
+
+	// FileNodes maps file ID's to the Nodes that contain the whole file. Those nodes are syncing the whole file all the
+	// time.
+	FileNodes FileNodes
 }
 
-type ChunkNodes map[datastore.ChunkID][]string
+func CleanNetworkPath(networkPath string) string {
+	networkPath = path.Clean(networkPath)
+	if len(networkPath) == 0 {
+		return "/"
+	}
+	if len(networkPath) == 1 && networkPath[0] == '.' {
+		return "/"
+	}
+	if len(networkPath) > 1 && networkPath[0] == '.' && networkPath[1] == '/' {
+		return networkPath[1:]
+	}
+	if networkPath[0] != '/' {
+		return "/" + networkPath
+	}
+	return networkPath
+}
 
-type request struct {
-	Cloud    *cloud
-	FromNode *cloudNode
+func (c *cloud) GetFolder(folder string) (*NetworkFolder, error) {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	return c.network.GetFolder(folder)
+}
+
+func (c *cloud) GetFile(file string) (*datastore.File, error) {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	return c.network.GetFile(file)
+}
+
+func (n *Network) GetFile(file string) (*datastore.File, error) {
+	dir, base := path.Split(file)
+	folder, err := n.GetFolder(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range folder.Files.Files {
+		if f.Name == base {
+			return f, nil
+		}
+	}
+	return nil, errors.New("file not found")
+}
+
+func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
+	paths := strings.Split(folder, "/")
+
+	if n.RootFolder == nil {
+		n.RootFolder = &NetworkFolder{
+			Name: "/",
+		}
+	}
+	f := n.RootFolder
+
+	for _, p := range paths {
+		if p == "" {
+			continue
+		}
+
+		// TODO: Check validity of path.
+
+		foundFolder := false
+		for _, sub := range f.SubFolders {
+			if sub.Name == p {
+				foundFolder = true
+				f = sub
+				break
+			}
+		}
+		if !foundFolder {
+			newFolder := &NetworkFolder{Name: p, Files: datastore.DataStore{}}
+			f.SubFolders = append(f.SubFolders, newFolder)
+			f = newFolder
+		}
+	}
+	return f, nil
 }
 
 func (c *cloud) NodeByID(ID string) (node Node, found bool) {

@@ -3,8 +3,11 @@ package network
 import (
 	"cloud/datastore"
 	"crypto/rsa"
+	"github.com/fsnotify/fsnotify"
 	"net"
+	"os"
 	"sync"
+	"time"
 )
 
 type Cloud interface {
@@ -29,14 +32,28 @@ type Cloud interface {
 	AddNode(node Node)
 	IsNodeOnline(ID string) bool
 	GetCloudNode(ID string) *cloudNode
+	NodeByID(ID string) (node Node, found bool)
 
 	// Whitelist.
 	AddToWhitelist(ID string) error
 	Whitelist() []string
 
 	// File
-	AddFile(file *datastore.File) error
-	Distribute(file datastore.File, numReplicas int, antiAffinity bool) error
+	GetFolder(path string) (*NetworkFolder, error)
+	DistributeChunk(cloudPath string, store datastore.FileStore, chunkID datastore.ChunkID) error
+	CreateDirectory(folderPath string) error
+	DeleteDirectory(folderPath string) error
+	AddFile(file *datastore.File, filepath string, localpath string) error
+	AddFileInPlace(file *datastore.File, filepath string, localpath string) error
+	AddFileMetadata(file *datastore.File, filepath string) error
+	UpdateFile(file *datastore.File, filepath string) error
+	DeleteFile(filepath string) error
+	MoveFile(filepath string, newFilepath string) error
+	LockFile(path string) bool
+	UnlockFile(path string)
+	SyncFile(cloudPath string, localPath string) error
+	SyncFolder(cloudPath string, localPath string) error
+	Distribute(cloudPath string, file datastore.File, numReplicas int, antiAffinity bool) error
 
 	// Events.
 	Events() *CloudEvents
@@ -61,6 +78,13 @@ type CloudEvents struct {
 	WhitelistRemoved func(ID string)
 }
 
+// TODO: move this
+type fileSync struct {
+	CloudPath    string
+	LocalPath    string
+	LastEditTime time.Time
+}
+
 // Cloud is the client's view of the Network. Contains client-specific information.
 type cloud struct {
 	network Network
@@ -73,8 +97,23 @@ type cloud struct {
 	// NodesMutex is used only when accessing the Nodes.
 	NodesMutex sync.RWMutex
 
+	// Locks a file (full path) to a node ID. If a path is locked, only the given node ID may interact
+	// with the file. This is to prevent race conditions.
+	fileLocks     map[string]string
+	fileLockMutex sync.RWMutex
+
 	// Mutex is used for any other cloud variable.
 	Mutex sync.RWMutex
+
+	// Local storage. Maps file path to the store.
+	fileStorage      map[string]datastore.FileStore
+	fileStorageMutex sync.RWMutex
+
+	downloadManager *DownloadManager
+
+	fileSyncs   []fileSync
+	folderSyncs []fileSync
+	watcher     *fsnotify.Watcher
 
 	// Non-authorized connections.
 	PendingNodes []*cloudNode
@@ -93,12 +132,19 @@ type cloud struct {
 	benchmarkState CloudBenchmarkState
 }
 
+func (c *cloud) FileStore(cloudPath string) datastore.FileStore {
+	c.fileStorageMutex.RLock()
+	defer c.fileStorageMutex.RUnlock()
+	return c.fileStorage[cloudPath]
+}
+
 func (c *cloud) Config() CloudConfig {
 	return c.config
 }
 
 func (c *cloud) SetConfig(config CloudConfig) {
 	c.config = config
+	os.MkdirAll(c.config.FileStorageDir, os.ModeDir)
 }
 
 func (c *cloud) Events() *CloudEvents {

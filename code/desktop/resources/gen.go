@@ -1,0 +1,74 @@
+// +build ignore
+
+package main
+
+import (
+	"fmt"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+
+	"fyne.io/fyne"
+)
+
+const fileHeader = "// auto-generated\n" + // to exclude this file in goreportcard
+	"// **** THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT IT **** //"
+
+func formatVariable(name string) string {
+	str := strings.Replace(name, "-", "", -1)
+	return strings.Replace(str, "_", "", -1)
+}
+
+func bundleFile(name string, filepath string, f *os.File) {
+	res, err := fyne.LoadResourceFromPath(filepath)
+	if err != nil {
+		fyne.LogError("Unable to load file "+filepath, err)
+		return
+	}
+
+	_, err = f.WriteString(fmt.Sprintf("var %s = %#v\n", formatVariable(name), res))
+	if err != nil {
+		fyne.LogError("Unable to write to bundled file", err)
+	}
+}
+
+func iconDir() string {
+	_, dirname, _, _ := runtime.Caller(0)
+	return path.Join(path.Dir(dirname), "icons")
+}
+
+func bundleIcon(name string, f *os.File) {
+	path := path.Join(iconDir(), fmt.Sprintf("%s.svg", name))
+
+	formatted := fmt.Sprintf("%sIconRes", strings.ToLower(name))
+	bundleFile(formatted, path, f)
+}
+
+func openFile(filename string) *os.File {
+	os.Remove(filename)
+	_, dirname, _, _ := runtime.Caller(0)
+	f, err := os.Create(path.Join(path.Dir(dirname), filename))
+	if err != nil {
+		fyne.LogError("Unable to open file "+filename, err)
+		return nil
+	}
+
+	_, err = f.WriteString(fileHeader + "\n\npackage resources\n\nimport \"fyne.io/fyne\"\n\n")
+	if err != nil {
+		fyne.LogError("Unable to write file "+filename, err)
+		return nil
+	}
+
+	return f
+}
+
+func main() {
+	f := openFile("bundled-icons.go")
+	if f == nil {
+		return
+	}
+
+	bundleIcon("file", f)
+	f.Close()
+}
