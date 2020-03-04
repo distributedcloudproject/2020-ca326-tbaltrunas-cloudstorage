@@ -141,6 +141,7 @@ export default class FileExplorer extends React.Component {
               actionRenderer={CustomRenderers.ActionRenderer}
               filterRenderer={CustomRenderers.FilterRenderer}
               detailRenderer={CustomRenderers.DetailRenderer}
+              confirmDeletionRenderer={CustomRenderers.ConfirmDeletionRenderer}
           />
             </Col>
           </Row>
