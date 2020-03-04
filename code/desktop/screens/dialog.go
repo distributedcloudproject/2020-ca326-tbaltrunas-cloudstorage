@@ -9,7 +9,7 @@ import (
 )
 
 func LoadFileDialog() (string, error) {
-	cmd := exec.Command(os.Args[0] + " --dialog=file-load")
+	cmd := exec.Command(os.Args[0], "--dialog=file-load")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -21,7 +21,7 @@ func LoadFileDialog() (string, error) {
 }
 
 func SaveFileDialog() (string, error) {
-	cmd := exec.Command(os.Args[0] + " --dialog=file-save")
+	cmd := exec.Command(os.Args[0], "--dialog=file-save")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -33,7 +33,7 @@ func SaveFileDialog() (string, error) {
 }
 
 func BrowseDirDialog() (string, error) {
-	cmd := exec.Command(os.Args[0] + " --dialog=dir")
+	cmd := exec.Command(os.Args[0], "--dialog=dir")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
