@@ -1,13 +1,15 @@
 package network
 
 import (
-	// "cloud/datastore"
+	"cloud/datastore"
 	"cloud/utils"
 	"net/http"
 	"strconv"
 	"fmt"
 	"encoding/json"
 	"os"
+	"io/ioutil"
+	"io"
 
 	"github.com/gorilla/mux"
 	gorillaHandlers "github.com/gorilla/handlers"
@@ -66,7 +68,9 @@ func (wapp *webapp) Serve(port int) error {
 	s.HandleFunc("/files", wapp.WebGetFiles).Methods(http.MethodGet)
 	s.HandleFunc("/files/{fileID}", wapp.WebGetFile).Methods(http.MethodGet).
 											   Queries("filter", "contents")
-	s.HandleFunc("/files", wapp.WebCreateFile).Methods(http.MethodPost)
+
+	s.HandleFunc("/files", wapp.CreateFile).Methods(http.MethodPost)
+
 	s.HandleFunc("/downloadlink/{fileID}", wapp.WebGetFileDownloadLink).Methods(http.MethodGet)
 
 	// Add gorilla router as handler for all routes.
@@ -92,41 +96,108 @@ func (wapp *webapp) WebNetworkInfoHandler(w http.ResponseWriter, req *http.Reque
 	w.Write([]byte(fmt.Sprintf(`{"name": "%s"}`, networkName)))
 }
 
-// Endpoint
-// Method
-// Required Body:
-// Required Query Params:
-// Optional Query Params:
-// Response
-func (wapp *webapp) WebCreateFile(w http.ResponseWriter, req *http.Request) {
+// CreateFile API method creates a new file on the cloud.
+// Endpoint: /files
+// Method: POST.
+// Headers: Authorization.
+// Query parameters:
+// - name=str, the path of the file on the cloud (also the file's key).
+// - size=int, the expected size of the file's contents.
+// - type=str (optional), the file type (extension).
+// - lastModified=date (optional), the date the file was last modified or uploaded.
+// Body:
+// - File contents as POST body, encoded using post data.
+// Response:
+// - 200 if file is stored on the cloud successfully.
+func (wapp *webapp) CreateFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] CreateFile called.")
-	w.WriteHeader(http.StatusOK)
 
 	utils.GetLogger().Printf("[DEBUG] URL: %v", req.URL)
 	qs := req.URL.Query()
 	utils.GetLogger().Printf("[DEBUG] Querystring parameters: %v", qs)
-	names, ok := qs["name"]
-	if ok {
-		utils.GetLogger().Printf("[DEBUG] Name: %v", names)
-	}
-	sizes, ok := qs["size"]
-	if ok {
-		utils.GetLogger().Printf("[DEBUG] Size: %v", sizes)
-	}
-	var size int
-	if len(sizes) != 0 {
-		// TODO: check that only 1 param
-		size, _ = strconv.Atoi(sizes[0])
-	}
-	// TODO: validation.
-	// Param exists or not -> switch flow.
-	// Only 1 value of param.
 
-	// f := datastore.NewFile(file, path, size)
-	file, _, _ := req.FormFile("file")
-	buffer := make([]byte, size)
-	file.Read(buffer)
-	utils.GetLogger().Printf("[DEBUG] %v", string(buffer))
+	path, err := GetQueryParam(req.URL, "name")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	sizeStr, err := GetQueryParam(req.URL, "size")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	size, err := strconv.Atoi(sizeStr)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	// fType := GetQueryParam(req.URL, "type")
+	// lastModified := GetQueryParam(req.URL, "lastModified")
+
+	multipartFileReader, _, _ := req.FormFile("file")
+	defer multipartFileReader.Close()
+
+	// Create File data structure
+	file, err := datastore.NewFile(multipartFileReader, path, wapp.cloud.Config().FileChunkSize)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	utils.GetLogger().Printf("[DEBUG] Created file: %v", file)
+	// Verify size
+	if int(file.Size) != size {
+		utils.GetLogger().Printf("[ERROR] File sizes do not match: %v (want %v)", file.Size, size)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Temporarily save the file locally.
+	tmpFile, err := ioutil.TempFile("", "cloud_web_file_*")
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Write out file contents.
+	var bufferSize int // pick the smaller buffer size
+	if size < wapp.cloud.Config().FileChunkSize {
+		bufferSize = size
+	} else {
+		bufferSize = wapp.cloud.Config().FileChunkSize
+	}
+	utils.GetLogger().Printf("[DEBUG] Buffer size: %v", bufferSize)
+	buffer := make([]byte, bufferSize)
+	written := 0
+	for written < size {
+		numRead, err := multipartFileReader.Read(buffer)
+		if err != nil && err != io.EOF {
+			utils.GetLogger().Printf("[ERROR] %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		numWritten, err := tmpFile.Write(buffer[:numRead])
+		if err != nil {
+			utils.GetLogger().Printf("[ERROR] %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		written += numWritten
+	}
+	localPath := tmpFile.Name();
+	utils.GetLogger().Printf("[DEBUG] Saved contents to: %v.", localPath)
+
+	// Finally add the file.
+	wapp.cloud.AddFile(file, path, localPath)
+
+	// Send back a response.
+	w.WriteHeader(http.StatusOK)
 }
 
 func (wapp *webapp) WebGetFiles(w http.ResponseWriter, req *http.Request) {

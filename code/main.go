@@ -58,6 +58,7 @@ func main() {
 	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
 	fileStorageDirPtr := flag.String("file-storage-dir", "", "Directory where cloud files should be stored on the node.")
 	fileStorageCapacityPtr := flag.Int64("file-storage-capacity", 0, "Storage space in bytes allocated for file storage.")
+	fileChunkSizePtr := flag.Int("file-chunk-size", 10 * 1e+7, "Chunk size in bytes used for file splitting (default 10 megabytes)")
 
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
@@ -140,7 +141,6 @@ func main() {
 			Whitelist:   *networkWhitelistPtr,
 			RequireAuth: *networkSecurePtr,
 		}, me, key)
-		c.SetConfig(network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 	} else {
 		utils.GetLogger().Println("[INFO] Bootstrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
@@ -151,12 +151,14 @@ func main() {
 			return
 		}
 		c = n
-		c.SetConfig(network.CloudConfig{
-			FileStorageDir:      *fileStorageDirPtr,
-			FileStorageCapacity: *fileStorageCapacityPtr,
-		})
 		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
+
+	c.SetConfig(network.CloudConfig{
+		FileStorageDir: *fileStorageDirPtr,
+		FileStorageCapacity: *fileStorageCapacityPtr,
+		FileChunkSize: *fileChunkSizePtr,
+	})
 
 	if *networkWhitelistFilePtr != "" {
 		r, err := os.Open(*networkWhitelistFilePtr)
@@ -197,11 +199,12 @@ func main() {
 
 				network := c.Network()
 				fmt.Printf("Network: %s | Nodes: %d | Online: %d\n", network.Name, len(network.Nodes), c.OnlineNodesNum())
-				fmt.Printf("Name, ID, Online[, Node]:\n")
+				fmt.Printf("Name, ID, Online:\n")
 				for _, n := range network.Nodes {
 					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
 				if *verbosePtr {
+					fmt.Printf("Files: %v\n", c.Files)
 					fmt.Printf("ChunkNodes: %v\n",
 						network.ChunkNodes)
 					fmt.Printf("My node: %v.", c.MyNode())

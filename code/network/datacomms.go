@@ -102,7 +102,6 @@ func (r request) OnDeleteDirectory(folderPath string) error {
 }
 
 // AddFile adds a file to the Network. It distributes the file automatically.
-// TODO: might want to do the actual distribution here, so that the file gets saved with this call.
 // TODO: Use reader instead of LocalPath.
 func (c *cloud) AddFile(file *datastore.File, cloudPath string, localPath string) error {
 	var err error
