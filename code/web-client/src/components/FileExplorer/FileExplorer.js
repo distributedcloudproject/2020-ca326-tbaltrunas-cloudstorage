@@ -11,7 +11,7 @@ import Download from './Download';
 import { FilesAPI, FilesDownloadAPI, APIConstants } from '../../api';
 import * as UpdateUI from './UpdateUI';
 import urljoin from 'url-join';
-import { ActionRenderer } from './fileBrowserCustom';
+import * as CustomRenderers from './fileBrowserCustom';
 
 export default class FileExplorer extends React.Component {
     state = {
@@ -138,7 +138,8 @@ export default class FileExplorer extends React.Component {
                 console.log('Preview close: ' + file);
               }}
               
-              actionRenderer={ActionRenderer}
+              actionRenderer={CustomRenderers.ActionRenderer}
+              filterRenderer={CustomRenderers.FilterRenderer}
           />
             </Col>
           </Row>

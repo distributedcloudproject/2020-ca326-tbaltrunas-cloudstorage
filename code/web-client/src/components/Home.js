@@ -9,7 +9,7 @@ import FileExplorer from './FileExplorer';
 export default function Home(props) {
     return (
         <Container className='d-flex flex-column p-2'>
-            <Row className='border border-primary m-2 p-2 d-flex justify-content-around rounded'>
+            <Row className='border rounded border-primary m-2 p-2 d-flex justify-content-around'>
                 <Col className='col-md-10 d-flex justify-content-center'>
                     <CloudInfo />
                 </Col>
