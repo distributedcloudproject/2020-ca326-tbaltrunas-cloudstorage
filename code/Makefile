@@ -17,6 +17,8 @@ deps:
 	go get github.com/hashicorp/logutils
 	go get github.com/ricochet2200/go-disk-usage/du
 	go get github.com/fsnotify/fsnotify
+	go get fyne.io/fyne
+	go get github.com/sqweek/dialog
 
 
 clean:
