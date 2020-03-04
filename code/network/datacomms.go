@@ -193,7 +193,7 @@ func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 				FilePath: fpath,
 			}
 			fil, err := os.Create(fpath)
-			if err != nil {
+			if err == nil {
 				fil.Close()
 			}
 		} else {
