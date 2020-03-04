@@ -56,8 +56,8 @@ func main() {
 	verbosePtr := flag.Bool("verbose", false, "Print verbose information.")
 
 	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
-	fileStorageDirPtr := flag.String("file-storage-dir", "",
-		"Directory where cloud files should be stored on the node.")
+	fileStorageDirPtr := flag.String("file-storage-dir", "", "Directory where cloud files should be stored on the node.")
+	fileStorageCapacityPtr := flag.Int64("file-storage-capacity", 0, "Storage space in bytes allocated for file storage.")
 
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
@@ -145,13 +145,16 @@ func main() {
 		utils.GetLogger().Println("[INFO] Bootstrapping to an existing network.")
 		// TODO: Verify ip is a valid ip.
 		ip := *networkPtr
-		n, err := network.BootstrapToNetwork(ip, me, key)
+		n, err := network.BootstrapToNetwork(ip, me, key, network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		c = n
-		c.SetConfig(network.CloudConfig{FileStorageDir: *fileStorageDirPtr})
+		c.SetConfig(network.CloudConfig{
+			FileStorageDir:      *fileStorageDirPtr,
+			FileStorageCapacity: *fileStorageCapacityPtr,
+		})
 		utils.GetLogger().Printf("[INFO] Bootstrapped cloud: %v.", c)
 	}
 
@@ -199,8 +202,8 @@ func main() {
 					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
 				if *verbosePtr {
-					fmt.Printf("DataStore: %v | ChunkNodes: %v\n",
-						network.DataStore, network.ChunkNodes)
+					fmt.Printf("ChunkNodes: %v\n",
+						network.ChunkNodes)
 					fmt.Printf("My node: %v.", c.MyNode())
 				}
 			}
@@ -209,6 +212,7 @@ func main() {
 
 	if *filePtr != "" && *fileStorageDirPtr != "" {
 		fmt.Println("Storing user file: ", *filePtr)
+		time.Sleep(time.Millisecond * 100)
 		r, err := os.Open(*filePtr)
 		defer r.Close()
 		if err != nil {
@@ -221,12 +225,15 @@ func main() {
 			return
 		}
 
-		err = c.AddFile(file)
+		err = c.AddFile(file, "/"+file.Name, *filePtr)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		err = network.Distribute(file, c)
+
+		numReplicas := -1
+		antiAffinity := true
+		err = c.Distribute("/"+file.Name, *file, numReplicas, antiAffinity)
 		if err != nil {
 			fmt.Println(err)
 			return

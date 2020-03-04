@@ -1,8 +1,7 @@
 .idea/
 code/cloud.exe
 code/cloud
-code/**/logs/
-Save File
+deploy/cloud
 
 # TLS certificates
 cert.crt

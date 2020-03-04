@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -15,6 +16,11 @@ import (
 type CloudConfig struct {
 	// FileStorageDir is a file path to a directory where user files should be stored on this node.
 	FileStorageDir string
+
+	// FileStorageCapacity is the maximum amount of user data that should be stored on this node, in bytes.
+	// If 0, the node's available disk capacity (under the FileStorageDir path) will be taken as the storage capacity.
+	// If -1, no storage will be allowed on the node.
+	FileStorageCapacity int64
 }
 
 // ConnectToNode establishes a connection to a node with that ID. Will return error if a connection could not be
@@ -72,7 +78,7 @@ func (c *cloud) ConnectToNode(ID string) error {
 	return nil
 }
 
-func BootstrapToNetwork(bootstrapIP string, myNode Node, privateKey *rsa.PrivateKey) (Cloud, error) {
+func BootstrapToNetwork(bootstrapIP string, myNode Node, privateKey *rsa.PrivateKey, config CloudConfig) (Cloud, error) {
 	utils.GetLogger().Printf("[INFO] Bootstrapping with ip: %v, and node: %v.", bootstrapIP, myNode)
 
 	myNode.PublicKey = privateKey.PublicKey
@@ -80,12 +86,16 @@ func BootstrapToNetwork(bootstrapIP string, myNode Node, privateKey *rsa.Private
 
 	// Create the cloud object.
 	cloud := &cloud{
-		Nodes:      make(map[string]*cloudNode),
-		events:     &CloudEvents{},
-		myNode:     myNode,
-		privateKey: privateKey,
-		Port:       0,
+		Nodes:       make(map[string]*cloudNode),
+		fileLocks:   make(map[string]string),
+		fileStorage: make(map[string]datastore.FileStore),
+		events:      &CloudEvents{},
+		myNode:      myNode,
+		privateKey:  privateKey,
+		Port:        0,
+		config:      config,
 	}
+	cloud.downloadManager = &DownloadManager{Cloud: cloud}
 	ips := strings.Split(myNode.IP, ":")
 	if len(ips) > 0 {
 		cloud.Port, _ = strconv.Atoi(ips[len(ips)-1])
@@ -142,6 +152,31 @@ func BootstrapToNetwork(bootstrapIP string, myNode Node, privateKey *rsa.Private
 	}
 
 	cloud.network = network
+	// Create stores for any files.
+	var createStorage func(folderpath string, nw *NetworkFolder)
+	createStorage = func(folderpath string, nw *NetworkFolder) {
+		if nw == nil {
+			return
+		}
+		for _, f := range nw.Files.Files {
+			fpath := CleanNetworkPath(path.Join(folderpath, f.Name))
+			if storage := cloud.fileStorage[fpath]; storage == nil {
+				cloud.fileStorage[fpath] = &datastore.PartialFileStore{
+					BaseFileStore: datastore.BaseFileStore{
+						FileID: f.ID,
+						Chunks: f.Chunks.Chunks,
+					},
+					FolderPath: cloud.config.FileStorageDir,
+				}
+			}
+		}
+
+		for _, f := range nw.SubFolders {
+			fpath := CleanNetworkPath(path.Join(folderpath, f.Name))
+			createStorage(fpath, f)
+		}
+	}
+	createStorage("/", cloud.network.RootFolder)
 	utils.GetLogger().Printf("[INFO] Retrieved network info: %v", network)
 
 	// Connect to all of the other nodes.
@@ -165,13 +200,16 @@ func SetupNetwork(network Network, myNode Node, privateKey *rsa.PrivateKey) Clou
 	}
 
 	cloud := &cloud{
-		network:    network,
-		events:     &CloudEvents{},
-		Nodes:      make(map[string]*cloudNode),
-		myNode:     myNode,
-		privateKey: privateKey,
-		Port:       0,
+		network:     network,
+		events:      &CloudEvents{},
+		Nodes:       make(map[string]*cloudNode),
+		fileLocks:   make(map[string]string),
+		fileStorage: make(map[string]datastore.FileStore),
+		myNode:      myNode,
+		privateKey:  privateKey,
+		Port:        0,
 	}
+	cloud.downloadManager = &DownloadManager{Cloud: cloud}
 	ips := strings.Split(myNode.IP, ":")
 	if len(ips) > 0 {
 		cloud.Port, _ = strconv.Atoi(ips[len(ips)-1])

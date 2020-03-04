@@ -17,7 +17,7 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
-func (c *cloud) AuthLoginHandler(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebAuthLoginHandler(w http.ResponseWriter, req *http.Request) {
 	var creds Credentials
 	err := json.NewDecoder(req.Body).Decode(&creds)
 	if err != nil {
@@ -69,7 +69,7 @@ func (c *cloud) AuthLoginHandler(w http.ResponseWriter, req *http.Request) {
 
 // Adapted from: https://www.sohamkamani.com/blog/golang/2019-01-01-jwt-authentication/
 // Should send cookies.
-func (c *cloud) AuthRefreshHandler(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebAuthRefreshHandler(w http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie(accessTokenKey)
 	if err != nil {
 		utils.GetLogger().Printf("[ERROR] %v", err)

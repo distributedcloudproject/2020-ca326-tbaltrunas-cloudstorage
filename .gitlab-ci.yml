@@ -3,7 +3,7 @@ image: "golang:latest"
 stages:
   - build
   - test
-  - deploy
+  # - deploy
 
 before_script:
   - echo "Creating symlink between repo/code and GOPATH/src"
@@ -23,7 +23,9 @@ test:
   script:
     - make test
 
-deploy:
-  stage: deploy
-  script:
-    - make deploy
+# deploy:
+#   stage: deploy
+#   script:
+#     - make deploy
+
+# FIXME: build once, then pass the build to further stages of the pipeline

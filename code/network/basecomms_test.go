@@ -24,7 +24,7 @@ func TestNode_NetworkInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2)
+	n2, err := BootstrapToNetwork(cloud.MyNode().IP, Node{Name: "test2"}, key2, CloudConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}

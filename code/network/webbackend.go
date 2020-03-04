@@ -33,26 +33,26 @@ func (c *cloud) ServeWebApp(port int) error {
 
 	// Add public routes.
 	// Do not require authentication.
-	r.HandleFunc("/ping", c.PingHandler)
-	r.HandleFunc("/auth/login", c.AuthLoginHandler).Methods(http.MethodPost)
+	r.HandleFunc("/ping", c.WebPingHandler)
+	r.HandleFunc("/auth/login", c.WebAuthLoginHandler).Methods(http.MethodPost)
 
 	// Public route with query string token verification.
 	d := r.PathPrefix("/downloadfile").Subrouter()
 	d.Use(DownloadTokenMiddleware)
-	d.HandleFunc("/{fileID}", c.GetFileDownload).Methods(http.MethodGet).
+	d.HandleFunc("/{fileID}", c.WebGetFileDownload).Methods(http.MethodGet).
 														 Queries("token", "")
 
 	// Add "secret" routes.
 	// Require authentication.
 	s := r.PathPrefix("/").Subrouter()
 	s.Use(AuthenticationMiddleware)
-	s.HandleFunc("/auth/refresh", c.AuthRefreshHandler).Methods(http.MethodGet)
-	s.HandleFunc("/netinfo", c.NetworkInfoHandler).Methods(http.MethodGet)
-	s.HandleFunc("/files", c.GetFiles).Methods(http.MethodGet)
-	s.HandleFunc("/files/{fileID}", c.GetFile).Methods(http.MethodGet).
+	s.HandleFunc("/auth/refresh", c.WebAuthRefreshHandler).Methods(http.MethodGet)
+	s.HandleFunc("/netinfo", c.WebNetworkInfoHandler).Methods(http.MethodGet)
+	s.HandleFunc("/files", c.WebGetFiles).Methods(http.MethodGet)
+	s.HandleFunc("/files/{fileID}", c.WebGetFile).Methods(http.MethodGet).
 											   Queries("filter", "contents")
-	s.HandleFunc("/files", c.CreateFile).Methods(http.MethodPost)
-	s.HandleFunc("/downloadlink/{fileID}", c.GetFileDownloadLink).Methods(http.MethodGet)
+	s.HandleFunc("/files", c.WebCreateFile).Methods(http.MethodPost)
+	s.HandleFunc("/downloadlink/{fileID}", c.WebGetFileDownloadLink).Methods(http.MethodGet)
 
 	// Add gorilla router as handler for all routes.
 	http.Handle("/", r)
@@ -67,7 +67,10 @@ func (c *cloud) ServeWebApp(port int) error {
 	// TODO: set up server with read and write timeouts.
 }
 
-func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
+// FIXME: Instead of having methods of cloud, have a new struct WebApp with cloud as an attribute
+// and these methods
+
+func (c *cloud) WebNetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] NetworkInfoHandler called.")
 	w.WriteHeader(http.StatusOK)
 	networkName := c.Network().Name
@@ -80,7 +83,7 @@ func (c *cloud) NetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
 // Required Query Params:
 // Optional Query Params:
 // Response
-func (c *cloud) CreateFile(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebCreateFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] CreateFile called.")
 	w.WriteHeader(http.StatusOK)
 
@@ -111,7 +114,7 @@ func (c *cloud) CreateFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Printf("[DEBUG] %v", string(buffer))
 }
 
-func (c *cloud) GetFiles(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebGetFiles(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] GetFiles called.")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -163,7 +166,7 @@ func (c *cloud) GetFiles(w http.ResponseWriter, req *http.Request) {
 }
 
 // TODO: check that query param is filter=content
-func (c *cloud) GetFile(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebGetFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Println("[INFO] GetFile called.")
 	vars := mux.Vars(req)
 	fileID := vars["fileID"]
@@ -172,7 +175,7 @@ func (c *cloud) GetFile(w http.ResponseWriter, req *http.Request) {
 }
 
 // Approach based on: https://codeburst.io/part-1-jwt-to-authenticate-downloadable-files-at-client-8e0b979c9ac1
-func (c *cloud) GetFileDownloadLink(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebGetFileDownloadLink(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	fileID := vars["fileID"]
 
@@ -210,7 +213,7 @@ func DownloadTokenMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (c *cloud) GetFileDownload(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebGetFileDownload(w http.ResponseWriter, req *http.Request) {
 	// token should be verified by middleware
 	vars := mux.Vars(req)
 	fileID := vars["fileID"]
@@ -247,7 +250,7 @@ func (c *cloud) GetFileDownload(w http.ResponseWriter, req *http.Request) {
 }
 
 // PingHandler for /ping.
-func (c *cloud) PingHandler(w http.ResponseWriter, req *http.Request) {
+func (c *cloud) WebPingHandler(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "pong"}`))
 }
