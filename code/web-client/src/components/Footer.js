@@ -10,7 +10,7 @@ All rights reserved`;
 
 export default function Footer(props) {
     return (
-        <Navbar bg='light' fixed='bottom' className='d-flex'>
+        <Navbar bg='light' className='d-flex justify-content-around'>
             <Navbar.Brand href='/about' >
                 <span className='text-wrap h6'>{copyrightNotice}</span>
             </Navbar.Brand>

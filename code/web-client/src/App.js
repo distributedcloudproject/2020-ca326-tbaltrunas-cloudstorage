@@ -3,6 +3,7 @@ import {
   BrowserRouter as Router, 
   Route 
 } from 'react-router-dom';
+import Container from 'react-bootstrap/Container';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Cookies from 'js-cookie';
 import './App.css';
@@ -31,14 +32,15 @@ export default function App() {
 
   return (
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticatedCallback: setIsAuthenticatedCallback }}>
-        {/* TODO: header and footer with logo and info/links */}
-        <Header />
+        <Header className='header' />
+        <Container className='content'>  
           <Router>
             <Route path='/login' component={Login} />
             <Route path='/about' component={About} />
             <PrivateRoute exact path='/' component={Home} />
           </Router>
-        <Footer />
+        </Container>
+        <Footer className='footer' />
       </AuthContext.Provider>
     );
 }

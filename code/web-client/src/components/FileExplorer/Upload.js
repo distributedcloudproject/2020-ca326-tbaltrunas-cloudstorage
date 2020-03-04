@@ -22,16 +22,16 @@ export default function Upload(props) {
     // TODO: Upload field or box.
     return (
         <Button 
-            className="icon-button"
+            className='icon-button' 
             onClick={handleButtonClick} >
-            <Form.Control 
+            <Form.Control
                 type="file" 
                 id="file" 
                 ref={fileUploaderEl} 
                 hidden
                 onChange={handleInputChange} >
             </Form.Control>
-            <FileExplorerIcons.Upload />
+            <FileExplorerIcons.Upload/>
             Upload
         </Button>
     );

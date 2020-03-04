@@ -10,8 +10,12 @@ export default function Home(props) {
     return (
         <Container className='d-flex flex-column p-2'>
             <Row className='border border-primary m-2 p-2 d-flex justify-content-around rounded'>
-                <CloudInfo />
-                <Logout />
+                <Col className='col-md-10 d-flex justify-content-center'>
+                    <CloudInfo />
+                </Col>
+                <Col className='d-flex justify-content-center'>
+                    <Logout />
+                </Col>
             </Row>
             <Container className='d-flex flex-wrap border border-primary rounded'>
                 <Col className='m-1 p-1'>

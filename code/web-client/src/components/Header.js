@@ -7,15 +7,15 @@ export default function Header(props) {
     return (
         <Navbar bg='light' className='navbar-static-top d-flex justify-content-start'>
             <Navbar.Brand 
-                className='d-flex align-items-center justify-content-between'
+                className='d-flex align-items-end justify-content-between'
                 href="/" >
                 <img 
                     src={process.env.PUBLIC_URL + 'dcloud.svg'} 
                     alt='icon distributed cloud storage' 
                     width='35'
                     height='35'
-                    className='d-inline-block align-top icon-button' />
-                <span>{title}</span>
+                    className='p-1 d-inline-block align-top' />
+                <span className='h5'>{title}</span>
             </Navbar.Brand>
         </Navbar>
     );

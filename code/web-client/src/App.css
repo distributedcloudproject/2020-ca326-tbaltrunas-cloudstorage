@@ -1,7 +1,6 @@
 body {
   background-color: #424242ff;
   display: flex;
-  min-height: 100vh;
   flex-direction: column;
 }
 
@@ -18,26 +17,22 @@ a:hover {
   text-decoration: none;
 }
 
-.icon-button {
-  padding: 2%;
+.left-icon * {
+  padding-right: 5%;
 }
 
-/* .App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.icon-button * {
+  padding: 3%;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.header {
+  min-height: 5vh;
 }
 
-.App-link {
-  color: #61dafb;
-} */
+.footer {
+  min-height: 5vh;
+}
+
+.content {
+  min-height: 81vh;
+}

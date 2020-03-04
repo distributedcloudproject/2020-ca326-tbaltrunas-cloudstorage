@@ -6,6 +6,8 @@ import Button from 'react-bootstrap/Button';
 import { useAuthContext} from '../context/Authentication';
 import { AuthenticationAPI } from '../api';
 
+const loginButtonText = 'Login';
+
 export default function Login(props) {
     // Add state to our Login component.
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -74,7 +76,9 @@ export default function Login(props) {
                             }}
                         />
                     </Form.Group>
-                    <Button variant='primary' type='submit' onClick={postLogin} >Connect</Button>
+                    <Button variant='primary' type='submit' onClick={postLogin}>
+                        {loginButtonText}
+                    </Button>
                 </Form>
         </Container>
     );
