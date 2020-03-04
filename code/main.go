@@ -225,7 +225,7 @@ func main() {
 
 		numReplicas := -1
 		antiAffinity := true
-		err = c.Distribute(*file, numReplicas, antiAffinity)
+		err = c.Distribute("/"+file.Name, *file, numReplicas, antiAffinity)
 		if err != nil {
 			fmt.Println(err)
 			return
