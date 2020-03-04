@@ -18,9 +18,6 @@ type Cloud interface {
 	AcceptUsingListener(listener net.Listener)
 	ListenAndAccept() error
 
-	// HTTP.
-	ServeWebApp(port int) error
-
 	// Config.
 	Config() CloudConfig
 	SetConfig(config CloudConfig)

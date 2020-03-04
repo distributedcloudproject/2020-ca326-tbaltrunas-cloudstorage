@@ -242,7 +242,8 @@ func main() {
 
 	if *webBackendPtr {
 		fmt.Println("Web backend enabled. Listening on: ", *webBackendPortPtr)
-		go c.ServeWebApp(*webBackendPortPtr)
+		webapp := network.NewWebApp(c)
+		go webapp.Serve(*webBackendPortPtr)
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")
