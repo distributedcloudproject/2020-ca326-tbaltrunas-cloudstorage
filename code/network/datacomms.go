@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 )
@@ -190,6 +191,10 @@ func (r request) OnAddFileRequest(file *datastore.File, filepath string) error {
 					Chunks: file.Chunks.Chunks,
 				},
 				FilePath: fpath,
+			}
+			fil, err := os.Create(fpath)
+			if err != nil {
+				fil.Close()
 			}
 		} else {
 			c.fileStorage[filepath] = &datastore.PartialFileStore{
