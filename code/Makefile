@@ -16,6 +16,7 @@ make: deps
 deps:
 	go get github.com/hashicorp/logutils
 	go get github.com/ricochet2200/go-disk-usage/du
+	go get github.com/fsnotify/fsnotify
 
 
 clean:
