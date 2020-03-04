@@ -14,6 +14,8 @@ export default function Upload(props) {
     function handleInputChange(e) {
         e.preventDefault();
         console.log('Received files: ' + e.target.files)
+        // FIXME: reading too big file results in out of memory
+        // probably shouldnt use a raw array but instead pass a reader around
         const filesArray = Array.from(e.target.files)
         props.callback(filesArray)
     }
