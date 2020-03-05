@@ -13,13 +13,16 @@ Distributed Cloud Storage – Technical Manual
   - 2.1. Operational Overview
   - 2.2. Class Diagram
   - 2.3. Communications Overview
-  - 2.4. REST API Reference
+  - 2.4. API Reference
+    - 2.4.1. Cloud API Reference
+    - 2.4.2. REST API Reference
 - 3. High Level Design
   - 3.1. Initial Design
   - 3.2. Current Design
   - 3.3. Major Design Considerations
 - 4. Problems and Solutions
   - 4.1. Network communications
+    - 4.1. Message Structure
   - 4.2. Cloud and Network data structures
   - 4.3. File Storage data structures
   - 4.4. Desktop Client
@@ -114,6 +117,10 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 
 ### 2.1. Operational Overview
 
+The following is an Operational Overview Diagram
+
+![operational overview diagram](Operational&#32;Overview.png)
+
 ### 2.2. Class Diagram
 
 Go library
@@ -124,7 +131,7 @@ Secure comms (TCP)
 
 HTTPS
 
-### 2.4. REST API Reference
+### 2.4. API Reference
 
 ## 3. High-Level Design
 <!-- This section should set out the high-level design of the system. It should include system models showing the relationship between system components and the systems and its environment. These might be object-models, DFD, etc. Unlike the design in the Functional Specification - this description must reflect the design of the system as it is demonstrated. -->
