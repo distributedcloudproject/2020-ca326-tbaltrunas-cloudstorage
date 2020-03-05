@@ -1,0 +1,21 @@
+/* Text */
+.rendered-file-browser th,a,a:hover,td,h2,dl {
+    color: white;
+}
+
+.rendered-file-browser {
+    display: flex;
+    flex-flow: column wrap;
+}
+
+.rendered-file-browser .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rendered-file-browser .item-actions {
+    display: flex;
+    flex-direction: wrap;
+}
+/* TODO: "Confirm" button style. */
