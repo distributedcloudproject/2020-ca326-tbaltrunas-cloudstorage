@@ -51,7 +51,7 @@ func (wapp *webapp) Serve(port int) error {
 
 	// Add public routes.
 	// Do not require authentication.
-	r.HandleFunc("/ping", wapp.WebPingHandler)
+	r.HandleFunc("/ping", wapp.Ping)
 	r.HandleFunc("/auth/login", wapp.WebAuthLoginHandler).Methods(http.MethodPost)
 
 	// Public route with query string token verification.
@@ -69,7 +69,7 @@ func (wapp *webapp) Serve(port int) error {
 
 	s.HandleFunc("/files", wapp.CreateFile).Methods(http.MethodPost)
 	s.HandleFunc("/files", wapp.ReadFiles).Methods(http.MethodGet)
-	s.HandleFunc("/files/{fileKey}", wapp.WebGetFile).Methods(http.MethodGet).
+	s.HandleFunc("/files/{fileKey}", wapp.ReadFile).Methods(http.MethodGet).
 											   Queries("filter", "contents")
 
 	s.HandleFunc("/files/{fileKey}", wapp.DeleteFile).Methods(http.MethodDelete)
@@ -240,13 +240,9 @@ func (wapp *webapp) ReadFiles(w http.ResponseWriter, req *http.Request) {
 	w.Write(data)
 }
 
-// TODO: check that query param is filter=content
-func (wapp *webapp) WebGetFile(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] GetFile called.")
-	vars := mux.Vars(req)
-	fileID := vars["fileID"]
-	utils.GetLogger().Printf("[DEBUG] Got file ID: %s.", fileID)
-
+// ReadFile API call reads the metadata of a single file.
+func (wapp *webapp) ReadFile(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // DeleteFile API call deletes a file from the cloud.
@@ -331,8 +327,8 @@ func (wapp *webapp) UpdateFile(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// PingHandler for /ping.
-func (wapp *webapp) WebPingHandler(w http.ResponseWriter, req *http.Request) {
-	w.WriteHeader(http.StatusOK)
+// Ping API call pings the web application.
+func (wapp *webapp) Ping(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"message": "pong"}`))
 }
