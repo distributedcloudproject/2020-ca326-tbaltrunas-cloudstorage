@@ -504,6 +504,7 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 }
 
 func (c *cloud) GetChunk(filePath string, chunkID datastore.ChunkID) (content []byte, err error) {
+	filePath = CleanNetworkPath(filePath)
 	c.networkMutex.RLock()
 	nodes := c.network.ChunkNodes[chunkID]
 	c.networkMutex.RUnlock()
@@ -515,6 +516,7 @@ func (c *cloud) GetChunk(filePath string, chunkID datastore.ChunkID) (content []
 			if err == nil {
 				return res[0].([]byte), nil
 			}
+			return nil, err
 		}
 	}
 	return nil, errors.New("could not download chunk")
@@ -528,7 +530,7 @@ func (r request) OnGetChunkRequest(filePath string, chunkID datastore.ChunkID) (
 	c.fileStorageMutex.RUnlock()
 
 	if storage == nil {
-		return nil, errors.New("chunk is not stored")
+		return nil, errors.New("file is not stored")
 	}
 	return storage.ReadChunk(chunkID)
 }
