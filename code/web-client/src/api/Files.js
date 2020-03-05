@@ -3,21 +3,19 @@ import urljoin from 'url-join';
 import * as Constants from './Constants';
 
 // Perform a GET request for all files.
-function GetFiles(callback) {
+async function GetFiles() {
     console.log("Called API method: GetFiles")
     const url = urljoin(Constants.GetBase(), '/files')
     console.log('Computed URL: ' + url)
-    axios.get(url)
-        .then(response => {
-            if (response.status === 200) {
-                callback(response.data)
-            } else {
-                console.log(response.status)
-            }
-        })
-        .catch(error => {
-            console.log(error)
-        })
+    try {
+        const response = await axios.get(url)
+        if (response.status !== 200) {
+            console.error(response.status)
+        }
+        return response.data
+    } catch (error) {
+        console.error(error)
+    }
 }
 
 // Perform a GET request for a file's metadata.

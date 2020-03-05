@@ -27,8 +27,9 @@ type WebApp interface {
 	Serve(port int) error
 }
 
-type File struct {
-	Key		string   `json:"key"`
+type WebFile struct {
+	Key	string `json:"key"`
+	Size int `json:"size"`
 }
 
 func NewWebApp(c Cloud) WebApp {
@@ -65,11 +66,12 @@ func (wapp *webapp) Serve(port int) error {
 	s.Use(AuthenticationMiddleware)
 	s.HandleFunc("/auth/refresh", wapp.WebAuthRefreshHandler).Methods(http.MethodGet)
 	s.HandleFunc("/netinfo", wapp.WebNetworkInfoHandler).Methods(http.MethodGet)
-	s.HandleFunc("/files", wapp.WebGetFiles).Methods(http.MethodGet)
+
+	s.HandleFunc("/files", wapp.CreateFile).Methods(http.MethodPost)
+	s.HandleFunc("/files", wapp.ReadFiles).Methods(http.MethodGet)
 	s.HandleFunc("/files/{fileID}", wapp.WebGetFile).Methods(http.MethodGet).
 											   Queries("filter", "contents")
 
-	s.HandleFunc("/files", wapp.CreateFile).Methods(http.MethodPost)
 
 	s.HandleFunc("/downloadlink/{fileID}", wapp.WebGetFileDownloadLink).Methods(http.MethodGet)
 
@@ -96,7 +98,7 @@ func (wapp *webapp) WebNetworkInfoHandler(w http.ResponseWriter, req *http.Reque
 	w.Write([]byte(fmt.Sprintf(`{"name": "%s"}`, networkName)))
 }
 
-// CreateFile API method creates a new file on the cloud.
+// CreateFile API call creates a new file on the cloud.
 // Endpoint: /files
 // Method: POST.
 // Headers: Authorization.
@@ -108,10 +110,8 @@ func (wapp *webapp) WebNetworkInfoHandler(w http.ResponseWriter, req *http.Reque
 // Body:
 // - File contents as POST body, encoded using post data.
 // Response:
-// - 200 if file is stored on the cloud successfully.
+// - 200 if file is stored on the cloud successfully on the set path.
 func (wapp *webapp) CreateFile(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] CreateFile called.")
-
 	utils.GetLogger().Printf("[DEBUG] URL: %v", req.URL)
 	qs := req.URL.Query()
 	utils.GetLogger().Printf("[DEBUG] Querystring parameters: %v", qs)
@@ -200,53 +200,37 @@ func (wapp *webapp) CreateFile(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (wapp *webapp) WebGetFiles(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] GetFiles called.")
+// ReadFiles API call reads the metadata of all the files that are currently stored on the cloud.
+// Endpoint: /files
+// Method: GET.
+// Headers: Authorization.
+// Query parameters: None.
+// Response:
+// - JSON containing a list of Files.
+// - A File contains a key (here, filepath), size, and lastModified time (TODO).
+func (wapp *webapp) ReadFiles(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
-	files := []*File{
-		&File{
-		    Key: "photos/animals/cat in a hat.png",
-		//   modified: +Moment().subtract(1, "hours"),
-		    // size: 1.5 * 1024 * 1024,
-		},
-		&File{
-		    Key: "photos/animals/kitten_ball.png",
-		//   modified: +Moment().subtract(3, "days"),
-		    // size: 545 * 1024,
-		},
-		&File{
-		    Key: "photos/animals/elephants.png",
-		//   modified: +Moment().subtract(3, "days"),
-		    // size: 52 * 1024,
-		},
-		&File{
-		    Key: "photos/funny fall.gif",
-		//   modified: +Moment().subtract(2, "months"),
-		    // size: 13.2 * 1024 * 1024,
-		},
-		&File{
-		    Key: "photos/holiday.jpg",
-		  // modified: +Moment().subtract(25, "days"),
-		  //   size: 85 * 1024,
-		},
-		&File{
-		    Key: "documents/letter chunks.doc",
-		//   modified: +Moment().subtract(15, "days"),
-		    // size: 480 * 1024,
-		},
-		&File{
-		    Key: "documents/export.pdf",
-		//   modified: +Moment().subtract(15, "days"),
-		    // size: 4.2 * 1024 * 1024,
-		},
+	// Retrieve files from the cloud.
+	files := wapp.cloud.GetFiles()
+	utils.GetLogger().Printf("[DEBUG] Got %d files.", len(files))
+
+	// Put into web API file struct format.
+	filesWeb := make([]WebFile, 0)
+	for _, file := range files {
+		webFile := WebFile{
+			Key: file.Name,
+			Size: int(file.Size),
+		}
+		filesWeb = append(filesWeb, webFile)
 	}
+	utils.GetLogger().Printf("[DEBUG] Got %d  web files.", len(filesWeb))
 
-	data, err := json.Marshal(files)
+	// Serialize as JSON.
+	data, err := json.Marshal(filesWeb)
 	if err != nil {
-		utils.GetLogger().Printf("[ERROR] Error encoding files as JSON: %v.", err)
-		// TODO: respond with status code (internal server error?)
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.Write(data)
 }

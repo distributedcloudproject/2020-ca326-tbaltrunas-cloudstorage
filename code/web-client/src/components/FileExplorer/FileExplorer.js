@@ -19,10 +19,10 @@ export default class FileExplorer extends React.Component {
       selectedFile: {key: 'test'},
     }
 
-    componentDidMount() {
-      FilesAPI.GetFiles((files) => {
-        this.setState({ files: files })
-      })
+    async componentDidMount() {
+      const files = await FilesAPI.GetFiles();
+      this.setState({ files: files });
+      // TODO: might want to call GetFiles on each UI update so that UI doesn't get out of sync with backend
     }
 
     // handleCreateFiles adds new files to existing files.

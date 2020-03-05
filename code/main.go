@@ -204,7 +204,7 @@ func main() {
 					fmt.Printf("|%-20v|%-20v|%8v|\n", n.Name, n.ID, c.IsNodeOnline(n.ID))
 				}
 				if *verbosePtr {
-					fmt.Printf("Files: %v\n", c.Files)
+					fmt.Printf("Files: %v\n", c.Network().RootFolder)
 					fmt.Printf("ChunkNodes: %v\n",
 						network.ChunkNodes)
 					fmt.Printf("My node: %v.", c.MyNode())

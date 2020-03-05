@@ -90,6 +90,12 @@ func (c *cloud) GetFile(file string) (*datastore.File, error) {
 	return c.network.GetFile(file)
 }
 
+func (c *cloud) GetFiles() []*datastore.File {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	return c.network.GetFiles()
+}
+
 func (n *Network) GetFile(file string) (*datastore.File, error) {
 	dir, base := path.Split(file)
 	folder, err := n.GetFolder(dir)
@@ -137,6 +143,25 @@ func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 		}
 	}
 	return f, nil
+}
+
+func (n *Network) GetFiles() []*datastore.File {
+	return n.rGetFiles(n.RootFolder)
+}
+
+func (n *Network) rGetFiles(folder *NetworkFolder) []*datastore.File {
+	files := make([]*datastore.File, 0)
+	// base case
+	if folder == nil {
+		return files
+	}
+	// recursive case
+	files = append(files, folder.Files.Files...)
+	for _, subfolder := range folder.SubFolders {
+		subfiles := n.rGetFiles(subfolder)
+		files = append(files, subfiles...)
+	}
+	return files
 }
 
 func (c *cloud) NodeByID(ID string) (node Node, found bool) {
