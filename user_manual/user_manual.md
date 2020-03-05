@@ -1,6 +1,6 @@
 # Distributed Cloud Storage – User Manual
 
-This is a 5 to 10 page user instruction guide on how to use the software system. It should include a step by step guide on how to use the product major components and should be written for a user and not technical audience (unless the system/product is intended for use by technical persons). You may consider including screen shots. 
+<!-- This is a 5 to 10 page user instruction guide on how to use the software system. It should include a step by step guide on how to use the product major components and should be written for a user and not technical audience (unless the system/product is intended for use by technical persons). You may consider including screen shots.  -->
 
 ## Table of Contents
 
@@ -78,6 +78,38 @@ Binary. Same binary as for end user.
 ### Website client set up
 
 Set up a website client for end-users.
+
+The web client exposes a File Explorer UI to the storage cloud through the web.
+
+#### 5.3.1. Web Application
+
+Also need:
+
+Install the web application (web backend):
+
+postgresql. Apply schema. Create user with bcrypt password.
+
+Obtain HTTPS TLS certificates.
+- Testing: self-signed generate with:
+
+Obtain the cloud binary as from section ...
+
+Run the program with the web backend enabled.
+
+#### 5.3.2. Web Server
+
+npm
+
+Obtain frontend source
+
+install dependencies
+
+Serve with react-create-app or custom web server
+npm start
+
+#### 5.3.3. Website
+
+Browser. Open address
 
 #### Prerequisites
 
