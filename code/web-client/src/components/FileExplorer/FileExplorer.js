@@ -7,10 +7,8 @@ import '../../../node_modules/react-keyed-file-browser/dist/react-keyed-file-bro
 import * as FileExplorerIcons from './Icons';
 import './FileExplorer.css';
 import Upload from './Upload';
-import Download from './Download';
-import { FilesAPI, FilesDownloadAPI, APIConstants } from '../../api';
+import { FilesAPI, FilesDownloadAPI } from '../../api';
 import * as UpdateUI from './UpdateUI';
-import urljoin from 'url-join';
 import * as CustomRenderers from './fileBrowserCustom';
 
 export default class FileExplorer extends React.Component {
@@ -20,8 +18,16 @@ export default class FileExplorer extends React.Component {
     }
 
     async componentDidMount() {
-      const files = await FilesAPI.GetFiles();
-      this.setState({ files: files });
+      // Get existing state of cloud files and folders
+      try {
+        const files = await FilesAPI.GetFiles();
+        console.log('Received number of files: ' + files.length);
+        const folders = await FilesAPI.GetFolders();
+        console.log('Received number of folders: ' + folders.length);
+        this.setState({ files: files });  
+      } catch (error) {
+        console.error(error)
+      }
       // TODO: might want to call GetFiles on each UI update so that UI doesn't get out of sync with backend
       // FIXME: if can't connect to backend, get undefined files error.
     }
@@ -81,9 +87,9 @@ export default class FileExplorer extends React.Component {
     }
 
     // handleCreateFolder creates a new folder.
-    handleCreateFolder = (key) => {
-      FilesAPI.CreateFolder()
-      this.setState({state: UpdateUI.UpdateUICreateFolder(this.state, key)})
+    handleCreateFolder = (folderKey) => {
+      FilesAPI.CreateFolder(folderKey)
+      this.setState({state: UpdateUI.UpdateUICreateFolder(this.state, folderKey)})
     }
 
     // handleRenameFolder renames an existing folder.
@@ -95,7 +101,8 @@ export default class FileExplorer extends React.Component {
     // handleDeleteFolder deletes an existing folder.
     handleDeleteFolder = (folderKeys) => {
       folderKeys.forEach(folderKey => {
-        FilesAPI.DeleteFolder()
+        // FIXME: may want to wrap FilesAPI calls in  try-catch, and only update UI state on success.
+        FilesAPI.DeleteFolder(folderKey)
         this.setState({state: UpdateUI.UpdateUIDeleteFolder(this.state, folderKey)})  
       });
     }

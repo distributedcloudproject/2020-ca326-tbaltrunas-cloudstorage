@@ -65,10 +65,10 @@ func (wapp *webapp) Serve(port int) error {
 	s := r.PathPrefix("/").Subrouter()
 	s.Use(AuthenticationMiddleware)
 	s.HandleFunc("/auth/refresh", wapp.WebAuthRefreshHandler).Methods(http.MethodGet)
-	s.HandleFunc("/netinfo", wapp.WebNetworkInfoHandler).Methods(http.MethodGet)
+	s.HandleFunc("/cloudinfo", wapp.CloudInfo).Methods(http.MethodGet)
 
-	s.HandleFunc("/files", wapp.CreateFile).Methods(http.MethodPost)
 	s.HandleFunc("/files", wapp.ReadFiles).Methods(http.MethodGet)
+	s.HandleFunc("/files", wapp.CreateFile).Methods(http.MethodPost)
 	s.HandleFunc("/files/{fileKey}", wapp.ReadFile).Methods(http.MethodGet).
 											   Queries("filter", "contents")
 
@@ -77,6 +77,12 @@ func (wapp *webapp) Serve(port int) error {
 													  Queries("path", "")
 													  // TODO: might want to change something else, not just path.
 	s.HandleFunc("/downloadlink/{fileKey}", wapp.FileDownloadLink).Methods(http.MethodGet)
+
+	s.HandleFunc("/directories", wapp.ReadDirectories).Methods(http.MethodGet)
+	s.HandleFunc("/directories", wapp.CreateDirectory).Methods(http.MethodPost).
+													   Queries("path", "")
+	s.HandleFunc("/directories", wapp.DeleteDirectory).Methods(http.MethodDelete).
+													   Queries("path", "")
 
 	// FIXME: passing paths as fileKey's might not be good (need to encode/escape the URL. Might mess parameters up.)
 
@@ -96,11 +102,9 @@ func (wapp *webapp) Serve(port int) error {
 // FIXME: Instead of having methods of cloud, have a new struct WebApp with cloud as an attribute
 // and these methods
 
-func (wapp *webapp) WebNetworkInfoHandler(w http.ResponseWriter, req *http.Request) {
-	utils.GetLogger().Println("[INFO] NetworkInfoHandler called.")
-	w.WriteHeader(http.StatusOK)
+func (wapp *webapp) CloudInfo(w http.ResponseWriter, req *http.Request) {
 	networkName := wapp.cloud.Network().Name
-	w.Write([]byte(fmt.Sprintf(`{"name": "%s"}`, networkName)))
+	w.Write([]byte(fmt.Sprintf(`{"networkname": "%s"}`, networkName)))
 }
 
 // CreateFile API call creates a new file on the cloud.
@@ -325,6 +329,54 @@ func (wapp *webapp) UpdateFile(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+}
+
+// CreateFolder API call creates a new directory (folder) on the cloud.
+// Endpoint: /directories
+// Method: POST.
+// Headers: Authorization.
+// Query parameters:
+// - path=string, the cloud path (name) of the new directory.
+// Response:
+// - 200 if directory was created successfully.
+func (wapp *webapp) CreateDirectory(w http.ResponseWriter, req *http.Request) {
+	path, err := GetQueryParam(req.URL, "path")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	utils.GetLogger().Printf("[DEBUG] Creating directory: %s", path)
+	err = wapp.cloud.CreateDirectory(path)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (wapp *webapp) ReadDirectories(w http.ResponseWriter, req *http.Request) {
+
+}
+
+// Note that cannot pass the directory path as part of the endpoint URL, else get 404 no route matched.
+// Need to pass as a query string or another parameter.
+func (wapp *webapp) DeleteDirectory(w http.ResponseWriter, req *http.Request) {
+	path, err := GetQueryParam(req.URL, "path")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	utils.GetLogger().Printf("[DEBUG] Deleting directory: %s", path)
+	err = wapp.cloud.DeleteDirectory(path)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // Ping API call pings the web application.

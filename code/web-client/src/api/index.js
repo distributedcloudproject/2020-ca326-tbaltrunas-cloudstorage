@@ -2,6 +2,7 @@ import * as APIConstants from './Constants';
 import * as FilesAPI from './Files';
 import * as FilesDownloadAPI from './FilesDownload';
 import * as AuthenticationAPI from './Authentication';
+import * as CloudAPI from './Cloud';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -21,4 +22,5 @@ export {
     FilesAPI,
     FilesDownloadAPI,
     AuthenticationAPI,
+    CloudAPI,
 }

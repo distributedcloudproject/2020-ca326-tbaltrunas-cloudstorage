@@ -3,7 +3,7 @@ import urljoin from 'url-join';
 import * as Constants from './Constants';
 
 // Perform a POST request with a file.
-function CreateFile(file) {
+export function CreateFile(file) {
     console.log("Called API method: CreateFile")
     const formData = new FormData();
     formData.append('file', file)
@@ -28,7 +28,7 @@ function CreateFile(file) {
 }
 
 // Perform a GET request for all files.
-async function GetFiles() {
+export async function GetFiles() {
     console.log("Called API method: GetFiles")
     const url = urljoin(Constants.GetBase(), '/files')
     console.log('Computed URL: ' + url)
@@ -45,7 +45,7 @@ async function GetFiles() {
 
 // Perform a GET request for a file's metadata.
 // See FilesDownload.GetFileContentsLink for a file's contents.
-function GetFile(fileKey) {
+export function GetFile(fileKey) {
     console.log("Called API method: GetFile")
     const url = urljoin(Constants.GetBase(), `/files/${fileKey}`)
     console.log('Computed URL: ' + url)
@@ -66,7 +66,7 @@ function GetFile(fileKey) {
 
 
 // Perform a PUT request on a file.
-function UpdateFile(fileKey, newFileKey) {
+export function UpdateFile(fileKey, newFileKey) {
     console.log("Called API method: UpdateFile")
     const url = urljoin(Constants.GetBase(), `/files/${fileKey}`, `?path=${newFileKey}`)
     console.log('Computed URL: ' + url)
@@ -81,7 +81,7 @@ function UpdateFile(fileKey, newFileKey) {
 }
 
 // Perform a DELETE request on a file.
-function DeleteFile(fileKey) {
+export function DeleteFile(fileKey) {
     console.log("Called API method: DeleteFile")
     const url = urljoin(Constants.GetBase(), `/files/${fileKey}`)
     console.log('Computed URL: ' + url)
@@ -95,34 +95,60 @@ function DeleteFile(fileKey) {
         })
 }
 
+// Perform a POST request with a folder.
+export function CreateFolder(folderKey) {
+    console.log("Called API method: CreateFolder")
+    console.log("Creating new folder: " + folderKey)
+    const url = urljoin(Constants.GetBase(), '/directories', `?path=/${folderKey}`)
+    axios.post(url)
+        .then(response => {
+            if (response.status !== 200) {
+                console.error(response.status)
+            }
+        }).catch(error => {
+            console.error(error)
+        })
+}
+
+// Perform a GET request for all folders.
+export async function GetFolders() {
+    console.log("Called API method: GetFolders")
+    const url = urljoin(Constants.GetBase(), '/directories')
+    console.log("Computed URL: " + url)
+    try {
+        const response = await axios.get(url)
+        if (response.status !== 200) {
+            console.error(response.status)
+        }
+        return response.data
+    } catch (error) {
+        console.error(error)
+    }
+}
+
 // Perform a GET request for a folder.
-function GetFolder(folderID, callback) {
+export function GetFolder(folderID, callback) {
     console.log("Called API method: GetFolder")
 }
 
-// Perform a POST request with a folder.
-function CreateFolder(folderID, folder, callback) {
-    console.log("Called API method: CreateFolder")
-}
-
 // Perform a PUT request on a folder.
-function UpdateFolder(folderID, folder, callback) {
+export function UpdateFolder(folderID, folder, callback) {
     console.log("Called API method: UpdateFolder")
 }
 
 // Perform a DELETE request on a folder.
-function DeleteFolder(folderID, callback) {
+export function DeleteFolder(folderKey) {
     console.log("Called API method: DeleteFolder")
+    console.log("Deleting folder: "+ folderKey)
+    const url = urljoin(Constants.GetBase(), '/directories', `?path=/${folderKey}`)
+    console.log("Computed URL: " + url)
+    axios.delete(url)
+        .then(response => {
+            if (response.status !== 200) {
+                console.error(response.status)
+            }
+        }).catch(error => {
+            console.error(error)
+        })
 }
 
-export {
-    GetFiles,
-    GetFile,
-    CreateFile,
-    UpdateFile,
-    DeleteFile,
-    GetFolder,
-    CreateFolder,
-    UpdateFolder,
-    DeleteFolder,
-};

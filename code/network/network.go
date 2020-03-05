@@ -90,6 +90,12 @@ func (c *cloud) GetFile(file string) (*datastore.File, error) {
 	return c.network.GetFile(file)
 }
 
+func (c *cloud) GetFolders() []*NetworkFolder {
+	c.networkMutex.RLock()
+	defer c.networkMutex.RUnlock()
+	return c.network.GetFolders()
+}
+
 func (c *cloud) GetFiles() []*datastore.File {
 	c.networkMutex.RLock()
 	defer c.networkMutex.RUnlock()
@@ -143,6 +149,10 @@ func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 		}
 	}
 	return f, nil
+}
+
+func (n *Network) GetFolders() []*NetworkFolder {
+	return nil
 }
 
 func (n *Network) GetFiles() []*datastore.File {
