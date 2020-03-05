@@ -115,6 +115,52 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 ## 2. System Architecture
 <!-- This section describes the high-level overview of the system architecture showing the distribution functions across (potential) system modules. Architectural components that are reused or 3rd party should be highlighted. Unlike the architecture in the Functional Specification - this description must reflect the design components of the system as it is demonstrated. -->
 
+<<<<<<< HEAD
+**Communication between Nodes**
+Nodes are in constant communication between each other, making it important to get the communications right. All communications between nodes is done using a TCP socket, ensuring the communication between them is reliable. The data sent is encoded and decoded using Gob on the fly. This allows for highely performant communication while maintaining ease of use. This allows passing Go structs as parameters and the data will be decoded/encoded in the communication layer.
+
+An example demonstrating the ease of writing communication functions between nodes. Node 1 calls `GetNetwork()`, which calls `OnGetNetworkRequest()` on Node 2, returning any information to node 1.
+```
+type Network struct {
+	Name string
+	Nodes []Node
+}
+
+func GetNetwork() (Network, error) {
+	network, err := client.SendMessage(GetNetworkMsg)
+}
+
+func OnGetNetworkRequest() (Network, error) {
+	return Network{...}, nil
+}
+```
+
+**Authentication**
+Every node connecting to the cloud network has to authenticate before participating in the network. Each node has a unique identifier, which is sha256 sum of a public key. Any node in the network can add a node ID to be able to join the network. Upon establishing a socket connection, public keys are exchanged. The node on on the network generates a symmetric key that will be used for encrypting and decrypting all communication between those two nodes, and encrypts it with the connecting node's public key and sends it to them. This ensures that the connecting node owns the private key corresponding to the public key and cannot fake another node's identity.
+
+**Go Library**
+As there are multiple uses of the cloud (Desktop CLI, Desktop GUI, Web app), we created a Go library to handle the cloud backbone. Making it easy to use and control outside. This library was created to be simple in use but offer as much control as possible.
+
+Connecting to an existing network is as easy as:
+```
+cloud, err := network.BootstrapToNetwork("networkip:port", network.Node{
+			Name:      "Node Name",
+			IP:        ":9002",
+			PublicKey: key.PublicKey,
+		}, privateKey, network.CloudConfig{FileStorageDir: "/path/to/dir/to/store})
+```
+
+Allowing for easy interfacing with the cloud:
+```
+// Syncs local folder to a folder on the cloud.
+c.SyncFolder("/folder/on/cloud", "/local/folder");
+
+// Adds a local file to the cloud.
+c.AddFile(fileMetadata, "/path/on/cloud", "/local/file")
+```
+
+Go library. TCP.
+=======
 ### 2.1. Operational Overview
 
 The following is an Operational Overview Diagram
@@ -122,6 +168,7 @@ The following is an Operational Overview Diagram
 ![operational overview diagram](Operational&#32;Overview.png)
 
 ### 2.2. Class Diagram
+>>>>>>> b07022c838a551ed2c902ff9fd796bd6569fea59
 
 Go library
 
