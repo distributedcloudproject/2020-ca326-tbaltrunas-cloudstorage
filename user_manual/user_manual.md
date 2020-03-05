@@ -79,6 +79,38 @@ Binary. Same binary as for end user.
 
 Set up a website client for end-users.
 
+The web client exposes a File Explorer UI to the storage cloud through the web.
+
+#### 5.3.1. Web Application
+
+Also need:
+
+Install the web application (web backend):
+
+postgresql. Apply schema. Create user with bcrypt password.
+
+Obtain HTTPS TLS certificates.
+- Testing: self-signed generate with:
+
+Obtain the cloud binary as from section ...
+
+Run the program with the web backend enabled.
+
+#### 5.3.2. Web Server
+
+npm
+
+Obtain frontend source
+
+install dependencies
+
+Serve with react-create-app or custom web server
+npm start
+
+#### 5.3.3. Website
+
+Browser. Open address
+
 #### Prerequisites
 
 Get our web app and front-end code. Database.

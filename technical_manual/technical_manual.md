@@ -32,9 +32,13 @@ Distributed Cloud Storage – Technical Manual
     - 4.6.2. Scripting
     - 4.6.3. Dependency Management
 - 5. Installation Guide
-  - 5.1. Cloud CLI
-  - 5.2. Cloud desktop GUI
-  - 5.3. Web client 
+  - 5.1. Node Software
+    - 5.1.1. Obtain from a release
+    - 5.1.2. Compile from source
+  - 5.2. Desktop GUI Client
+    - 5.2.1. Obtain from a release
+    - 5.2.2. Compile from source.
+  - 5.3. Web Client
 - 6. Testing
   - 6.1. GitLab CI
   - 6.2. Unit & Integration Tests
@@ -56,7 +60,7 @@ Distributed (de-centralised), secure, intelligent.
 - Reliability and privacy of storage at all times through redundancy and encrypted communications.
 - Minimised single points of failure. Each node acts both as a client and as a server (a distributed system).
 
-Portable (cross-platform), easily installable and configurable "node software" for technical/industry users requiring off-the-shelf private cloud storage solutions.
+Portable (cross-platform), easily installable "node software" for technical/industry users requiring off-the-shelf private cloud storage solutions. Configure through a graphical or command-line interface.
 
 "Client programs" including a mobile friendly website client and graphical desktop client for the end-users of storage. Modern file explorer UI/UX to interact with the cloud storage platform.
 
@@ -70,6 +74,10 @@ Portable (cross-platform), easily installable and configurable "node software" f
 **Node software** - a program that joins the computer it is running on into a storage cloud, intended to be used by technical users.
 
 **Client program** - a program or interface that connects the user to the storage cloud and allows them to store and download their files, intended for end-users that may not be as technical.
+
+**Node administrator** - a user that interacts with the cloud storage in a technical way, ensuring set up of "node software" and some "client software" such as the website.
+
+**End user** - a user that interacts with the cloud storage non-technically, to upload and download files.
 
 #### 1.2.2 General Terms
 
@@ -139,18 +147,99 @@ DL.
 Login.
 Postgresql
 
+Need Go. Go deps.
+
+
 ## 5. Installation Guide
 <!-- This is a 1 to 2 page section which contains a step by step software installation guide. It should include a detailed description of the steps necessary to install the software, a list of all required software, components, versions, hardware, etc. -->
 
-Obtain our binary.
-Or compile from source.
-Need Go. Go deps.
-create-react-app.
-Optional: Makefile, Ansible.
+Simple steps to install our node software and clients.
 
-Any OS.
+Where there are command-line examples, it is assumed that the environment is Unix (corresponding commands can be found for Windows).
 
-Need own servers to make a cloud.
+See the User Manual (Node Administrator section) for more details on set up of the software.
+
+All our software is cross-platform and compatible with most modern operating systems, including Windows, Linux, Mac OS X [https://golang.org/cmd/go/#hdr-Compile_packages_and_dependencies](). Some clients such as the web client work anywhere where there is a web browser.
+
+We do not require special hardware. The software can manage both powerful and less powerful machines. 
+
+In the case of executable binaries we provide precompiled releases on our GitLab for different architectures. Another option is to compile from source.
+
+### 5.1. Node Software
+
+Obtain a binary distribution of our node software (named "cloud").
+
+It is recommended for the node machine to have enhanced storage hardware (in storage space, RAID, etc.) and good or excellent network connectivity.
+
+#### 5.1.1. Obtain from a release.
+
+<!-- TODO -->
+See our GitLab releases.
+
+#### 5.1.2. Compile from source.
+
+Clone the project's GitLab repository
+```
+git clone https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage.git
+```
+
+Change directory into the node software
+```
+cd 2020-ca326-tbaltrunas-cloudstorage
+cd code/cloud
+```
+
+Compile the software into a binary
+`go build cloud`
+
+Optionally with the `Make` tool:
+```
+make
+```
+
+Find the node software executable binary under the name `cloud`.
+
+### 5.2. Desktop GUI Client 
+
+Obtain a binary of the desktop GUI client.
+
+The client requires the machine to have a graphical monitor.
+
+#### 5.2.1. Obtain from a release.
+
+<!-- TODO -->
+See our GitLab releases.
+
+#### 5.2.2. Compile from source.
+
+Clone the project's GitLab repository
+```
+git clone https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage.git
+```
+
+Change directory into the desktop client's directory
+```
+cd 2020-ca326-tbaltrunas-cloudstorage
+cd code/cloud/des
+```
+
+Compile the software into a binary
+```
+go build
+```
+
+Optionally with the `Make` tool:
+```
+make
+```
+
+Find the binary.
+
+<!-- TODO -->
+
+### 5.3. Web Client
+
+The web client runs as a website. See the user guide for in depth details of how to set up the web client from a node administrator's point of view.
 
 ## 6. Testing
 
