@@ -45,9 +45,9 @@ async function GetFiles() {
 
 // Perform a GET request for a file's metadata.
 // See FilesDownload.GetFileContentsLink for a file's contents.
-function GetFile(fileID) {
+function GetFile(fileKey) {
     console.log("Called API method: GetFile")
-    const url = urljoin(Constants.GetBase(), `/files/${fileID}`)
+    const url = urljoin(Constants.GetBase(), `/files/${fileKey}`)
     console.log('Computed URL: ' + url)
     axios.get(url, {
         responseType: 'blob',
@@ -66,14 +66,24 @@ function GetFile(fileID) {
 
 
 // Perform a PUT request on a file.
-function UpdateFile(fileID, file, callback) {
+function UpdateFile(fileKey, newFileKey) {
     console.log("Called API method: UpdateFile")
+    const url = urljoin(Constants.GetBase(), `/files/${fileKey}`, `?path=${newFileKey}`)
+    console.log('Computed URL: ' + url)
+    axios.put(url)
+        .then(response => {
+            if (response.status !== 200) {
+                console.error(response.status)
+            }
+        }).catch(error => {
+            console.error(error)
+        })   
 }
 
 // Perform a DELETE request on a file.
-function DeleteFile(fileID) {
+function DeleteFile(fileKey) {
     console.log("Called API method: DeleteFile")
-    const url = urljoin(Constants.GetBase(), `/files/${fileID}`)
+    const url = urljoin(Constants.GetBase(), `/files/${fileKey}`)
     console.log('Computed URL: ' + url)
     axios.delete(url)
         .then(response => {

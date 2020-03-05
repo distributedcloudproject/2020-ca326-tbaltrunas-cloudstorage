@@ -67,7 +67,7 @@ export default class FileExplorer extends React.Component {
 
     // handleRenameFile renames an existing file.
     handleRenameFile = (oldKey, newKey) => {
-      FilesAPI.UpdateFile()
+      FilesAPI.UpdateFile(oldKey, newKey)
       this.setState({state: UpdateUI.UpdateUIRenameFile(this.state, oldKey, newKey)})
     }
 

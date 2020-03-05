@@ -58,7 +58,7 @@ func (wapp *webapp) Serve(port int) error {
 	d := r.PathPrefix("/downloadfile").Subrouter()
 	d.Use(DownloadTokenMiddleware)
 	d.HandleFunc("/{fileKey}", wapp.WebGetFileDownload).Methods(http.MethodGet).
-														 Queries("token", "")
+														Queries("token", "")
 
 	// Add "secret" routes.
 	// Require authentication.
@@ -73,9 +73,12 @@ func (wapp *webapp) Serve(port int) error {
 											   Queries("filter", "contents")
 
 	s.HandleFunc("/files/{fileKey}", wapp.DeleteFile).Methods(http.MethodDelete)
-
-
+	s.HandleFunc("/files/{fileKey}", wapp.UpdateFile).Methods(http.MethodPut).
+													  Queries("path", "")
+													  // TODO: might want to change something else, not just path.
 	s.HandleFunc("/downloadlink/{fileKey}", wapp.WebGetFileDownloadLink).Methods(http.MethodGet)
+
+	// FIXME: passing paths as fileKey's might not be good (need to encode/escape the URL. Might mess parameters up.)
 
 	// Add gorilla router as handler for all routes.
 	http.Handle("/", r)
@@ -105,9 +108,9 @@ func (wapp *webapp) WebNetworkInfoHandler(w http.ResponseWriter, req *http.Reque
 // Method: POST.
 // Headers: Authorization.
 // Query parameters:
-// - name=str, the path of the file on the cloud (also the file's key).
+// - name=string, the path of the file on the cloud (also the file's key).
 // - size=int, the expected size of the file's contents.
-// - type=str (optional), the file type (extension).
+// - type=string (optional), the file type (extension).
 // - lastModified=date (optional), the date the file was last modified or uploaded.
 // Body:
 // - File contents as POST body, encoded using post data.
@@ -226,7 +229,7 @@ func (wapp *webapp) ReadFiles(w http.ResponseWriter, req *http.Request) {
 		}
 		filesWeb = append(filesWeb, webFile)
 	}
-	utils.GetLogger().Printf("[DEBUG] Got %d  web files.", len(filesWeb))
+	utils.GetLogger().Printf("[DEBUG] Got %d web files.", len(filesWeb))
 
 	// Serialize as JSON.
 	data, err := json.Marshal(filesWeb)
@@ -278,6 +281,54 @@ func (wapp *webapp) DeleteFile(w http.ResponseWriter, req *http.Request) {
 	}
 	utils.GetLogger().Printf("[INFO] Deleted file with path: %s", filepath)
 	w.WriteHeader(http.StatusOK)
+}
+
+// UpdateFile API call updates a file on the cloud.
+// Endpoint: /files/{fileKey}
+// - where fileKey is currently the path of the file on the cloud.
+// Method: POST.
+// Headers: Authorization.
+// Query parameters:
+// - path=string (optional), the new filepath for the file.
+// Response:
+// - 200 if file was updated successfully.
+func (wapp *webapp) UpdateFile(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	fileKey := vars["fileKey"]
+	filepath := fileKey
+
+	qs := req.URL.Query()
+	utils.GetLogger().Printf("[DEBUG] Querystring parameters: %v", qs)
+
+	newPath, err := GetQueryParam(req.URL, "path")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	utils.GetLogger().Printf("[DEBUG] Want to change %s to %s", filepath, newPath)
+
+	locked := wapp.cloud.LockFile(filepath)
+	if !locked {
+		utils.GetLogger().Printf("[WARN] Could not acquire file lock: %s", filepath)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	defer wapp.cloud.UnlockFile(filepath)
+	locked = wapp.cloud.LockFile(newPath)
+	if !locked {
+		utils.GetLogger().Printf("[WARN] Could not acquire file lock: %s", newPath)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	defer wapp.cloud.UnlockFile(newPath)
+
+	err = wapp.cloud.MoveFile(filepath, newPath)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 }
 
 // PingHandler for /ping.
