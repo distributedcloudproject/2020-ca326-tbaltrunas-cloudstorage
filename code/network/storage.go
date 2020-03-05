@@ -323,10 +323,12 @@ func (c *cloud) SyncFolder(cloudPath string, localPath string) error {
 			} else {
 				utils.GetLogger().Println("[ERROR] File", cloudFilePath, "not found in fileStorage")
 			}
-			c.downloadManager.QueueDownload(cloudFilePath, localFilePath, func() {
-				downloadsRem--
-				if downloadsRem <= 0 {
-					c.watcher.Add(localFolder)
+			c.downloadManager.QueueDownload(cloudFilePath, localFilePath, func(event DownloadEvent) {
+				if event == DownloadCompleted {
+					downloadsRem--
+					if downloadsRem <= 0 {
+						c.watcher.Add(localFolder)
+					}
 				}
 			})
 			c.fileStorage[cloudFilePath] = &datastore.SyncFileStore{
