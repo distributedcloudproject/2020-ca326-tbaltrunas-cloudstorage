@@ -23,6 +23,7 @@ export default class FileExplorer extends React.Component {
       const files = await FilesAPI.GetFiles();
       this.setState({ files: files });
       // TODO: might want to call GetFiles on each UI update so that UI doesn't get out of sync with backend
+      // FIXME: if can't connect to backend, get undefined files error.
     }
 
     // handleCreateFiles adds new files to existing files.
