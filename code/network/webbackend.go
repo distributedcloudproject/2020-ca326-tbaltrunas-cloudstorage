@@ -57,8 +57,8 @@ func (wapp *webapp) Serve(port int) error {
 	// Public route with query string token verification.
 	d := r.PathPrefix("/downloadfile").Subrouter()
 	d.Use(DownloadTokenMiddleware)
-	d.HandleFunc("/{fileKey}", wapp.WebGetFileDownload).Methods(http.MethodGet).
-														Queries("token", "")
+	d.HandleFunc("/{fileKey}", wapp.DownloadFile).Methods(http.MethodGet).
+												  Queries("token", "")
 
 	// Add "secret" routes.
 	// Require authentication.
@@ -76,7 +76,7 @@ func (wapp *webapp) Serve(port int) error {
 	s.HandleFunc("/files/{fileKey}", wapp.UpdateFile).Methods(http.MethodPut).
 													  Queries("path", "")
 													  // TODO: might want to change something else, not just path.
-	s.HandleFunc("/downloadlink/{fileKey}", wapp.WebGetFileDownloadLink).Methods(http.MethodGet)
+	s.HandleFunc("/downloadlink/{fileKey}", wapp.FileDownloadLink).Methods(http.MethodGet)
 
 	// FIXME: passing paths as fileKey's might not be good (need to encode/escape the URL. Might mess parameters up.)
 

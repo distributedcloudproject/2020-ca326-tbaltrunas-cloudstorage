@@ -11,7 +11,7 @@ import (
 const (
 	accessTokenExpirationTime = 60 * time.Minute
 	refreshMinTimeLeft = 30 * time.Second
-	downloadTokenExpirationTime = 2 * time.Second
+	downloadTokenExpirationTime = 15 * time.Second  // FIXME: pass this as an argument
 )
 
 var (
