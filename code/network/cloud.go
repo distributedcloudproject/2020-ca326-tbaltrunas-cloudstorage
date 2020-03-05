@@ -27,6 +27,7 @@ type Cloud interface {
 	MyNode() Node
 	OnlineNodesNum() int
 	NodesNum() int
+	DownloadManager() *DownloadManager
 
 	// Nodes.
 	AddNode(node Node)
@@ -133,6 +134,10 @@ type cloud struct {
 	config CloudConfig
 
 	benchmarkState CloudBenchmarkState
+}
+
+func (c *cloud) DownloadManager() *DownloadManager {
+	return c.downloadManager
 }
 
 func (c *cloud) FileStore(cloudPath string) datastore.FileStore {
