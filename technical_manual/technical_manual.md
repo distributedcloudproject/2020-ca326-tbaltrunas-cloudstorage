@@ -112,15 +112,19 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 ## 2. System Architecture
 <!-- This section describes the high-level overview of the system architecture showing the distribution functions across (potential) system modules. Architectural components that are reused or 3rd party should be highlighted. Unlike the architecture in the Functional Specification - this description must reflect the design components of the system as it is demonstrated. -->
 
-Go library. TCP.
+### 2.1. Operational Overview
 
-Desktop GUI.
+### 2.2. Class Diagram
 
-Desktop CLI.
+Go library
 
-Web app. Website. HTTPS
+### 2.3. Communications Overview
 
-Secure communications.
+Secure comms (TCP)
+
+HTTPS
+
+### 2.4. REST API Reference
 
 ## 3. High-Level Design
 <!-- This section should set out the high-level design of the system. It should include system models showing the relationship between system components and the systems and its environment. These might be object-models, DFD, etc. Unlike the design in the Functional Specification - this description must reflect the design of the system as it is demonstrated. -->
