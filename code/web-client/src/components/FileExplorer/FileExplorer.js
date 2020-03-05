@@ -74,7 +74,7 @@ export default class FileExplorer extends React.Component {
     // handleDeleteFile deletes an existing file.
     handleDeleteFile = (fileKeys) => {
       fileKeys.forEach(fileKey => {
-        FilesAPI.DeleteFile()
+        FilesAPI.DeleteFile(fileKey)
         this.setState({state : UpdateUI.UpdateUIDeleteFile(this.state, fileKey)})
       });
     }
