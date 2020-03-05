@@ -1,4 +1,4 @@
-package network
+package webapp
 
 import (
 	"os"

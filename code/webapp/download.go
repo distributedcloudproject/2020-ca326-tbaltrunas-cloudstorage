@@ -1,4 +1,4 @@
-package network
+package webapp
 
 import (
 	"cloud/utils"
@@ -73,10 +73,8 @@ func (wapp *webapp) DownloadFile(w http.ResponseWriter, req *http.Request) {
 	utils.GetLogger().Printf("[DEBUG] Initiated a download manager for file: %v", filepath)
 
 	// Download the file on the web app server
-	dm := DownloadManager{
-		Cloud: wapp.cloud.(*cloud),
-	}
-	dm.downloadFile(filepath, localFile)
+	dm := wapp.cloud.DownloadManager()
+	dm.DownloadFile(filepath, localFile)
 	// FIXME: function should probably be public (start with uppercase)
 	// FIXME: download token likely to expire if download takes a long time on the cloud side
 

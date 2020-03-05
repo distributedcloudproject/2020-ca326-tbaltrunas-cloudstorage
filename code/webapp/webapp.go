@@ -1,6 +1,7 @@
-package network
+package webapp
 
 import (
+	"cloud/network"
 	"cloud/datastore"
 	"cloud/utils"
 	"net/http"
@@ -20,7 +21,7 @@ const (
 )
 
 type webapp struct {
-	cloud Cloud
+	cloud network.Cloud
 }
 
 type WebApp interface {
@@ -32,7 +33,7 @@ type WebFile struct {
 	Size int `json:"size"`
 }
 
-func NewWebApp(c Cloud) WebApp {
+func NewWebApp(c network.Cloud) WebApp {
 	 webapp := webapp{
 		cloud: c,
 	}
@@ -52,7 +53,7 @@ func (wapp *webapp) Serve(port int) error {
 	// Add public routes.
 	// Do not require authentication.
 	r.HandleFunc("/ping", wapp.Ping)
-	r.HandleFunc("/auth/login", wapp.WebAuthLoginHandler).Methods(http.MethodPost)
+	r.HandleFunc("/auth/login", wapp.AuthLogin).Methods(http.MethodPost)
 
 	// Public route with query string token verification.
 	d := r.PathPrefix("/downloadfile").Subrouter()
@@ -64,7 +65,7 @@ func (wapp *webapp) Serve(port int) error {
 	// Require authentication.
 	s := r.PathPrefix("/").Subrouter()
 	s.Use(AuthenticationMiddleware)
-	s.HandleFunc("/auth/refresh", wapp.WebAuthRefreshHandler).Methods(http.MethodGet)
+	s.HandleFunc("/auth/refresh", wapp.AuthRefresh).Methods(http.MethodGet)
 	s.HandleFunc("/cloudinfo", wapp.CloudInfo).Methods(http.MethodGet)
 
 	s.HandleFunc("/files", wapp.ReadFiles).Methods(http.MethodGet)

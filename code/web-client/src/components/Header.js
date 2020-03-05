@@ -10,7 +10,7 @@ export default function Header(props) {
                 className='d-flex align-items-end justify-content-between'
                 href="/" >
                 <img 
-                    src={process.env.PUBLIC_URL + 'dcloud.svg'} 
+                    src={process.env.PUBLIC_URL + 'logo.svg'} 
                     alt='icon distributed cloud storage' 
                     width='35'
                     height='35'

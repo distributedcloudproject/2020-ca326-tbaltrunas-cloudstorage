@@ -5,6 +5,7 @@ import (
 	"cloud/datastore"
 	"cloud/network"
 	"cloud/utils"
+	"cloud/webapp"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -245,8 +246,8 @@ func main() {
 
 	if *webBackendPtr {
 		fmt.Println("Web backend enabled. Listening on: ", *webBackendPortPtr)
-		webapp := network.NewWebApp(c)
-		go webapp.Serve(*webBackendPortPtr)
+		wapp := webapp.NewWebApp(c)
+		go wapp.Serve(*webBackendPortPtr)
 	}
 
 	utils.GetLogger().Println("[INFO] Initialising listening.")
