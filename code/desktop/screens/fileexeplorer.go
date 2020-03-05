@@ -3,6 +3,7 @@ package screens
 import (
 	"cloud/datastore"
 	"cloud/desktop/resources"
+	"cloud/desktop/screens/widgets"
 	"cloud/network"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func fancySizePrint(num float64, suffix string) string {
@@ -90,6 +92,34 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 						fdialog.ShowError(err, w)
 					}
 				}),
+				widget.NewToolbarAction(theme.MoveDownIcon(), func() {
+					filename, err := SaveFileDialog()
+					if err != nil {
+						fdialog.ShowError(err, w)
+						return
+					}
+
+					fullpath := folderPath + "/" + file.Name
+					var q *network.DownloadQueue
+					q = c.DownloadManager().QueueDownload(fullpath, filename, func(event network.DownloadEvent) {
+						completed := false
+						if event == network.DownloadCompleted {
+							completed = true
+						}
+						if event == network.InfoRetrieved {
+							go func() {
+								content := widget.NewHBox(
+									widgets.NewChunkProgressBar(q.ChunkDownloaded),
+								)
+								fdialog.ShowCustom("Downloading", "Dismiss", content, w)
+								for !completed {
+									content.Refresh()
+									time.Sleep(time.Millisecond * 100)
+								}
+							}()
+						}
+					})
+				}),
 				widget.NewToolbarAction(theme.DeleteIcon(), func() {
 					fullpath := folderPath + "/" + file.Name
 					if !c.LockFile(fullpath) {
@@ -124,7 +154,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		}
 
 		_, fname := filepath.Split(filename)
-		f, err := datastore.NewFile(reader, fname, 1024*1024*4)
+		f, err := datastore.NewFile(reader, fname, 1024*200)
 		reader.Close()
 		if err != nil {
 			fdialog.ShowError(err, w)
