@@ -81,7 +81,7 @@ func (m *DownloadManager) createWorker() {
 		m.queue = append(m.queue[1:])
 		m.mutex.Unlock()
 
-		m.downloadFile(item.CloudPath, item.LocalPath)
+		m.DownloadFile(item.CloudPath, item.LocalPath)
 		m.mutex.Lock()
 		m.downloading--
 		m.completedFromQueue++
@@ -91,7 +91,7 @@ func (m *DownloadManager) createWorker() {
 }
 
 // DownloadFile downloads the file from the cloud.
-func (m *DownloadManager) downloadFile(cloudPath string, localPath string) error {
+func (m *DownloadManager) DownloadFile(cloudPath string, localPath string) error {
 	fmt.Println("DOWNLOAD FILE: ", cloudPath, localPath)
 	file, err := m.Cloud.GetFile(cloudPath)
 	if err != nil {

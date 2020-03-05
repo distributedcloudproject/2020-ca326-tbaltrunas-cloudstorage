@@ -21,6 +21,11 @@ type CloudConfig struct {
 	// If 0, the node's available disk capacity (under the FileStorageDir path) will be taken as the storage capacity.
 	// If -1, no storage will be allowed on the node.
 	FileStorageCapacity int64
+
+	// FileChunkSize controls into how many bytes a file should be chunked in.
+	// TODO: Default value? Check for 0 value everywhere.
+	// FIXME: use int64 (or uint64) type
+	FileChunkSize int
 }
 
 // ConnectToNode establishes a connection to a node with that ID. Will return error if a connection could not be
