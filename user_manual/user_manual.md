@@ -44,24 +44,24 @@ Initialize first node to create a cloud.
 
 ```
 cloud -key id_rsa -name "Node 0" \
-           -save-file save \
-           -whitelist-file whitelist \
-           -fancy-display -verbose \
-           -log-level "DEBUG" -log-dir $LOGSDIR \
-           -file-storage-capacity 100000 \
-           -file-storage-dir data
+        -save-file save \
+        -whitelist-file whitelist \
+        -fancy-display -verbose \
+        -log-level "DEBUG" -log-dir $LOGSDIR \
+        -file-storage-capacity 100000 \
+        -file-storage-dir data
 ```
 
 Connect other nodes
 
 ```
-$BINARYPATH -key id_rsa -name "Node 1" \
-           -save-file save \
-           -network "bootstrapnode.address.com" \
-           -fancy-display -verbose \
-           -log-level "DEBUG" -log-dir $LOGSDIR \
-           -file-storage-capacity 100000 \ 
-           -file-storage-dir data
+cloud -key id_rsa -name "Node 1" \
+        -save-file save \
+        -network "bootstrapnode.address.com" \
+        -fancy-display -verbose \
+        -log-level "DEBUG" -log-dir $LOGSDIR \
+        -file-storage-capacity 100000 \ 
+        -file-storage-dir data
 ```
 
 The important part is the `-network` flag which tells the address of a node already in the network.
@@ -170,6 +170,7 @@ User that wishes to store files on the cloud.
 #### Prerequisites
     
 Use the desktop binary provided. Supports Windows, Linux and Mac OS X.
+
 Requires a graphics driver to be installed to run.
 
 #### Manage files
@@ -261,4 +262,3 @@ Additionally we can search the available files by filename.
 ## 4. Other
 
 For more information see the technical manual, the source code, or contact the support team.
-
