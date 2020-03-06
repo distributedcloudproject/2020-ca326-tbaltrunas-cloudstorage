@@ -28,12 +28,13 @@ Distributed Cloud Storage – Technical Manual
     - 4.1.3. Authentication
   - 4.2. Cloud and Network data structures
   - 4.3. File Storage data structures
-  - 4.4. Desktop Client
-  - 4.5. Web Client
+  - 4.4. Distribution Algorithm
+  - 4.5. Desktop Client
+  - 4.6. Web Client
     - 4.5.1. Frontend
     - 4.5.2. Backend
     - 4.5.3. Secure Communications
-  - 4.6. Automation Tools
+  - 4.7. Automation Tools
     - 4.6.1. Deployment
     - 4.6.2. Scripting
     - 4.6.3. Dependency Management
@@ -110,6 +111,8 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 **Bootstrap** - CSS front-end library for mobile-friendly user interfaces [https://getbootstrap.com/].
 
 **PostgreSQL** - a relational (SQL) database [https://www.postgresql.org/].
+
+**SPA (Single Page Application)** - a website that is served once and updates dynamically instead of from browser refresh.
 
 **Ansible** - an automation tool for deploying software onto machines via SSH using a declarative configuration [https://www.ansible.com/].
 
@@ -252,19 +255,32 @@ Each function name will have a handler, which points towards a function in the c
 
 Every node connecting to the cloud network has to authenticate before participating in the network. Each node has a unique identifier, which is sha256 sum of a public key. Any node in the network can add a node ID to be able to join the network. Upon establishing a socket connection, public keys are exchanged. The node on on the network generates a symmetric key that will be used for encrypting and decrypting all communication between those two nodes, and encrypts it with the connecting node's public key and sends it to them. This ensures that the connecting node owns the private key corresponding to the public key and cannot fake another node's identity.
 
+### 4.2. Cloud and Network data structures
 
-Data structure design (files, network).
+Cloud and Network
+
+### 4.3. File Storage data structures
+
+Chunks
+
+### 4.4. Distribution Algorithm
 
 Distribution algorithm (Calculating node benchmaks).
 
+### 4.5. Desktop Client
+
+### 4.6. Web Client
 
 Frontend - bootstrap
 
 Secure comms - HTTPS certs.
+
 Auth - JWT. Download. Auth middleware.
 DL.
 Login.
 Postgresql
+
+### 4.7. Automation Tools
 
 Need Go. Go deps.
 
