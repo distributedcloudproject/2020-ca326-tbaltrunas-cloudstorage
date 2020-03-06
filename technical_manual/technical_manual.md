@@ -425,7 +425,7 @@ Find the node software executable binary under the name `cloud`.
 
 Obtain a binary of the desktop GUI client.
 
-The client requires the machine to have a graphical monitor.
+The client requires the machine to have a graphical monitor and a graphics driver.
 
 #### 5.2.1. Obtain from a release.
 
