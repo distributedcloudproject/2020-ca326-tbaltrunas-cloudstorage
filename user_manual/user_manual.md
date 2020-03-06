@@ -143,15 +143,36 @@ User that wishes to store files on the cloud.
 
 #### Prerequisites
     
-Use a binary. Any OS.
+Use the desktop binary provided. Supports Windows, Linux and Mac OS X.
+Requires a graphics driver to be installed to run.
 
 #### Manage files
 
-[Multiple screenshots for each operation]
+The main overview of the file explorer in the desktop GUI looks like this:
+![View of the File Explorer](file&#32;explorer.png)
+
+You can navigate through folders by double clicking on them.
+
+Each file has 3 main operations. Sync, Download and Delete.
+
+The sync option, will create a sync between the cloud file and a file locally stored on the system. This sync acts similarly to a symlink. Any change to the file locally will be reflected on the cloud, as well as any changes to the file on the cloud will be reflected locally.
+
+The download option downloads the file from the cloud to a local file. It will download the file chunks from any node that contains it.
+
+The final operation, is the delete operation. This deletes the file from the cloud.
+
+Additionally, at the bottom of the window, there are 2 buttons. `Add` and `Sync`.
+
+The `Add` button will upload a selected file from the local system to the cloud.
+The `Sync` button will upload the selected file to the cloud, and create a link between the local version and the cloud version.
 
 #### Manage directories
 
-[Multiple screenshots for each operation]
+There are 2 main operations for the folder.
+
+The sync operation on the folder, will sync the cloud folder to a local folder. Similarly to a file sync, but instead it syncs the folder. This is also like Google Drive, Dropbox, etc... where you have a local folder being synced with the cloud. Any changes to the folder and files inside it, will be kept up to date with the cloud.
+
+The other operation is deleting a folder. The folder has to be empty to be deleted.
 
 ### Website client
 
