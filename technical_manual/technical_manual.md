@@ -171,6 +171,8 @@ c.AddFile(fileMetadata, "/path/on/cloud", "/local/file")
 #### 4.1.1. RPC (Communication between Nodes)
 Nodes are in constant communication between each other, making it important to get the communications right. All communications between nodes is done using a TCP socket, ensuring the communication between them is reliable. The data sent is encoded and decoded using Gob on the fly. This allows for highely performant communication while maintaining ease of use. This allows passing Go structs as parameters and the data will be decoded/encoded in the communication layer.
 
+The function that is responsible for sending RPC communications is `SendMessage(functionName string, args...interface{})`. In that function, the arguements passed are serialized into gob data. The call is blocking until a response is received. The variables received are returned as an array. Additionally, the `SendMessage` returns an error. If the function on the receiving end returns an error, the error is seperated from outputs and placed into the `err` variable. Additionally, the error can be caused by failure to send the request, or the request timing out.
+
 An example demonstrating the ease of writing communication functions between nodes. Node 1 calls `GetNetwork()`, which calls `OnGetNetworkRequest()` on Node 2, returning any information to node 1.
 ```
 type Network struct {
@@ -180,6 +182,8 @@ type Network struct {
 
 func GetNetwork() (Network, error) {
 	network, err := client.SendMessage(GetNetworkMsg)
+  // network[0] is Network casted as interface{} received from OnGetNetworkRequest(). The err is the error received from that same function, or an error if the request could not be sent, or if the response was not received in given time.
+  return network[0].(Network), err
 }
 
 func OnGetNetworkRequest() (Network, error) {
