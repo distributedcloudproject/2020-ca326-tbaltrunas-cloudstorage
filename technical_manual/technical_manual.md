@@ -141,6 +141,36 @@ HTTPS
 
 ### 3.3. Major Design Considerations
 
+One of the major design considerations is the communication layer between nodes. As the nodes are in constant communication, it plays a key part in the cloud.
+
+The main options we considered for communication are:
+1. Using existing RPC libraries, such as gRPC.
+2. Acting as HTTP server and communicating using Rest API.
+3. Using websockets to communicate.
+4. Our own communication library.
+
+**RPC libraries, gRPC**
+The first consideration was using an existing RPC library, mainly considering gRPC as this is the most known/widely used library.
+
+One of the main benefits of gRPC is cross-language communication. gRPC is supported by most modern programming languages that are used, such as C++, Java, Golang, Python, etc... However this would not benefit us, as we had no plans to implement the cloud in other languages.
+
+Another benefit of gRPC is it's speed. As gRPC files requires to be compiled seperately, it allows for much faster encoding and decoding of variables than using gob, as the structure is known before. Unfortunately, it does need to be compiled seperately which is less than ideal.
+
+The drawback of gRPC is it's built for client-to-server communication. As our cloud is decentralized, every node is a client and a server. With this, twice as many sockets would have to be opened. Additionally, it would be impossible for nodes to participate in the network if their ports are closed. As they would only be able to send requests, and not receive. We decided it was not worth the trade off for a tiny performance improvement with encoding and decoding.
+
+**Rest API**
+The second consideration was to create a HTTP server and expose it using rest API and passing the data with json. This had the same drawback of being client-to-server communication like gRPC. Additionally, it would not have the performance improvements as gRPC would, as the encoding and decoding has to be flexible on the data structures passed.
+
+Having to work with the data as json would also add to the work required when implementing functions. As instead of receiving fixed data structures, we would end up with working on a json object.
+
+**Websockets**
+Websockets was another consideration. It would allow bi-directional communication (client-to-client). It would not provide much more benefits over than using pure TCP sockets, and as such we decided not to go with it.
+
+**Creating our own communication library**
+We decided to create our own library to facilitate communication between nodes. The library is built upon TCP sockets to ensure reliability. It allows bi-directional communication (client-to-client) and gives us full control over the communication layer. By encoding and decoding to gob, it allows for minimal overhead.
+
+All communication is encrypted, using a system based of TLS. Public keys are exchanged. A symmetric key is generated, encrypted using the public key, and sent over. The symmetric key is used for encrypting and decrypting the data that is sent as opposed to the public key, as symmetrical encryption is much faster than asymmetrical.
+
 #### 3.3.1. Go Library
 
 As there are multiple uses of the cloud (Desktop CLI, Desktop GUI, Web app), we created a Go library to handle the cloud backbone. Making it easy to use and control outside. This library was created to be simple in use but offer as much control as possible.
