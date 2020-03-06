@@ -189,6 +189,19 @@ func OnGetNetworkRequest() (Network, error) {
 
 #### 4.1.2. Message Structure
 
+The message structure for socket communication starts off with 9 bytes of headers.
+The first byte, determines if the message is a response to another message.
+The next 4 bytes hold the message ID. The message ID is an unsigned int and is incremental. This is used to identify messages and send responses back to specific messages. As the communication is done over a single TCP socket connection, this allows multiple messages to be sent and received at the same time. It is safe for the message ID to overflow.
+The next 4 bytes, the last 4 bytes, hold the message length. As it is not guaranteed for the packet to arrive in it's entirety, this is used to combine multiple packets into one request. Allowing for much larger requests than packet size.
+
+The remaining data, of which length is determined by the last 4 bytes in the header, contains the function name to call and the corresponding data. In the case of the message being a response, function name is omitted.
+
+The function name is escaped by a NULL (\0) character. Anything after that is encrypted gob data of variables that are passed.
+The function name determines which function on the receiving end to call for the request.
+
+Each function name will have a handler, which points towards a function in the code to call.
+
+
 #### 4.1.3. Authentication
 
 Every node connecting to the cloud network has to authenticate before participating in the network. Each node has a unique identifier, which is sha256 sum of a public key. Any node in the network can add a node ID to be able to join the network. Upon establishing a socket connection, public keys are exchanged. The node on on the network generates a symmetric key that will be used for encrypting and decrypting all communication between those two nodes, and encrypts it with the connecting node's public key and sends it to them. This ensures that the connecting node owns the private key corresponding to the public key and cannot fake another node's identity.
