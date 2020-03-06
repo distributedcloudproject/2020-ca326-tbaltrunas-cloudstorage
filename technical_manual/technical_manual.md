@@ -141,6 +141,7 @@ HTTPS
 
 ### 3.3. Major Design Considerations
 
+#### 3.3.1. Communication Layer
 One of the major design considerations is the communication layer between nodes. As the nodes are in constant communication, it plays a key part in the cloud.
 
 The main options we considered for communication are:
@@ -171,7 +172,7 @@ We decided to create our own library to facilitate communication between nodes. 
 
 All communication is encrypted, using a system based of TLS. Public keys are exchanged. A symmetric key is generated, encrypted using the public key, and sent over. The symmetric key is used for encrypting and decrypting the data that is sent as opposed to the public key, as symmetrical encryption is much faster than asymmetrical.
 
-#### 3.3.1. Go Library
+#### 3.3.2. Go Library
 
 As there are multiple uses of the cloud (Desktop CLI, Desktop GUI, Web app), we created a Go library to handle the cloud backbone. Making it easy to use and control outside. This library was created to be simple in use but offer as much control as possible.
 
@@ -192,6 +193,17 @@ c.SyncFolder("/folder/on/cloud", "/local/folder");
 // Adds a local file to the cloud.
 c.AddFile(fileMetadata, "/path/on/cloud", "/local/file")
 ```
+
+#### 3.3.3. Go GUI Library
+
+Creating GUI in Golang is not the smoothest experience. There is no official library to do this, and many libraries are still under-developed. When choosing a GUI library for the desktop client, we mainly looked at those factors:
+1. No runtime requirements - The compiled executable should be enough to run the program. There should be no third-party programs that are required to be installed in order to run the program.
+2. Cross compatibility - One of the main benefits of Golang is it's cross compatibility. As such, it was very important to keep this.
+3. Lightweight - The library should be lightweight and performant to run. This eliminated a lot of libraries that depend on HTML/CSS/JS combo to run.
+4. Decent design - Having a decent working design that can be used is really beneficial. It will save a lot of time designing our own from scratch.
+5. Flexible - Having full control over the GUI was an important factor.
+
+With all of those factors considered, we decided to settle on [fyne.io](fyne.io) library. It ticked all of the boxes above.
 
 ## 4. Problems and Solutions
 <!-- This section should include a description of any major problems encountered during the design and implementation of the system and the actions that were taken to resolve them. -->
