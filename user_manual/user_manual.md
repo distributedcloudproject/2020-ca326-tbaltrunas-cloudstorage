@@ -4,18 +4,31 @@
 
 ## Table of Contents
 
-## Intro
+- 1. Preface
+- 2. Node Administrator Guide
+  - 2.1. Cloud set up (command-line interface)
+  - 2.2. Cloud set up (desktop graphical user interface)
+  - 2.3. Website client set up
+- 3. End User Guide
+  - 3.1. Desktop client
+  - 3.2. Website client
+- 4. Other
 
-Guide for our two primary users - node administrator and end-user.
+## 1. Preface
+
+This is a guide for our two primary users - node administrator and end-user.
+
 We present how to set up the cloud, and how to use it with desktop and website clients.
 
-## Node Administrator Guide
+## 2. Node Administrator Guide
 
 Node administrator will set up the cloud on nodes (machines or servers).
 
+The node administrator will also set up the web client.
+
 Software is OS-independent. 
 
-### Cloud set up (command-line interface)
+### 2.1. Cloud set up (command-line interface)
 
 Cloud binary. See help flag. Examples are on Unix.
 
@@ -31,6 +44,7 @@ Initialize first node to create a cloud.
 
 Pass attributes:
 * Private RSA key
+  * `ssh-keygen` to generate a key.
 
 Optional attributes:
 * Network name
@@ -63,7 +77,7 @@ Misc attributes:
 
 [Code sample]
 
-### Cloud set up (desktop graphical user interface)
+### 2.2. Cloud set up (desktop graphical user interface)
 
 Binary. Same binary as for end user.
 
@@ -79,67 +93,88 @@ Binary. Same binary as for end user.
 
 Set up a website client for end-users.
 
-The web client exposes a File Explorer UI to the storage cloud through the web.
-
 #### 5.3.1. Web Application
 
-Also need:
+Set up the cloud as per the previous sections.
 
-Install the web application (web backend):
+**1. Run the cloud binary with web app enabled**
 
-postgresql. Apply schema. Create user with bcrypt password.
+Pass the `-web-backend` switch (optionally with `-web-backend-port port` to specify port).
 
-Obtain HTTPS TLS certificates.
-- Testing: self-signed generate with:
+For example:
+```
+./cloud -key ~/.ssh/id_rsa -web-backend
+```
 
-Obtain the cloud binary as from section ...
+**2. Install and set up PostgreSQL**
 
-Run the program with the web backend enabled.
+See [https://www.postgresql.org/]()
+
+Set up a user and a database for the cloud with `psql`.
+
+Make sure PostgreSQL is running.
+
+**3. Create a database**
+
+Apply the schema found at `code/cloud/webapp/cloud.sql` (starting from the root of the repo).
+
+This will create a users table.
+
+Use `psql` and bcrypt to create a new user.
+
+**4. Obtain HTTPS TLS certificates**
+
+Download a certificate you own or generate a self-signed certificate.
+
+**5. Create a .env file**
+
+Use the following example:
+```
+JWT_KEY=mybigtimesecret
+
+SSL_CRT_FILE=cert.crt
+SSL_KEY_FILE=cert.key
+
+DB_TYPE=postgres
+DB_HOST=localhost
+DB_PORT=5434
+DB_NAME=cloud
+DB_USER=cloud_admin
+DB_PASSWORD=root
+```
 
 #### 5.3.2. Web Server
 
-npm
+The following assumes that you will use the create-react-app ([https://github.com/facebook/create-react-app]()) web server.
 
-Obtain frontend source
+**1. Install npm**
 
-install dependencies
+Install the node package manager from https://www.npmjs.com/.
 
-Serve with react-create-app or custom web server
-npm start
+**2. Install front-end dependencies**
 
-#### 5.3.3. Website
+Navigate to the front-end source in the repo: `cd code/client`.
 
-Browser. Open address
+Run `npm install` to install dependencies.
 
-#### Prerequisites
+**3. Create a .env file**
 
-Get our web app and front-end code. Database.
+Follow this example:
+```
+HTTPS=true
+SSL_CRT_FILE=cert.crt
+SSL_KEY_FILE=cert.key
+```
 
-#### Enable web app backend on a node
+**4. Start the web server**
 
-Serve a web app to our website client from a node.
+Run `npm start` (or `make` with the Unix `Make` tool).
 
-Pass a command-line argument.
-
-[Code sample]
-
-#### Serve the website on a web server
-
-Serve the website.
-
-[Code sample]
-
-#### Change user accounts.
-
-Connect to database.
-
-[Code sample or screenshot]
-
-## End User Guide
+## 3. End User Guide
 
 User that wishes to store files on the cloud.
 
-### Desktop client
+### 3.1. Desktop client
 
 #### Prerequisites
     
@@ -174,35 +209,65 @@ The sync operation on the folder, will sync the cloud folder to a local folder. 
 
 The other operation is deleting a folder. The folder has to be empty to be deleted.
 
-### Website client
+### 3.2. Website client
 
-#### Prerequisites
+The website client exposes a File Explorer UI to the storage cloud through the web.
 
-Browser.
-
-Web address.
+Enter the website address into a web browser to access the website.
 
 #### Log in
 
-Credentials provided by administrator.
+Enter your username and password.
 
-#### Overview of home screen
+The credentials will be provided by administrator.
 
-[Screenshot pointing out things on the layout]
+![login-page](login.png)
 
-#### Manage files
+#### Home screen
 
-[Multiple screenshots]
+You will find yourself at the home screen.
 
-#### Manage directories
+At the top you can see the name of your network and a button to logout.
 
-[Multiple screenshots]
+The main part of the home screen is the file explorer, where you can manage your files and directories.
 
-#### Search for a file
+![home-page](home.png)
 
-## Other
+#### Upload a file
 
-More information:
-Technical specification link. Source code link.
+Add a file by clicking the upload button or by dragging and dropping the file into the file explorer window.
 
-Contact support team.
+![upload](upload.png)
+
+We now have added a file and can see its attributes such as size.
+
+#### Download a file
+
+We can download a file by selecting the file and clicking the download button that appears.
+
+![download file](file.png)
+
+#### Other file operations
+
+We can double click on a file to have a more detailed view.
+
+We can also rename and delete files using the provided buttons.
+
+![file operations](multiple-files.png)
+
+#### Manage folders
+
+We can create, rename, and delete folders (directories). We can move files into and out of folders.
+
+![folders](folders.png)
+
+#### Search files
+
+Additionally we can search the available files by filename.
+
+![search](search.png)
+
+## 4. Other
+
+For more information see the technical manual, the source code, or contact the support team.
+
