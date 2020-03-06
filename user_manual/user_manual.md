@@ -30,64 +30,55 @@ Software is OS-independent.
 
 ### 2.1. Cloud set up (command-line interface)
 
-Cloud binary. See help flag. Examples are on Unix.
+Get a copy of our cloud binary.
 
-[Code sample]
+#### Generate encryption keys
 
-#### Prerequisites
+`ssh-keygen -f id_rsa -m PEM -q -N`
 
-Get binary.
+We require PEM-format keys.
 
-#### Initiate the cloud
+#### Create a cloud
 
 Initialize first node to create a cloud.
 
-Pass attributes:
-* Private RSA key
-  * `ssh-keygen` to generate a key.
+```
+cloud -key id_rsa -name "Node 0" \
+           -save-file save \
+           -whitelist-file whitelist \
+           -fancy-display -verbose \
+           -log-level "DEBUG" -log-dir $LOGSDIR \
+           -file-storage-capacity 100000 \
+           -file-storage-dir data
+```
 
-Optional attributes:
-* Network name
+Connect other nodes
 
-[Code sample]
+```
+$BINARYPATH -key id_rsa -name "Node 1" \
+           -save-file save \
+           -network "bootstrapnode.address.com" \
+           -fancy-display -verbose \
+           -log-level "DEBUG" -log-dir $LOGSDIR \
+           -file-storage-capacity 100000 \ 
+           -file-storage-dir data
+```
 
-#### Add a node on the cloud
+The important part is the `-network` flag which tells the address of a node already in the network.
 
-Bootstrap (connect) other nodes to an already created cloud (already connected node).
-
-Pass address of existing node.
-
-Authenticate with a private RSA key and a whitelist file.
-
-[Code sample]
-
-#### Configure an added node
-
-Configure certain attributes:
-* IP and port.
-* Save file for cloud state.
-* Storage allocated.
-* Storage directory.
-
-[Code sample]
-
-Misc attributes:
-* Logging.
-* Fancy display for cloud state.
-
-[Code sample]
+See `cloud -h` for a detailed list of available flags.
 
 ### 2.2. Cloud set up (desktop graphical user interface)
 
-Binary. Same binary as for end user.
+Obtain a binary of the desktop GUI, which is the same as for the end user.
 
-#### Add a node to an existing network
+#### Set up a cloud or connect to an existing cloud
 
-[Multiple screenshots of menu]
+Follow instructions on screen
 
 #### See administrative information of a node
 
-[Screenshots]
+See chunk distribution, etc.
 
 ### Website client set up
 
