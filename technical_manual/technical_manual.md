@@ -200,7 +200,21 @@ In contrast to the initial design, we have decided that the web client will supe
 
 #### 3.4. Compression Layer
 
-As part of the initial design we have indicated that we will have a compression layer that will compress files on the client side before we store them on the cloud. We have decided against having this layer for performance and extensibility reasons. If we do compression, in the future we will not be able to implement a possible real-time streaming feature (as compression has significant performance overhead). Moreover with compression in the future we will not be able to do implement efficient file update (only updating chunks of a file that changed).
+As part of the initial design, we have indicated that we will have a compression layer that will compress files to reduce file sizes and increase the potential use of space. We have decided against having this layer for performance and extensibility reasons.
+We have looked into compressing the files to reduce the file sizes and potentially increase the space available on the nodes.
+We have looked at two options:
+- Compressing the entire file before chunking.
+- Compressing each chunk invidually.
+
+We found that compressing the entire file before chunking would yield better compression results than compressing each chunk invidually. However, this would make file chunking pretty redundant, as any small changes to a file can result in most, if not all, of the chunks changing.
+
+Compressing each chunk invidually would not yield as good as results as compressing an entire file, as there is less data to work with.
+
+Storing the files compressed would also increase the latency by quite a large margin, depending on the compression level. Any meaningful space saved by compression would suffer by increased latency. We found that this is not worth the trade off.
+
+As part of future extensibility, with compression we will not be able to implement a possible real-time streaming feature, as the entire file will have to be transfered or decompressed before initiating transfer.
+
+Additionally, Windows and Linux both support compression on their file system. We believe it's better to leave compression handling to the operating system and the user.
 
 ## 4. Problems and Solutions
 <!-- This section should include a description of any major problems encountered during the design and implementation of the system and the actions that were taken to resolve them. -->
