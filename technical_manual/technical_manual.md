@@ -7,12 +7,9 @@ Distributed Cloud Storage – Technical Manual
 - 1. Introduction
   - 1.1. Overview
   - 1.2. Glossary
-    - 1.2.1. Project-specific Terms
-    - 1.2.2. General Terms
 - 2. System Architecture
   - 2.1. Operational Overview
   - 2.2. Component Diagram
-  - 2.3. Communications Overview
 - 3. High Level Design
   - 3.1. Go Library
   - 3.2. File Chunking
@@ -37,15 +34,12 @@ Distributed Cloud Storage – Technical Manual
   - 4.7. Automation Tools
     - 4.7.1. Compilation
     - 4.7.2. Deployment
-    - 4.7.3. Scripting
-    - 4.7.4. Dependency Management
+    - 4.7.3. Dependency Management
 - 5. Installation Guide
   - 5.1. Node Software
-    - 5.1.1. Obtain from a release
-    - 5.1.2. Compile from source
+    - 5.1.1. Compile from source
   - 5.2. Desktop GUI Client
-    - 5.2.1. Obtain from a release
-    - 5.2.2. Compile from source.
+    - 5.2.1. Compile from source.
   - 5.3. Web Client
 - 6. Testing
   - 6.1. GitLab CI
@@ -74,8 +68,6 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 ### 1.2 Glossary
 <!-- Define and technical terms used in this document. Only include those with which the reader may not be familiar. -->
 
-#### 1.2.1 Project-specific Terms
-
 **Node** - a server or computer system capable of participating in a storage cloud (capabilities: network stack, persistent file system, etc.)
 
 **Node software** - a program that joins the computer it is running on into a storage cloud, intended to be used by technical users.
@@ -86,31 +78,17 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 
 **End user** - a user that interacts with the cloud storage non-technically, to upload and download files.
 
-#### 1.2.2 General Terms
-
 **Cloud** - network of computers connected via the Internet that expose some interface to the outside world.
 
 **Storage Cloud** - a cloud designed to expose file storage.
 
-**Go, Golang** - performant, concurrent, C like general-purpose programming language [https://golang.org].
-
-**RPC (Remote Procedure Call)** - executing a function on a different computer.
-
-**Gob** - Go standard library package for encoding/decoding variables into binary and vice versa, used for RPC [https://golang.org/pkg/encoding/gob/].
+**Go, Golang** - performant, concurrent, C like general-purpose programming language [].
 
 **Struct** - a Go object-like (OOP) variable.
 
-**Binary executable** - a single file that can be distributed and executed as a complete program (for example, .exe on Windows).
-
-**REST API** - a style for web (HTTP) API's, important aspects include a client-server architecture and stateless requests (server treats each request as if the request had everything that was needed to serve it).
-
-**React.js** - JavaScript front-end web development library, declarative and stateful [https://reactjs.org/].
+**RPC (Remote Procedure Call)** - executing a function on a different computer.
 
 **SPA (Single Page Application)** - a website that is served once and updates dynamically instead of from browser refresh.
-
-**Ansible** - an automation tool for deploying software onto machines via SSH using a declarative configuration [https://www.ansible.com/].
-
-**Make** - a Unix tool for automatically building software via a set of rules [https://www.gnu.org/software/make/].
 
 ## 2. System Architecture
 <!-- This section describes the high-level overview of the system architecture showing the distribution functions across (potential) system modules. Architectural components that are reused or 3rd party should be highlighted. Unlike the architecture in the Functional Specification - this description must reflect the design components of the system as it is demonstrated. -->
@@ -126,9 +104,9 @@ The most important part of the diagram is the cloud area. This indicates the clo
 * Other nodes connect to nodes already in the network.
 * Not all nodes may be connected to all other nodes at the same time.
 
-Outside the cloud we can see the "GUI Nodes" that connect to our cloud but do not actually store any data. They are used for desktop GUI. The user access the desktop GUI to perform file operations or see cloud information.
+Outside the cloud we can see the "GUI Nodes" that connect to our cloud but do not actually store any data. They are used for desktop GUI client.
 
-Another type of client is the web client. We have a "web client" area that shows all of the components set up for a functional website. That includes one of the nodes running a web application server together with a database, and a web server that serves our React SPA. The user can then access the cloud via a browser.
+We have a "web client" area that shows all of the components set up for a functional website for the web client. That includes one of the nodes running a web application server together with a database, and a web server that serves our React SPA. The user can then access the cloud via a browser.
 
 ### 2.2. Component Diagram
 
@@ -146,16 +124,6 @@ Some important relationships include:
   2. The Desktop Client's screen component.
   3. The Web Application component.
 * The communication between the web application and the SPA are done via the SPA's API wrapper and the Web Application's Handlers sub-components.
-
-### 2.3. Communications Overview
-
-Secure comms (TCP)
-
-HTTPS
-
-Web API
-
-### 2.4. API Reference
 
 ## 3. High-Level Design
 <!-- This section should set out the high-level design of the system. It should include system models showing the relationship between system components and the systems and its environment. These might be object-models, DFD, etc. Unlike the design in the Functional Specification - this description must reflect the design of the system as it is demonstrated. -->
@@ -196,7 +164,7 @@ We have decided to implement the web application as part of the node software (a
 
 The reason for this is because the communications between the web application and the cloud will be simplified and speeded up. Since the web application is running on the same program (same address space) as the node software, web responses can query the cloud immediatelly. We also do not need to write an additional communications layer between the web application and the cloud.
 
-In contrast to the initial design, we have decided that the web client will supersede the mobile client (mobile application). Thus, the website is designed to be mobile friendly. We made this decision due to time constraints. However, because the web SPA is written in React.js, it could be argued that making a React Native mobile app will not take as much time if more development time was available.
+In contrast to the initial design, we have decided that the web client will supersede the mobile client (mobile application). Thus, the website is designed to be mobile friendly. We made this decision due to time constraints. However, because the web SPA is written in `React.js` ([https://reactjs.org]()), it could be argued that making a `React Native` mobile app will not take as much time if more development time was available.
 
 #### 3.4. Compression Layer
 
@@ -228,29 +196,29 @@ We discussed how we have solved major challenges in various sub-systems of the p
 One of the major design considerations is the communication layer between nodes. As the nodes are in constant communication, it plays a key part in the cloud.
 
 The main options we considered for communication are:
-1. Using existing RPC libraries, such as gRPC.
-2. Acting as HTTP server and communicating using Rest API.
-3. Using websockets to communicate.
-4. Our own communication library.
 
-**RPC libraries, gRPC**
+**1. Existing RPC libraries, such as gRPC**
+
 The first consideration was using an existing RPC library, mainly considering gRPC as this is the most known/widely used library.
 
 One of the main benefits of gRPC is cross-language communication. gRPC is supported by most modern programming languages that are used, such as C++, Java, Golang, Python, etc... However this would not benefit us, as we had no plans to implement the cloud in other languages.
 
-Another benefit of gRPC is it's speed. As gRPC files requires to be compiled seperately, it allows for much faster encoding and decoding of variables than using gob, as the structure is known before. Unfortunately, it does need to be compiled seperately which is less than ideal.
+Another benefit of gRPC is it's speed. As gRPC files requires to be compiled seperately, it allows for much faster encoding and decoding of variables than using gob (Go standard library package for serialisation), as the structure is known before. Unfortunately, it does need to be compiled seperately which is less than ideal.
 
 The drawback of gRPC is it's built for client-to-server communication. As our cloud is decentralized, every node is a client and a server. With this, twice as many sockets would have to be opened. Additionally, it would be impossible for nodes to participate in the network if their ports are closed. As they would only be able to send requests, and not receive. We decided it was not worth the trade off for a tiny performance improvement with encoding and decoding.
 
-**Rest API**
+**2. Acting as HTTP server and communicating using REST API**
+
 The second consideration was to create a HTTP server and expose it using rest API and passing the data with json. This had the same drawback of being client-to-server communication like gRPC. Additionally, it would not have the performance improvements as gRPC would, as the encoding and decoding has to be flexible on the data structures passed.
 
 Having to work with the data as json would also add to the work required when implementing functions. As instead of receiving fixed data structures, we would end up with working on a json object.
 
-**Websockets**
+**3. Using websockets**
+
 Websockets was another consideration. It would allow bi-directional communication (client-to-client). It would not provide much more benefits over than using pure TCP sockets, and as such we decided not to go with it.
 
-**Creating our own communication library**
+**4. Creating our own communication library**
+
 We decided to create our own library to facilitate communication between nodes. The library is built upon TCP sockets to ensure reliability. It allows bi-directional communication (client-to-client) and gives us full control over the communication layer. By encoding and decoding to gob, it allows for minimal overhead.
 
 All communication is encrypted, using a system based of TLS. Public keys are exchanged. A symmetric key is generated, encrypted using the public key, and sent over. The symmetric key is used for encrypting and decrypting the data that is sent as opposed to the public key, as symmetrical encryption is much faster than asymmetrical.
@@ -269,7 +237,6 @@ type Network struct {
 
 func GetNetwork() (Network, error) {
 	network, err := client.SendMessage(GetNetworkMsg)
-  // network[0] is Network casted as interface{} received from OnGetNetworkRequest(). The err is the error received from that same function, or an error if the request could not be sent, or if the response was not received in given time.
   return network[0].(Network), err
 }
 
@@ -312,17 +279,19 @@ In terms of the actual chunk contents, we don't store contents in-memory anywher
 
 ### 4.4. Distribution Algorithm
 
-We have to make decisions about which node receives which file chunk. For that we have implemented a "distribution algorithm". The algorithm was designed with two objectives in mind: 1. Efficiency. 2. Reliability.
+We have to make decisions about which node receives which file chunk. For that we have implemented a "distribution algorithm". The algorithm was designed with two objectives in mind: 
 
-To achieve efficient communications and storage, we have implemented the ability to query node benchmarks. We include benchmarks such as storage space left and network quality based on various factors. This way we can fitler and score nodes based on optimal storage load and optimal network.
+1. Efficiency
+   - We query node benchmarks such as storage space and network quality.
+   - Using the benchmarks, storage load and network usage are optimised.
+2. Reliability
+   - We implement storage redundancy by replicating (making copies of) chunks and checking nodes for "anti-affinity" (same node does not store a chunk multiple times).
 
-In the case of the reliability objective, we have primarily achieved it by implementing storage redundancy. We replicate (make a copy of) each chunk a number of times, and check for node "anti-affinity" in order to not store a chunk and its replicas on the same node.
-
-All available nodes are filtered against hard constrains (such as non-zero storage available) and ranked according to the soft constraints seen above. We create a "distribution scheme" that the network layer uses to actually send out the chunks, decoupling distribution decisions from the distribution itself.
+We create a "distribution scheme" that the network layer uses to actually send out the chunks, decoupling distribution decisions from the distribution itself.
 
 ### 4.5. Desktop GUI Client
 
-Creating GUI in Golang is not the smoothest experience. There is no official library to do this, and many libraries are still under-developed. When choosing a GUI library for the desktop client, we mainly looked at those factors:
+Creating a GUI in Golang is not the smoothest experience. There is no official library to do this, and many libraries are still under-developed. When choosing a GUI library for the desktop client, we mainly looked at those factors:
 1. No runtime requirements - The compiled executable should be enough to run the program. There should be no third-party programs that are required to be installed in order to run the program.
 2. Cross compatibility - One of the main benefits of Golang is it's cross compatibility. As such, it was very important to keep this.
 3. Lightweight - The library should be lightweight and performant to run. This eliminated a lot of libraries that depend on HTML/CSS/JS combo to run.
@@ -341,17 +310,13 @@ We have decided to write a `React.js` SPA that allows for quick prototyping. One
 
 We have also used `Bootstrap` for CSS and styling to achieve mobile friendly layouts and accessible visuals.
 
-In order to send network requests and responses we have used the `axios` AJAX library.
-
 #### 4.6.2. Backend
 
 We have written a Go web application and a Go HTTP server to serve that web application. We have aimed to expose a RESTful HTTP web API to the frontend. 
 
-We have used the excellent Go standard library `net/http` to start a HTTP server. We use `Gorilla Mux` go library for routing. This allows us to specify advanced routes and specify a handler function that should serve those routes. Go contains built-in JSON and URL libraries for parsing contents into/from structs and retrieving parameters.
+We have used the excellent Go standard library `net/http` to start a HTTP server. We use `Gorilla Mux` go library for routing. This allows us to specify advanced routes and specify a handler function that should serve those routes.
 
-The web application imports the cloud library in order to access the cloud and its API.
-
-To store user accounts, we have decided to use `PostgreSQL`, a relational database and a program. We decided that a relation based database will suit for user accounts or future data storage (many of ours structs have ID's, which correspond to Primary/Foreign Keys in a relational database). We use a third party ORM (object-relational mapper) library in Go to access the database. We have a Go wrapper for querying the database for an account's username and password.
+To store user accounts, we have decided to use `PostgreSQL`, a relational database and a program. We decided that a relation based database will suit for user accounts and future storage needs. We use a third party ORM (object-relational mapper) library in Go to access the database. We have a Go wrapper for querying the database for an account's username and password.
 
 #### 4.6.3. Authentication
 
@@ -367,19 +332,15 @@ We have written our own authentication middleware to verify the token for all pr
 
 #### 4.6.4. Downloads
 
-In order to send a file to the client and reliability trigger a browser download, we need to create an unprotected download link.
-
-After considering the alternatives we have decided that the best way is to issue a temporary download link with a temporary token passed as parameters. We reuse JWT functions that we have written, and have implemented download middleware to verify the token parameter before initiating the download.
+In order to send a file to the client and reliability trigger a browser download, we have decided that the best way is to create an unprotected temporary download link. We use a token as a parameter of the link as a form of authentication before initiating the download. We reuse JWT functions that we have written.
 
 #### 4.6.5. Security
 
-Any real website in 2020 must at least use HTTPS in order to encrypt all its communications and not deter its users. For this we require HTTPS TLS certificates to be passed both for the web server serving the React SPA and the web application responding to API calls from the SPA.
+Our web communications use HTTPS. We require HTTPS TLS certificates to be passed both for the web server serving the React SPA and the web application responding to API calls from the SPA.
 
-Account passwords are stored in PostgreSQL as hashed and salted using bcrypt. We have chosen bcrypt due to its strong security and ease of use through a Go third party library.
+Account passwords are stored in PostgreSQL as hashed and salted using bcrypt.
 
 ### 4.7. Automation Tools
-
-Our project contains multiple technologies and will be distributed across multiple computers. The usage of automation tools greatly simplifies the process for us and the user.
 
 #### 4.7.1. Compilation
 
@@ -390,13 +351,9 @@ We have used the `Make` Unix tool with appropriate `Makefile`'s to compile and t
 To simplify deployment of our software onto actual nodes we have taken the following steps:
 
 - All deployment specific variables such as keys, certificates, database addresses, etc. go into `.env` environment variable files.
-- We have created an `Ansible` playbook in the `/deploy` directory for automatically distributing our node software binary to a set servers.
+- We have created an `Ansible` (automation tool that configures machiness via SSH) playbook in the `/deploy` directory for automatically distributing our node software binary to a set servers.
 
-#### 4.7.3. Scripting
-
-We have created various small `.sh` shell files for interacting with our postgresql database, generating self-signed certificates, and running the node software.
-
-#### 4.7.4. Dependency Management
+#### 4.7.3. Dependency Management
 
 For all `Go` related subsystems, we use "go modules", which produce a `go.mod` file with all required Go dependencies, by automatically scanning the source code.
 
@@ -405,17 +362,13 @@ For the React.js SPA, we use the famous `npm` tool with `package.json` for all d
 ## 5. Installation Guide
 <!-- This is a 1 to 2 page section which contains a step by step software installation guide. It should include a detailed description of the steps necessary to install the software, a list of all required software, components, versions, hardware, etc. -->
 
-Simple steps to install our node software and clients.
+All our software is cross-platform and compatible with most modern operating systems, including Windows, Linux, Mac OS X. Some clients such as the web client work anywhere where there is a web browser. We do not require special hardware. The software can manage both powerful and less powerful machines. 
 
-Where there are command-line examples, it is assumed that the environment is Unix (corresponding commands can be found for Windows).
+For executable binaries we provide precompiled releases on our GitLab (see our releases). Another option is to compile from source.
 
 See the User Manual (Node Administrator section) for more details on set up of the software.
 
-All our software is cross-platform and compatible with most modern operating systems, including Windows, Linux, Mac OS X [https://golang.org/cmd/go/#hdr-Compile_packages_and_dependencies](). Some clients such as the web client work anywhere where there is a web browser.
-
-We do not require special hardware. The software can manage both powerful and less powerful machines. 
-
-In the case of executable binaries we provide precompiled releases on our GitLab for different architectures. Another option is to compile from source.
+Where there are command-line examples, it is assumed that the environment is Unix (corresponding commands can be found for Windows).
 
 ### 5.1. Node Software
 
@@ -423,31 +376,15 @@ Obtain a binary distribution of our node software (named "cloud").
 
 It is recommended for the node machine to have enhanced storage hardware (in storage space, RAID, etc.) and good or excellent network connectivity.
 
-#### 5.1.1. Obtain from a release.
+#### 5.1.1. Compile from source.
 
-<!-- TODO -->
-See our GitLab releases.
+Clone the project's GitLab repository: `git clone https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage.git`
 
-#### 5.1.2. Compile from source.
+Change directory into the node software: `cd 2020-ca326-tbaltrunas-cloudstorage/code/cloud`
 
-Clone the project's GitLab repository
-```
-git clone https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage.git
-```
+Compile the software into a binary: `go build cloud`
 
-Change directory into the node software
-```
-cd 2020-ca326-tbaltrunas-cloudstorage
-cd code/cloud
-```
-
-Compile the software into a binary
-`go build cloud`
-
-Optionally with the `Make` tool:
-```
-make
-```
+Or optionally with the `Make` tool: `make`.
 
 Find the node software executable binary under the name `cloud`.
 
@@ -457,45 +394,21 @@ Obtain a binary of the desktop GUI client.
 
 The client requires the machine to have a graphical monitor and a graphics driver.
 
-#### 5.2.1. Obtain from a release.
+#### 5.2.1. Compile from source.
 
-<!-- TODO -->
-See our GitLab releases.
+Clone and change into the repository as in 5.1.1.
 
-#### 5.2.2. Compile from source.
+Change directory into the desktop client's directory: `cd 2020-ca326-tbaltrunas-cloudstorage/code/cloud/desktop`
 
-Clone the project's GitLab repository
-```
-git clone https://gitlab.computing.dcu.ie/baltrut2/2020-ca326-tbaltrunas-cloudstorage.git
-```
+Compile the software into a binary with `go build` or `make` (with the `Make` tool).
 
-Change directory into the desktop client's directory
-```
-cd 2020-ca326-tbaltrunas-cloudstorage
-cd code/cloud/des
-```
-
-Compile the software into a binary
-```
-go build
-```
-
-Optionally with the `Make` tool:
-```
-make
-```
-
-Find the binary.
-
-<!-- TODO -->
+Find the desktop binary.
 
 ### 5.3. Web Client
 
-The web client runs as a website. See the user guide for in depth details of how to set up the web client from a node administrator's point of view.
+The web client exposes a website to the end user. See the user guide for in depth details of how to set up the web client from a node administrator's point of view.
 
 ## 6. Testing
-
-In this section we will outline our testing strategy.
 
 ### 6.1. GitLab CI
 
