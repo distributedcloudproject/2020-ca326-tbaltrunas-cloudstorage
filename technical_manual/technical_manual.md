@@ -11,11 +11,8 @@ Distributed Cloud Storage – Technical Manual
     - 1.2.2. General Terms
 - 2. System Architecture
   - 2.1. Operational Overview
-  - 2.2. Class Diagram
+  - 2.2. Component Diagram
   - 2.3. Communications Overview
-  - 2.4. API Reference
-    - 2.4.1. Cloud API Reference
-    - 2.4.2. REST API Reference
 - 3. High Level Design
   - 3.1. Initial Design
   - 3.2. Current Design
@@ -111,13 +108,7 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 
 **GCP (Google Cloud Platform)** - cloud services provided by Google, including ability to rent a virtual machine with an external IP [https://cloud.google.com/free/].
 
-**Fyne** - Go third party library for desktop-based portable GUI's [https://github.com/fyne-io/fyne].
-
 **React.js** - JavaScript front-end web development library, declarative and stateful [https://reactjs.org/].
-
-**Bootstrap** - CSS front-end library for mobile-friendly user interfaces [https://getbootstrap.com/].
-
-**PostgreSQL** - a relational (SQL) database [https://www.postgresql.org/].
 
 **SPA (Single Page Application)** - a website that is served once and updates dynamically instead of from browser refresh.
 
@@ -134,9 +125,31 @@ The following is an Operational Overview Diagram
 
 ![operational overview diagram](Operational&#32;Overview.png)
 
-### 2.2. Class Diagram
+The most important part of the diagram is the cloud area. This indicates the cloud network that our Go node software creates by connecting multiple computers or nodes.
+* The network starts out with a single node, the "bootstrap node".
+* Other nodes connect to nodes already in the network.
+* Not all nodes may be connected to all other nodes at the same time.
 
-Go library
+Outside the cloud we can see the "GUI Nodes" that connect to our cloud but do not actually store any data. They are used for desktop GUI. The user access the desktop GUI to perform file operations or see cloud information.
+
+Another type of client is the web client. We have a "web client" area that shows all of the components set up for a functional website. That includes one of the nodes running a web application server together with a database, and a web server that serves our React SPA. The user can then access the cloud via a browser.
+
+### 2.2. Component Diagram
+
+The following is a component diagram.
+
+![component diagram](Component&#32;Diagram.png)
+
+Each rectangle indicates a major component or subcomponent, colour coded to show different subsystems in our project.
+
+The arrows indicate a "uses" relationship (imports package, or initiates communication with).
+
+Some important relationships include:
+* The Network component is imported by:
+  1. The Main Node sub-component, which represents the binary used for setting up the cloud, and the desktop client.
+  2. The Desktop Client's screen component.
+  3. The Web Application component.
+* The communication between the web application and the SPA are done via the SPA's API wrapper and the Web Application's Handlers sub-components.
 
 ### 2.3. Communications Overview
 
@@ -317,7 +330,7 @@ In order to send network requests and responses we have used the `axios` AJAX li
 
 We have written a Go web application and a Go HTTP server to serve that web application.
 
-We use `Gorilla Mux` go library for our routing. This allows us to specify advanced routes and specify a handler function that should serve those routes. Go contains built-in JSON and URL libraries for parsing contents into/from structs and retrieving parameters.
+We have used the excellentGo standard library `net/http` to start a HTTP server. We use `Gorilla Mux` go library for routing. This allows us to specify advanced routes and specify a handler function that should serve those routes. Go contains built-in JSON and URL libraries for parsing contents into/from structs and retrieving parameters.
 
 The web application imports the cloud library in order to access the cloud and its API.
 
