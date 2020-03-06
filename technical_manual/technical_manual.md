@@ -14,11 +14,10 @@ Distributed Cloud Storage – Technical Manual
   - 2.2. Component Diagram
   - 2.3. Communications Overview
 - 3. High Level Design
-  - 3.1. Initial Design
-  - 3.2. Current Design
-  - 3.3. Major Design Considerations
-    - 3.3.1. Go Library
-    - 3.3.2. File Chunking
+  - 3.1. Go Library
+  - 3.2. File Chunking
+  - 3.3. Web and Mobile Clients
+  - 3.4. Compression Layer
 - 4. Problems and Solutions
   - 4.1. Network Communications
     - 4.1.1. Choice of Communication Method
@@ -157,14 +156,16 @@ Secure comms (TCP)
 
 HTTPS
 
+Web API
+
 ### 2.4. API Reference
 
 ## 3. High-Level Design
 <!-- This section should set out the high-level design of the system. It should include system models showing the relationship between system components and the systems and its environment. These might be object-models, DFD, etc. Unlike the design in the Functional Specification - this description must reflect the design of the system as it is demonstrated. -->
 
-### 3.3. Major Design Considerations
+In this section we will discuss the major design decisions we currently have, where relevant mentioning how they differ from the proposed design.
 
-#### 3.3.1. Go Library
+#### 3.1. Go Library
 
 As there are multiple uses of the cloud (Desktop CLI, Desktop GUI, Web app), we created a Go library to handle the cloud backbone. Making it easy to use and control outside. This library was created to be simple in use but offer as much control as possible.
 
@@ -186,18 +187,23 @@ c.SyncFolder("/folder/on/cloud", "/local/folder");
 c.AddFile(fileMetadata, "/path/on/cloud", "/local/file")
 ```
 
-#### 3.3.2. File Chunking
+#### 3.2. File Chunking
 
 We have decided to split each file into a number of chunks.  This way we distribute parts of the file to the cloud instead of the entire file.
 
 This could easily allow for updating only the part of a file that changed, reducing message sizes, etc.
 
+#### 3.3. Web and Mobile Clients
 
-#### 3.3.3. API for Web Client
-
-In contrast to the initial design, we have decided to implement the web application as part of the node software. The web application could be easily enabled, turning the node software into a web server as well.
+We have decided to implement the web application as part of the node software (as opposed to a separate program, communicating with the cloud via our own protocol). The web application could be easily enabled, turning the node software into a web server as well.
 
 The reason for this is because the communications between the web application and the cloud will be simplified and speeded up. Since the web application is running on the same program (same address space) as the node software, web responses can query the cloud immediatelly. We also do not need to write an additional communications layer between the web application and the cloud.
+
+In contrast to the initial design, we have decided that the web client will supersede the mobile client (mobile application). Thus, the website is designed to be mobile friendly. We made this decision due to time constraints. However, because the web SPA is written in React.js, it could be argued that making a React Native mobile app will not take as much time if more development time was available.
+
+#### 3.4. Compression Layer
+
+As part of the initial design we have indicated that we will have a compression layer that will compress files on the client side before we store them on the cloud. We have decided against having this layer for performance and extensibility reasons. If we do compression, in the future we will not be able to implement a possible real-time streaming feature (as compression has significant performance overhead). Moreover with compression in the future we will not be able to do implement efficient file update (only updating chunks of a file that changed).
 
 ## 4. Problems and Solutions
 <!-- This section should include a description of any major problems encountered during the design and implementation of the system and the actions that were taken to resolve them. -->
@@ -328,9 +334,9 @@ In order to send network requests and responses we have used the `axios` AJAX li
 
 #### 4.6.2. Backend
 
-We have written a Go web application and a Go HTTP server to serve that web application.
+We have written a Go web application and a Go HTTP server to serve that web application. We have aimed to expose a RESTful HTTP web API to the frontend. 
 
-We have used the excellentGo standard library `net/http` to start a HTTP server. We use `Gorilla Mux` go library for routing. This allows us to specify advanced routes and specify a handler function that should serve those routes. Go contains built-in JSON and URL libraries for parsing contents into/from structs and retrieving parameters.
+We have used the excellent Go standard library `net/http` to start a HTTP server. We use `Gorilla Mux` go library for routing. This allows us to specify advanced routes and specify a handler function that should serve those routes. Go contains built-in JSON and URL libraries for parsing contents into/from structs and retrieving parameters.
 
 The web application imports the cloud library in order to access the cloud and its API.
 
