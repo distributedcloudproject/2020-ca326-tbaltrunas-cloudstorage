@@ -52,7 +52,6 @@ Distributed Cloud Storage – Technical Manual
   - 6.2. Unit & Integration Tests
   - 6.3. System Tests
   - 6.4. User Tests
-  - 6.5. Directory `/tests`
 
 ## 1. Introduction
 
@@ -104,8 +103,6 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 **Binary executable** - a single file that can be distributed and executed as a complete program (for example, .exe on Windows).
 
 **REST API** - a style for web (HTTP) API's, important aspects include a client-server architecture and stateless requests (server treats each request as if the request had everything that was needed to serve it).
-
-**GCP (Google Cloud Platform)** - cloud services provided by Google, including ability to rent a virtual machine with an external IP [https://cloud.google.com/free/].
 
 **React.js** - JavaScript front-end web development library, declarative and stateful [https://reactjs.org/].
 
@@ -484,8 +481,28 @@ The web client runs as a website. See the user guide for in depth details of how
 
 ## 6. Testing
 
-Unit and integration tests.
+In this section we will outline our testing strategy.
 
-System tests.
+### 6.1. GitLab CI
 
-User testing.
+In order to enforce quality of code we have configured the available GitLab Continuous Integration (CI) runner to automatically build and test our code upon each commit. We only merge requests if all if the CI pipeline does not fail.
+
+### 6.2. Unit & Integration Tests
+
+For our code we have written unit and integration (major component) tests. In the case of Go we have `*_test.go` files together with the source. We use the `testing` library from the Go standard library for assertions and a Go test runner. These tests are also ran by the GitLab CI runner.
+
+While we do not have an official coverage reporting tool, we do make sure to test every package for expected behaviour. Go has an excellent compiler and type checking that covers many error cases.
+
+In the case of the web client we have a test that the application runs without crashing.
+
+### 6.3. System Tests
+
+In order to test our project on actual servers, we have used GCP (Google Cloud Platform), to set up multiple virtual machines at different locations and deploy our node software to.
+
+We have verified that the servers can become nodes and connect into a cloud network.
+
+### 6.4. User Tests
+
+In the case of the web client, we have performed verbal user testing. The user testing included checking the colour schemes, layout, expected functionality, etc.
+
+We have kept the testing verbal and without record to comply with ethics requirements.
