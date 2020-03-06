@@ -19,6 +19,8 @@ Distributed Cloud Storage – Technical Manual
   - 3.3. Major Design Considerations
     - 3.3.1. Go Library
     - 3.3.2. File Chunking
+    - 3.3.3. API for Web Client
+    - 3.3.4. Compression
 - 4. Problems and Solutions
   - 4.1. Network Communications
     - 4.1.1. Choice of Communication Method
@@ -198,6 +200,21 @@ This could easily allow for updating only the part of a file that changed, reduc
 In contrast to the initial design, we have decided to implement the web application as part of the node software. The web application could be easily enabled, turning the node software into a web server as well.
 
 The reason for this is because the communications between the web application and the cloud will be simplified and speeded up. Since the web application is running on the same program (same address space) as the node software, web responses can query the cloud immediatelly. We also do not need to write an additional communications layer between the web application and the cloud.
+
+#### 3.3.4. Compression
+
+We have looked into compressing the files to reduce the file sizes and potentially increase the space available on the nodes.
+We have looked at two options:
+- Compressing the entire file before chunking.
+- Compressing each chunk invidually.
+
+We found that compressing the entire file before chunking would yield better compression results than compressing each chunk invidually. However, this would make file chunking pretty redundant, as any small changes to a file can result in most, if not all, of the chunks changing.
+
+Compressing each chunk invidually would not yield as good as results as compressing an entire file, as there is less data to work with.
+
+Storing the files compressed would also increase the latency by quite a large margin, depending on the compression level. Any meaningful space saved by compression would suffer by increased latency. We found that this is not worth the trade off.
+
+Additionally, Windows and Linux both support compression on their file system. We believe it's better to leave compression handling to the operating system and the user.
 
 ## 4. Problems and Solutions
 <!-- This section should include a description of any major problems encountered during the design and implementation of the system and the actions that were taken to resolve them. -->
