@@ -21,23 +21,28 @@ Distributed Cloud Storage – Technical Manual
   - 3.2. Current Design
   - 3.3. Major Design Considerations
     - 3.3.1. Go Library
+    - 3.3.2. File Chunking
 - 4. Problems and Solutions
   - 4.1. Network Communications
-    - 4.1.1. RPC (Communication between Nodes)
-    - 4.1.2. Message Structure
-    - 4.1.3. Authentication
+    - 4.1.1. Choice of Communication Method
+    - 4.1.2. RPC (Communication between Nodes)
+    - 4.1.3. Message Structure
+    - 4.1.4. Authentication
   - 4.2. Cloud and Network data structures
   - 4.3. File Storage data structures
   - 4.4. Distribution Algorithm
   - 4.5. Desktop Client
   - 4.6. Web Client
-    - 4.5.1. Frontend
-    - 4.5.2. Backend
-    - 4.5.3. Secure Communications
+    - 4.6.1. Frontend
+    - 4.6.2. Backend
+    - 4.6.3. Authentication
+    - 4.6.4. Downloads
+    - 4.6.5. Security
   - 4.7. Automation Tools
-    - 4.6.1. Deployment
-    - 4.6.2. Scripting
-    - 4.6.3. Dependency Management
+    - 4.7.1. Compilation
+    - 4.7.2. Deployment
+    - 4.7.3. Scripting
+    - 4.7.4. Dependency Management
 - 5. Installation Guide
   - 5.1. Node Software
     - 5.1.1. Obtain from a release
@@ -98,6 +103,8 @@ Portable (cross-platform), easily installable "node software" for technical/indu
 
 **Gob** - Go standard library package for encoding/decoding variables into binary and vice versa, used for RPC [https://golang.org/pkg/encoding/gob/].
 
+**Struct** - a Go object-like (OOP) variable.
+
 **Binary executable** - a single file that can be distributed and executed as a complete program (for example, .exe on Windows).
 
 **REST API** - a style for web (HTTP) API's, important aspects include a client-server architecture and stateless requests (server treats each request as if the request had everything that was needed to serve it).
@@ -144,7 +151,50 @@ HTTPS
 
 ### 3.3. Major Design Considerations
 
-#### 3.3.1. Communication Layer
+#### 3.3.1. Go Library
+
+As there are multiple uses of the cloud (Desktop CLI, Desktop GUI, Web app), we created a Go library to handle the cloud backbone. Making it easy to use and control outside. This library was created to be simple in use but offer as much control as possible.
+
+Connecting to an existing network is as easy as:
+```
+cloud, err := network.BootstrapToNetwork("networkip:port", network.Node{
+			Name:      "Node Name",
+			IP:        ":9002",
+			PublicKey: key.PublicKey,
+		}, privateKey, network.CloudConfig{FileStorageDir: "/path/to/dir/to/store})
+```
+
+Allowing for easy interfacing with the cloud:
+```
+// Syncs local folder to a folder on the cloud.
+c.SyncFolder("/folder/on/cloud", "/local/folder");
+
+// Adds a local file to the cloud.
+c.AddFile(fileMetadata, "/path/on/cloud", "/local/file")
+```
+
+#### 3.3.2. File Chunking
+
+We have decided to split each file into a number of chunks.  This way we distribute parts of the file to the cloud instead of the entire file.
+
+This could easily allow for updating only the part of a file that changed, reducing message sizes, etc.
+
+
+#### 3.3.3. API for Web Client
+
+In contrast to the initial design, we have decided to implement the web application as part of the node software. The web application could be easily enabled, turning the node software into a web server as well.
+
+The reason for this is because the communications between the web application and the cloud will be simplified and speeded up. Since the web application is running on the same program (same address space) as the node software, web responses can query the cloud immediatelly. We also do not need to write an additional communications layer between the web application and the cloud.
+
+## 4. Problems and Solutions
+<!-- This section should include a description of any major problems encountered during the design and implementation of the system and the actions that were taken to resolve them. -->
+
+We discussed how we have solved major challenges in various sub-systems of the project.
+
+### 4.1. Network Communications
+
+#### 4.1.1. Choice of Communication Method
+
 One of the major design considerations is the communication layer between nodes. As the nodes are in constant communication, it plays a key part in the cloud.
 
 The main options we considered for communication are:
@@ -175,45 +225,7 @@ We decided to create our own library to facilitate communication between nodes. 
 
 All communication is encrypted, using a system based of TLS. Public keys are exchanged. A symmetric key is generated, encrypted using the public key, and sent over. The symmetric key is used for encrypting and decrypting the data that is sent as opposed to the public key, as symmetrical encryption is much faster than asymmetrical.
 
-#### 3.3.2. Go Library
-
-As there are multiple uses of the cloud (Desktop CLI, Desktop GUI, Web app), we created a Go library to handle the cloud backbone. Making it easy to use and control outside. This library was created to be simple in use but offer as much control as possible.
-
-Connecting to an existing network is as easy as:
-```
-cloud, err := network.BootstrapToNetwork("networkip:port", network.Node{
-			Name:      "Node Name",
-			IP:        ":9002",
-			PublicKey: key.PublicKey,
-		}, privateKey, network.CloudConfig{FileStorageDir: "/path/to/dir/to/store})
-```
-
-Allowing for easy interfacing with the cloud:
-```
-// Syncs local folder to a folder on the cloud.
-c.SyncFolder("/folder/on/cloud", "/local/folder");
-
-// Adds a local file to the cloud.
-c.AddFile(fileMetadata, "/path/on/cloud", "/local/file")
-```
-
-#### 3.3.3. Go GUI Library
-
-Creating GUI in Golang is not the smoothest experience. There is no official library to do this, and many libraries are still under-developed. When choosing a GUI library for the desktop client, we mainly looked at those factors:
-1. No runtime requirements - The compiled executable should be enough to run the program. There should be no third-party programs that are required to be installed in order to run the program.
-2. Cross compatibility - One of the main benefits of Golang is it's cross compatibility. As such, it was very important to keep this.
-3. Lightweight - The library should be lightweight and performant to run. This eliminated a lot of libraries that depend on HTML/CSS/JS combo to run.
-4. Decent design - Having a decent working design that can be used is really beneficial. It will save a lot of time designing our own from scratch.
-5. Flexible - Having full control over the GUI was an important factor.
-
-With all of those factors considered, we decided to settle on [fyne.io](fyne.io) library. It ticked all of the boxes above.
-
-## 4. Problems and Solutions
-<!-- This section should include a description of any major problems encountered during the design and implementation of the system and the actions that were taken to resolve them. -->
-
-### 4.1. Network Communications
-
-#### 4.1.1. RPC (Communication between Nodes)
+#### 4.1.2. RPC (Communication between Nodes)
 Nodes are in constant communication between each other, making it important to get the communications right. All communications between nodes is done using a TCP socket, ensuring the communication between them is reliable. The data sent is encoded and decoded using Gob on the fly. This allows for highely performant communication while maintaining ease of use. This allows passing Go structs as parameters and the data will be decoded/encoded in the communication layer.
 
 The function that is responsible for sending RPC communications is `SendMessage(functionName string, args...interface{})`. In that function, the arguements passed are serialized into gob data. The call is blocking until a response is received. The variables received are returned as an array. Additionally, the `SendMessage` returns an error. If the function on the receiving end returns an error, the error is seperated from outputs and placed into the `err` variable. Additionally, the error can be caused by failure to send the request, or the request timing out.
@@ -236,7 +248,7 @@ func OnGetNetworkRequest() (Network, error) {
 }
 ```
 
-#### 4.1.2. Message Structure
+#### 4.1.3. Message Structure
 
 The message structure for socket communication starts off with 9 bytes of headers.
 The first byte, determines if the message is a response to another message.
@@ -250,40 +262,115 @@ The function name determines which function on the receiving end to call for the
 
 Each function name will have a handler, which points towards a function in the code to call.
 
-
-#### 4.1.3. Authentication
+#### 4.1.4. Authentication
 
 Every node connecting to the cloud network has to authenticate before participating in the network. Each node has a unique identifier, which is sha256 sum of a public key. Any node in the network can add a node ID to be able to join the network. Upon establishing a socket connection, public keys are exchanged. The node on on the network generates a symmetric key that will be used for encrypting and decrypting all communication between those two nodes, and encrypts it with the connecting node's public key and sends it to them. This ensures that the connecting node owns the private key corresponding to the public key and cannot fake another node's identity.
 
 ### 4.2. Cloud and Network data structures
 
-Cloud and Network
+We have decided to represent the "cloud" using two Go structs. The first struct `Cloud` is the representation of the "cloud" only for the current node. It contains node specific information such as the node's configuration and connections to other nodes.
+
+The second struct `Network` is the shared representation of the "cloud" that includes the nodes in the cloud and a reference of the data stored on the cloud. Each node has the same `Network` struct.
 
 ### 4.3. File Storage data structures
 
-Chunks
+Files are represented by the `File` struct that includes fixed information such as the file's filename or path on the cloud, the size of the file, etc.
+
+In order to split a file into chunks, we have created a `Chunk` struct that represents a chunk in a file. `Chunk` includes chunk ID (hash of its contents), sequence number (which chunk is it), size, etc. We split files based on the configured size of each chunk in bytes. For example, if our chunk size is 5 bytes, then a 10 byte file is split into two 2 chunks (5 bytes each).
+
+In terms of the actual chunk contents, we don't store contents in-memory anywhere. Instead we pass around `reader` variables that can read from a stream and write the reader's contents into persistent storage.
 
 ### 4.4. Distribution Algorithm
 
-Distribution algorithm (Calculating node benchmaks).
+We have to make decisions about which node receives which file chunk. For that we have implemented a "distribution algorithm". The algorithm was designed with two objectives in mind: 1. Efficiency. 2. Reliability.
 
-### 4.5. Desktop Client
+To achieve efficient communications and storage, we have implemented the ability to query node benchmarks. We include benchmarks such as storage space left and network quality based on various factors. This way we can fitler and score nodes based on optimal storage load and optimal network.
+
+In the case of the reliability objective, we have primarily achieved it by implementing storage redundancy. We replicate (make a copy of) each chunk a number of times, and check for node "anti-affinity" in order to not store a chunk and its replicas on the same node.
+
+All available nodes are filtered against hard constrains (such as non-zero storage available) and ranked according to the soft constraints seen above. We create a "distribution scheme" that the network layer uses to actually send out the chunks, decoupling distribution decisions from the distribution itself.
+
+### 4.5. Desktop GUI Client
+
+Creating GUI in Golang is not the smoothest experience. There is no official library to do this, and many libraries are still under-developed. When choosing a GUI library for the desktop client, we mainly looked at those factors:
+1. No runtime requirements - The compiled executable should be enough to run the program. There should be no third-party programs that are required to be installed in order to run the program.
+2. Cross compatibility - One of the main benefits of Golang is it's cross compatibility. As such, it was very important to keep this.
+3. Lightweight - The library should be lightweight and performant to run. This eliminated a lot of libraries that depend on HTML/CSS/JS combo to run.
+4. Decent design - Having a decent working design that can be used is really beneficial. It will save a lot of time designing our own from scratch.
+5. Flexible - Having full control over the GUI was an important factor.
+
+With all of those factors considered, we decided to settle on [fyne.io](fyne.io) library. It ticked all of the boxes above.
 
 ### 4.6. Web Client
 
-Frontend - bootstrap
+Creating the web client has been a lot of work since it involves developing both the frontend and a web backend connected to the cloud.
 
-Secure comms - HTTPS certs.
+#### 4.6.1. Frontend
 
-Auth - JWT. Download. Auth middleware.
-DL.
-Login.
-Postgresql
+We have decided to write a `React.js` SPA that allows for quick prototyping. One of the team members had small experience with the library. Additionally with access to npm (node package manager), we could easily use third party libraries for certain components.
+
+We have also used `Bootstrap` for CSS and styling to achieve mobile friendly layouts and accessible visuals.
+
+In order to send network requests and responses we have used the `axios` AJAX library.
+
+#### 4.6.2. Backend
+
+We have written a Go web application and a Go HTTP server to serve that web application.
+
+We use `Gorilla Mux` go library for our routing. This allows us to specify advanced routes and specify a handler function that should serve those routes. Go contains built-in JSON and URL libraries for parsing contents into/from structs and retrieving parameters.
+
+The web application imports the cloud library in order to access the cloud and its API.
+
+To store user accounts, we have decided to use `PostgreSQL`, a relational database and a program. We decided that a relation based database will suit for user accounts or future data storage (many of ours structs have ID's, which correspond to Primary/Foreign Keys in a relational database). We use a third party ORM (object-relational mapper) library in Go to access the database. We have a Go wrapper for querying the database for an account's username and password.
+
+#### 4.6.3. Authentication
+
+For any website worth using outside the development / playground environment we require good security and authentication practices.
+
+We have implemented a username/password login page that persists logins for a certain amount of time using cookies. Upon logout the cookies are cleared.
+
+The authentication type used is token based authentication. The client sends their credentials (username and password) to a public login endpoint on the web application. If the credentials are correct, the web application issues an access token with an expirty time to the client. Further client requests to protected routes include the access token. We do not use OAuth as we have decided that authentication through third parties is out of scope of the project.
+
+The token is a `JWT` (JSON Web Token). The token is generated and verified using a private key known to the web application only. The simplicity of JWT and the ability to include "claims" in the token is the reason why we have chosen it.
+
+We have written our own authentication middleware to verify the token for all protected routes.
+
+#### 4.6.4. Downloads
+
+In order to send a file to the client and reliability trigger a browser download, we need to create an unprotected download link.
+
+After considering the alternatives we have decided that the best way is to issue a temporary download link with a temporary token passed as parameters. We reuse JWT functions that we have written, and have implemented download middleware to verify the token parameter before initiating the download.
+
+#### 4.6.5. Security
+
+Any real website in 2020 must at least use HTTPS in order to encrypt all its communications and not deter its users. For this we require HTTPS TLS certificates to be passed both for the web server serving the React SPA and the web application responding to API calls from the SPA.
+
+Account passwords are stored in PostgreSQL as hashed and salted using bcrypt. We have chosen bcrypt due to its strong security and ease of use through a Go third party library.
 
 ### 4.7. Automation Tools
 
-Need Go. Go deps.
+Our project contains multiple technologies and will be distributed across multiple computers. The usage of automation tools greatly simplifies the process for us and the user.
 
+#### 4.7.1. Compilation
+
+We have used the `Make` Unix tool with appropriate `Makefile`'s to compile and test parts of our project with commands as simple as `make` or `make test`.
+
+#### 4.7.2. Deployment
+
+To simplify deployment of our software onto actual nodes we have taken the following steps:
+
+- All deployment specific variables such as keys, certificates, database addresses, etc. go into `.env` environment variable files.
+- We have created an `Ansible` playbook in the `/deploy` directory for automatically distributing our node software binary to a set servers.
+
+#### 4.7.3. Scripting
+
+We have created various small `.sh` shell files for interacting with our postgresql database, generating self-signed certificates, and running the node software.
+
+#### 4.7.4. Dependency Management
+
+For all `Go` related subsystems, we use "go modules", which produce a `go.mod` file with all required Go dependencies, by automatically scanning the source code.
+
+For the React.js SPA, we use the famous `npm` tool with `package.json` for all dependencies.
 
 ## 5. Installation Guide
 <!-- This is a 1 to 2 page section which contains a step by step software installation guide. It should include a detailed description of the steps necessary to install the software, a list of all required software, components, versions, hardware, etc. -->
