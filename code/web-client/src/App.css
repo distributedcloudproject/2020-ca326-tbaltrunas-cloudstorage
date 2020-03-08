@@ -1,0 +1,38 @@
+body {
+  background-color: #4C4C4C;
+  display: flex;
+  flex-direction: column;
+}
+
+p {
+  color: white;
+}
+
+a {
+  color: white;
+}
+
+a:hover {
+  color: white;
+  text-decoration: none;
+}
+
+.left-icon * {
+  padding-right: 5%;
+}
+
+.icon-button * {
+  padding: 3%;
+}
+
+.header {
+  min-height: 5vh;
+}
+
+.footer {
+  min-height: 5vh;
+}
+
+.content {
+  min-height: 81vh;
+}

@@ -1,4 +1,11 @@
 .idea/
-code/cloud.exe
-code/cloud
+code/cloud/cloud.exe
+code/cloud/cloud
 deploy/cloud
+
+# TLS certificates
+cert.crt
+cert.key
+
+# Environment variable files
+.env
