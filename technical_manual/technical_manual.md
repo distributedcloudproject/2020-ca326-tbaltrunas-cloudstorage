@@ -398,6 +398,9 @@ The client requires the machine to have a graphical monitor and a graphics drive
 
 Clone and change into the repository as in 5.1.1.
 
+Some additional prerequisites may be required when compiling, depending on the target operating system.
+More information on those can be found at https://fyne.io/develop/ 
+
 Change directory into the desktop client's directory: `cd 2020-ca326-tbaltrunas-cloudstorage/code/cloud/desktop`
 
 Compile the software into a binary with `go build` or `make` (with the `Make` tool).
