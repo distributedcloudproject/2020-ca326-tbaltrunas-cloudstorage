@@ -2,9 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
+import ListGroup from 'react-bootstrap/ListGroup'
 
+const ActionItem = ListGroup.Item;
 const ActionButton = Button;
 const ActionContainer = Container;
+const ActionListContainer = ListGroup;
+
+const ActionItemClass = 'border-0 bg-transparent p-1';
 
 function ActionRenderer(props) {
   const {
@@ -41,7 +46,7 @@ function ActionRenderer(props) {
     // Creating folders
     if (canCreateFolder && !nameFilter) {
       actions.push(
-        <li key="action-add-folder">
+        <ActionItem key="action-add-folder" className={ActionItemClass} /* className="list-group-item" */ >
           <ActionButton
             onClick={onCreateFolder}
             href="#"
@@ -50,9 +55,9 @@ function ActionRenderer(props) {
             {icons.Folder}
             &nbsp;Add Folder
           </ActionButton>
-        </li>
+        </ActionItem>
       )
-      return (<ul className="item-actions list-group">{actions}</ul>)
+      return (<ActionListContainer horizontal={'md'} className="item-actions bg-transparent">{actions}</ActionListContainer>)
     }
     return (<ActionContainer className="item-actions">&nbsp;</ActionContainer>)
   }
@@ -89,7 +94,7 @@ function ActionRenderer(props) {
   if (!isFolder && canDownloadFile) {
     // canDownloadFile is true if the file has more than 0 bytes in size.
     actions.push(
-      <li key="action-download">
+      <ActionItem key="action-download" className={ActionItemClass}>
         <ActionButton
           onClick={onDownloadFile}
           href="#"
@@ -98,7 +103,7 @@ function ActionRenderer(props) {
           {icons.Download}
           &nbsp;Download
         </ActionButton>
-      </li>
+      </ActionItem>
     )
   }
 
@@ -107,7 +112,7 @@ function ActionRenderer(props) {
   if (!itemsWithoutKeyDerived && !isFolder && canRenameFile && selectedItems.length === 1) {
     // File rename
     actions.push(
-      <li key="action-rename">
+      <ActionItem key="action-rename" className={ActionItemClass}>
         <ActionButton
           onClick={onRenameFile}
           href="#"
@@ -116,12 +121,12 @@ function ActionRenderer(props) {
           {icons.Rename}
           &nbsp;Rename
         </ActionButton>
-      </li>
+      </ActionItem>
     )
   } else if (!itemsWithoutKeyDerived && isFolder && canRenameFolder) {
     //Folder rename
     actions.push(
-      <li key="action-rename">
+      <ActionItem key="action-rename" className={ActionItemClass}>
         <ActionButton
           onClick={onRenameFolder}
           href="#"
@@ -130,7 +135,7 @@ function ActionRenderer(props) {
           {icons.Rename}
           &nbsp;Rename
         </ActionButton>
-      </li>
+      </ActionItem>
     )
   }
 
@@ -138,7 +143,7 @@ function ActionRenderer(props) {
   if (!itemsWithoutKeyDerived && !isFolder && canDeleteFile) {
     // File delete
     actions.push(
-      <li key="action-delete">
+      <ActionItem key="action-delete" className={ActionItemClass}>
         <ActionButton
           onClick={onDeleteFile}
           href="#"
@@ -147,12 +152,12 @@ function ActionRenderer(props) {
           {icons.Delete}
           &nbsp;Delete
         </ActionButton>
-      </li>
+      </ActionItem>
     )
   } else if (!itemsWithoutKeyDerived && isFolder && canDeleteFolder) {
     // Folder delete
     actions.push(
-      <li key="action-delete">
+      <ActionItem key="action-delete" className={ActionItemClass}>
         <ActionButton
           onClick={onDeleteFolder}
           href="#"
@@ -161,14 +166,14 @@ function ActionRenderer(props) {
           {icons.Delete}
           &nbsp;Delete
         </ActionButton>
-      </li>
+      </ActionItem>
     )
   }
 
   // Creating folders
   if (isFolder && canCreateFolder && !nameFilter) {
     actions.push(
-      <li key="action-add-folder">
+      <ActionItem key="action-add-folder" className={ActionItemClass}>
         <ActionButton
           onClick={onCreateFolder}
           href="#"
@@ -177,14 +182,14 @@ function ActionRenderer(props) {
           {icons.Folder}
           &nbsp;Add Subfolder
         </ActionButton>
-      </li>
+      </ActionItem>
     )
   }
 
   if (!actions.length) {
     return (<ActionContainer className="item-actions">&nbsp;</ActionContainer>)
   }
-  return (<ul className="item-actions">{actions}</ul>)
+  return (<ActionListContainer horizontal={'md'} className="item-actions bg-transparent">{actions}</ActionListContainer>)
 }
 
 ActionRenderer.propTypes = {

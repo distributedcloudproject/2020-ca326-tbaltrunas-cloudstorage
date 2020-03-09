@@ -109,50 +109,57 @@ export default class FileExplorer extends React.Component {
   
     render() {
       return (
-        <Container>
+        <Container className='col-xs-12 m-1'>
 
           {/* Can also drag and drop into the FileBrowser to upload. */}
-          <Row className='m-3'>
+          <Row className='mb-3'>
             <Col>
               <Upload callback={this.handleCreateFiles} />
             </Col>
           </Row>
 
-          <Row className='m-3'>
+          <Row className='mt-3'>
             <Col>
-            <FileBrowser
-              files={this.state.files}
-              icons={FileExplorerIcons.IconObjects}
+              <FileBrowser
+                files={this.state.files}
+                icons={FileExplorerIcons.IconObjects}
 
-              // TODO: buttons to specify sort order
+                // TODO: buttons to specify sort order
 
-              // Handlers
-              onCreateFolder={this.handleCreateFolder}
-              onCreateFiles={this.handleCreateFiles}
-              onMoveFolder={this.handleRenameFolder}
-              onMoveFile={this.handleRenameFile}
-              onRenameFolder={this.handleRenameFolder}
-              onRenameFile={this.handleRenameFile}
-              onDeleteFolder={this.handleDeleteFolder}
-              onDeleteFile={this.handleDeleteFile}
-              onDownloadFile={this.handleReadFiles}
+                // Handlers
+                onCreateFolder={this.handleCreateFolder}
+                onCreateFiles={this.handleCreateFiles}
+                onMoveFolder={this.handleRenameFolder}
+                onMoveFile={this.handleRenameFile}
+                onRenameFolder={this.handleRenameFolder}
+                onRenameFile={this.handleRenameFile}
+                onDeleteFolder={this.handleDeleteFolder}
+                onDeleteFile={this.handleDeleteFile}
+                onDownloadFile={this.handleReadFiles}
 
-              // onSelect: PropTypes.func,
-              onSelectFile={this.handleSelectFile}
-              // onSelectFolder: PropTypes.func,
-          
-              onPreviewOpen={(file) => {
-                console.log('Preview: ' + file);
-              }}
-              onPreviewClose={(file) => {
-                console.log('Preview close: ' + file);
-              }}
-              
-              actionRenderer={CustomRenderers.ActionRenderer}
-              filterRenderer={CustomRenderers.FilterRenderer}
-              detailRenderer={CustomRenderers.DetailRenderer}
-              confirmDeletionRenderer={CustomRenderers.ConfirmDeletionRenderer}
-          />
+                // onSelect: PropTypes.func,
+                onSelectFile={this.handleSelectFile}
+                // onSelectFolder: PropTypes.func,
+            
+                onPreviewOpen={(file) => {
+                  console.log('Preview: ' + file);
+                }}
+                onPreviewClose={(file) => {
+                  console.log('Preview close: ' + file);
+                }}
+                
+                // headerRenderer={() => {return null}}
+                // fileRenderer={() => {return null}}
+                // folderRenderer={() => {return null}}
+
+                actionRenderer={CustomRenderers.ActionRenderer}
+                // actionRenderer={() => {return null}}
+
+                filterRenderer={CustomRenderers.FilterRenderer}
+                
+                detailRenderer={CustomRenderers.DetailRenderer}
+                confirmDeletionRenderer={CustomRenderers.ConfirmDeletionRenderer}
+              />
             </Col>
           </Row>
         </Container>

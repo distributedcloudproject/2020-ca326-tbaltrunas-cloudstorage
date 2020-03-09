@@ -1,4 +1,10 @@
 /* Text */
+
+.rendered-react-keyed-file-browser {
+    display: flex;
+    flex-direction: column;
+}
+
 .rendered-file-browser th,a,a:hover,td,h2,dl {
     color: white;
 }
@@ -10,12 +16,13 @@
 
 .rendered-file-browser .action-bar {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
 }
 
-.rendered-file-browser .item-actions {
+/* .rendered-file-browser table {
     display: flex;
-    flex-direction: wrap;
-}
+} */
+
+
 /* TODO: "Confirm" button style. */
