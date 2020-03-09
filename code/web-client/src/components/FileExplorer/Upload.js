@@ -22,6 +22,7 @@ export default function Upload(props) {
 
     // TODO: Upload multiple files or a folder.
     // TODO: Upload field or box.
+    // TODO: Upload into selected folder.
     return (
         <Button 
             className='icon-button' 

@@ -79,6 +79,7 @@ func (r request) OnDeleteDirectory(folderPath string) error {
 	splitFolders := strings.Split(folderPath, "/")
 	baseFolder := strings.Join(splitFolders[:len(splitFolders)-1], "/")
 	targetFolder := splitFolders[len(splitFolders)-1]
+	utils.GetLogger().Printf("[DEBUG] Split: %v, base folder: '%s', target folder: '%s'", splitFolders, baseFolder, targetFolder)
 	var networkFolder *NetworkFolder
 
 	if len(splitFolders) == 1 {
@@ -430,6 +431,7 @@ func (r request) OnMoveFileRequest(filepath string, newfilepath string) error {
 	}
 
 	folderName, filename := path.Split(filepath)
+	utils.GetLogger().Printf("[DEBUG] Split into folderName: '%s', filename: '%s'", folderName, filename)
 	c.networkMutex.Lock()
 	defer c.networkMutex.Unlock()
 	folder, err := c.network.GetFolder(folderName)
