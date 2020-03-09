@@ -324,7 +324,7 @@ func (r request) OnUpdateFileRequest(file *datastore.File, cloudpath string) err
 						res, err := r.FromNode.client.SendMessage(GetChunkMsg, cloudpath, chunk.ID)
 						if err == nil {
 							content := res[0].([]byte)
-							sf.StoreChunk(chunk.ID, content)
+							fileStore.StoreChunk(chunk.ID, content)
 						}
 					}
 					go c.updateChunkNodes(chunk.ID, r.Cloud.MyNode().ID)
