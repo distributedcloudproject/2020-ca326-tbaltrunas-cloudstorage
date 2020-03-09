@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -110,9 +111,17 @@ func (m *DownloadManager) createWorker() {
 	}
 }
 
-// DownloadFile downloads the file from the cloud.
+func (m *DownloadManager) DownloadFile(cloudPath string, localPath string) error {
+	q := &DownloadQueue{
+		CloudPath: cloudPath,
+		LocalPath: localPath,
+	}
+	return q.downloadFile(m.Cloud)
+}
 
+// DownloadFile downloads the file from the cloud.
 func (m *DownloadQueue) downloadFile(c *cloud) error {
+	fmt.Println("Downloading", m.CloudPath, m.LocalPath)
 	file, err := c.GetFile(m.CloudPath)
 	if err != nil {
 		return err
@@ -121,7 +130,8 @@ func (m *DownloadQueue) downloadFile(c *cloud) error {
 	if m.OnEvent != nil {
 		m.OnEvent(InfoRetrieved)
 	}
-	w, err := os.OpenFile(m.LocalPath, os.O_CREATE|os.O_RDWR, 0666)
+	localPath := filepath.FromSlash(m.LocalPath)
+	w, err := os.OpenFile(localPath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
@@ -133,6 +143,7 @@ func (m *DownloadQueue) downloadFile(c *cloud) error {
 	rand.Shuffle(len(dl), func(i, j int) { dl[i], dl[j] = dl[j], dl[i] })
 	for i := range dl {
 		chunk := file.Chunks.Chunks[dl[i]]
+		fmt.Println("Downloading chunk", chunk.ID)
 		content, err := c.GetChunk(m.CloudPath, chunk.ID)
 		if err != nil {
 			return err

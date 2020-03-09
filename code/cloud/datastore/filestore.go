@@ -84,6 +84,7 @@ func (f *FullFileStore) DeleteAllContent() error {
 }
 
 func (f *FullFileStore) SetChunks(chunks []Chunk) ([]Chunk, []Chunk) {
+	f.FilePath = filepath.FromSlash(f.FilePath)
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	newChunks, oldChunks := f.BaseFileStore.SetChunks(chunks)
@@ -115,6 +116,7 @@ func (f *FullFileStore) SetChunks(chunks []Chunk) ([]Chunk, []Chunk) {
 
 func (f *FullFileStore) ReadChunk(chunkID ChunkID) ([]byte, error) {
 	f.mutex.RLock()
+	f.FilePath = filepath.FromSlash(f.FilePath)
 	defer f.mutex.RUnlock()
 	c, found := f.Chunk(chunkID)
 	if !found {
@@ -149,6 +151,7 @@ func (f *FullFileStore) ReadChunk(chunkID ChunkID) ([]byte, error) {
 
 func (f *FullFileStore) StoreChunk(chunkID ChunkID, content []byte) error {
 	f.mutex.Lock()
+	f.FilePath = filepath.FromSlash(f.FilePath)
 	defer f.mutex.Unlock()
 	c, found := f.Chunk(chunkID)
 	if !found {
@@ -271,6 +274,7 @@ func (f *PartialFileStore) DeleteAllContent() error {
 }
 
 func (f *PartialFileStore) SetChunks(chunks []Chunk) ([]Chunk, []Chunk) {
+	f.FolderPath = filepath.FromSlash(f.FolderPath)
 	newChunks, oldChunks := f.BaseFileStore.SetChunks(chunks)
 
 	// Delete old chunks.
@@ -286,6 +290,7 @@ func (f *PartialFileStore) SetChunks(chunks []Chunk) ([]Chunk, []Chunk) {
 }
 
 func (f *PartialFileStore) ReadChunk(chunkID ChunkID) ([]byte, error) {
+	f.FolderPath = filepath.FromSlash(f.FolderPath)
 	c, found := f.Chunk(chunkID)
 	if !found {
 		return nil, errors.New("chunk does not belong to the file")
@@ -297,6 +302,7 @@ func (f *PartialFileStore) ReadChunk(chunkID ChunkID) ([]byte, error) {
 }
 
 func (f *PartialFileStore) StoreChunk(chunkID ChunkID, content []byte) error {
+	f.FolderPath = filepath.FromSlash(f.FolderPath)
 	c, found := f.Chunk(chunkID)
 	if !found {
 		return errors.New("chunk does not belong to the file")

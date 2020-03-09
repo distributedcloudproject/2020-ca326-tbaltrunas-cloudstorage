@@ -12,6 +12,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	_ "github.com/joho/godotenv/autoload" // automatically load environment variables from .env file
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -19,7 +20,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	_ "github.com/joho/godotenv/autoload" // automatically load environment variables from .env file
 )
 
 func readKey(file string) (*rsa.PrivateKey, error) {
@@ -59,7 +59,7 @@ func main() {
 	filePtr := flag.String("file", "", "A test file to save (back up) on the cloud.")
 	fileStorageDirPtr := flag.String("file-storage-dir", "", "Directory where cloud files should be stored on the node.")
 	fileStorageCapacityPtr := flag.Int64("file-storage-capacity", 0, "Storage space in bytes allocated for file storage.")
-	fileChunkSizePtr := flag.Int("file-chunk-size", 10 * 1e+7, "Chunk size in bytes used for file splitting (default 10 megabytes)")
+	fileChunkSizePtr := flag.Int("file-chunk-size", 10*1e+7, "Chunk size in bytes used for file splitting (default 10 megabytes)")
 
 	logDirPtr := flag.String("log-dir", "", "The directory where logs should be written to.")
 	logLevelPtr := flag.String("log-level", "WARN", fmt.Sprintf("The level of logging. One of: %v.", utils.LogLevels))
@@ -156,9 +156,9 @@ func main() {
 	}
 
 	c.SetConfig(network.CloudConfig{
-		FileStorageDir: *fileStorageDirPtr,
+		FileStorageDir:      *fileStorageDirPtr,
 		FileStorageCapacity: *fileStorageCapacityPtr,
-		FileChunkSize: *fileChunkSizePtr,
+		FileChunkSize:       *fileChunkSizePtr,
 	})
 
 	if *networkWhitelistFilePtr != "" {
@@ -256,5 +256,80 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	c.Accept()
+	go c.Accept()
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		text, _ := reader.ReadString('\n')
+		text = strings.TrimSpace(text)
+		cmd := strings.Split(text, " ")
+		if cmd[0] == "syncfolder" {
+			if len(cmd) == 3 {
+				fmt.Println("Syncing cloud:", cmd[1], "to local folder:", cmd[2])
+				err := c.SyncFolder(cmd[1], cmd[2])
+				if err != nil {
+					fmt.Println("SyncFolder err: ", err)
+				}
+			} else {
+				fmt.Println("Usage: syncfolder <cloud folder> <local folder>")
+			}
+		}
+		if cmd[0] == "dir" {
+			if len(cmd) == 1 {
+				fmt.Println("sub-commands available: [list, create]")
+				continue
+			}
+			if cmd[1] == "create" {
+				if len(cmd) != 3 {
+					fmt.Println("Usage: dir create <cloud dir>")
+					continue
+				}
+				err := c.CreateDirectory(cmd[2])
+				if err != nil {
+					fmt.Println("Directory Create error:", err)
+				} else {
+					fmt.Println("Directory Created: ", cmd[2])
+				}
+			}
+			if cmd[1] == "list" {
+				if len(cmd) != 3 {
+					fmt.Println("Usage: dir list <cloud dir>")
+					continue
+				}
+				nw, err := c.GetFolder(cmd[2])
+				if err != nil {
+					fmt.Println("Directory list error:", err)
+				} else {
+					fmt.Println("Directory list: ", cmd[2])
+					for _, sub := range nw.SubFolders {
+						fmt.Println(sub.Name)
+					}
+					fmt.Println("")
+					for _, f := range nw.Files.Files {
+						fmt.Println(f.Name)
+					}
+				}
+			}
+		}
+		if cmd[0] == "whitelist" {
+			if len(cmd) == 1 {
+				fmt.Println("sub-commands available: [list, add]")
+				continue
+			}
+			if cmd[1] == "add" {
+				if len(cmd) != 3 {
+					fmt.Println("Usage: whitelist add <ID>")
+					continue
+				}
+				err := c.AddToWhitelist(cmd[2])
+				if err != nil {
+					fmt.Println("Whitelist Add error:", err)
+				} else {
+					fmt.Println("Whitelist added: ", cmd[2])
+				}
+			}
+			if cmd[1] == "list" {
+				fmt.Println("Whitelist:", c.Whitelist())
+			}
+		}
+	}
 }

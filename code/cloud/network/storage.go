@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // DownloadFile downloads the file from the cloud.
@@ -53,6 +54,7 @@ func (c *cloud) watcherEvent(event *fsnotify.Event) {
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				utils.GetLogger().Println("[INFO] modified file:", event.Name, c.folderSyncs[i].LocalPath, relativePath, cloudPath)
 
+				time.Sleep(time.Millisecond * 50)
 				f, err := c.GetFile(cloudPath)
 				if err != nil {
 					continue

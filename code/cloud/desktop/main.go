@@ -2,6 +2,7 @@ package main
 
 import (
 	"cloud/desktop/screens"
+	"cloud/utils"
 	"flag"
 	"fmt"
 	"fyne.io/fyne"
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	utils.NewLoggerFromLevel("INFO")
 	dialogFlag := flag.String("dialog", "", "")
 	flag.Parse()
 	if *dialogFlag == "file-load" {
