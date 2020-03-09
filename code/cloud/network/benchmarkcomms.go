@@ -5,9 +5,10 @@ import (
 	"time"
 )
 
+// Messages used for benchmark communications.
 const (
 	StorageSpaceRemainingMsg = "StorageSpaceRemaining"
-	NetworkLatencyMsg = "NetworkLatency"
+	NetworkLatencyMsg        = "NetworkLatency"
 )
 
 func init() {
@@ -58,7 +59,7 @@ func (r request) OnStorageSpaceRemaining() (uint64, error) {
 
 		// TODO: An alternative method when no data is available
 		// may be to walk through the entire directory to calculate its usage.
-		// We can use utils.DirSize for that. 
+		// We can use utils.DirSize for that.
 
 		utils.GetLogger().Printf("[DEBUG] Computed space usage: %d.", spaceUsed)
 		spaceRemaining := uint64(storageCapacity) - spaceUsed

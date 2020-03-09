@@ -9,7 +9,8 @@ import (
 	"sync"
 )
 
-const DOWNLOAD_WORKERS = 10
+// The maximum amount of threads to spawn when downloading.
+const DOWNLOAD_WORKERS = 50
 
 type DownloadEvent int
 

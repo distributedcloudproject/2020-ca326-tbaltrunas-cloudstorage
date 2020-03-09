@@ -154,7 +154,7 @@ func FileExplorerScreen(w fyne.Window, c network.Cloud) fyne.CanvasObject {
 		}
 
 		_, fname := filepath.Split(filename)
-		f, err := datastore.NewFile(reader, fname, 1024*200)
+		f, err := datastore.NewFile(reader, fname, 1024*1024*4)
 		reader.Close()
 		if err != nil {
 			fdialog.ShowError(err, w)

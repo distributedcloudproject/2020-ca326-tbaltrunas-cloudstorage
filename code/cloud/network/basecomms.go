@@ -7,6 +7,7 @@ import (
 	"errors"
 )
 
+// Messages used for basic communication.
 const (
 	NetworkInfoMsg    = "NetworkInfo"
 	NodeInfoMsg       = "NodeInfo"

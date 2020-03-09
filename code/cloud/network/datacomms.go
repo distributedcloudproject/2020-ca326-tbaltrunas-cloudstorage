@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// Messages for data communications.
 const (
 	CreateDirectoryMsg = "CreateDirectory"
 	DeleteDirectoryMsg = "DeleteDirectory"
@@ -303,35 +304,18 @@ func (r request) OnUpdateFileRequest(file *datastore.File, cloudpath string) err
 
 	if fileStore := c.fileStorage[cloudpath]; fileStore != nil {
 		newChunks, _ := fileStore.SetChunks(file.Chunks.Chunks)
-		if sf, ok := fileStore.(*datastore.SyncFileStore); ok {
-			go func() {
-				sf.StopWatching()
-				for _, chunk := range newChunks {
-					if r.FromNode.ID != c.MyNode().ID {
-						res, err := r.FromNode.client.SendMessage(GetChunkMsg, cloudpath, chunk.ID)
-						if err == nil {
-							content := res[0].([]byte)
-							sf.StoreChunk(chunk.ID, content)
-						}
+		go func() {
+			for _, chunk := range newChunks {
+				if r.FromNode.ID != c.MyNode().ID {
+					res, err := r.FromNode.client.SendMessage(GetChunkMsg, cloudpath, chunk.ID)
+					if err == nil {
+						content := res[0].([]byte)
+						fileStore.StoreChunk(chunk.ID, content)
 					}
-					go c.updateChunkNodes(chunk.ID, r.Cloud.MyNode().ID)
 				}
-				sf.StartWatching()
-			}()
-		} else {
-			go func() {
-				for _, chunk := range newChunks {
-					if r.FromNode.ID != c.MyNode().ID {
-						res, err := r.FromNode.client.SendMessage(GetChunkMsg, cloudpath, chunk.ID)
-						if err == nil {
-							content := res[0].([]byte)
-							sf.StoreChunk(chunk.ID, content)
-						}
-					}
-					go c.updateChunkNodes(chunk.ID, r.Cloud.MyNode().ID)
-				}
-			}()
-		}
+				go c.updateChunkNodes(chunk.ID, r.Cloud.MyNode().ID)
+			}
+		}()
 	}
 	return nil
 }

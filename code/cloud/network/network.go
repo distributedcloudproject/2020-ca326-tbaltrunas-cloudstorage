@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"path"
+	"path/filepath"
 	"strings"
 	"path/filepath"
 )
@@ -68,7 +69,10 @@ type Network struct {
 	FileNodes FileNodes
 }
 
+// CleanNetworkPath cleans the provided path and returns a network-friendly path. Always starting with a / and only
+// containing forward slashes.
 func CleanNetworkPath(networkPath string) string {
+	networkPath = filepath.ToSlash(networkPath)
 	networkPath = path.Clean(networkPath)
 	if len(networkPath) == 0 {
 		return "/"
@@ -109,6 +113,7 @@ func (c *cloud) GetFiles() []*NetworkFile {
 	return c.network.GetFiles()
 }
 
+// GetFile retrieves the metadata of a file given it's path.
 func (n *Network) GetFile(file string) (*datastore.File, error) {
 	dir, base := path.Split(file)
 	folder, err := n.GetFolder(dir)
@@ -124,6 +129,7 @@ func (n *Network) GetFile(file string) (*datastore.File, error) {
 	return nil, errors.New("file not found")
 }
 
+// GetFolder retrieves the folder for the given path.
 func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 	paths := strings.Split(folder, "/")
 
@@ -158,6 +164,7 @@ func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 	return f, nil
 }
 
+// GetFolders retrieve the folders in the network.
 func (n *Network) GetFolders() []*NetworkFolder {
 	return n.rGetFolders(n.RootFolder)
 }
@@ -179,7 +186,8 @@ func (n *Network) rGetFolders(folder *NetworkFolder) []*NetworkFolder {
 	return folders
 }
 
-func (n *Network) GetFiles() []*NetworkFile {
+// GetFiles retrieve the files in the network.
+func (n *Network) GetFiles() []*datastore.File {
 	return n.rGetFiles(n.RootFolder)
 }
 
@@ -261,6 +269,7 @@ func (r request) PingRequest(ping string) string {
 	return ""
 }
 
+// PublicKeyToID generates a sha256 hash based on the public key.
 func PublicKeyToID(key *rsa.PublicKey) (string, error) {
 	pub, err := x509.MarshalPKIXPublicKey(key)
 	if err != nil {
