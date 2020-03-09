@@ -129,42 +129,21 @@ func (c *cloud) createWatcher() error {
 						return
 					}
 					c.watcherEvent(&event)
-					if event.Op&fsnotify.Write == fsnotify.Write {
-						utils.GetLogger().Println("[INFO] modified file:", event.Name)
-
-						for i, fs := range c.fileSyncs {
-							if fs.LocalPath == event.Name {
-								f, err := c.GetFile(fs.CloudPath)
-								if err != nil {
-									continue
-								}
-								reader, err := os.Open(fs.LocalPath)
-								if err != nil {
-									continue
-								}
-								info, err := reader.Stat()
-								if err != nil {
-									continue
-								}
-								if info.ModTime() == fs.LastEditTime {
-									continue
-								}
-								c.fileSyncs[i].LastEditTime = info.ModTime()
-
-								f2, err := datastore.NewFile(reader, f.Name, f.Chunks.ChunkSize)
-								if len(f2.Chunks.Chunks) == 0 {
-									continue
-								}
-								reader.Close()
-								if err == nil {
-									if c.LockFile(fs.CloudPath) {
-										err := c.UpdateFile(f2, fs.CloudPath)
-										if err != nil {
-											utils.GetLogger().Println("[ERROR] UpdateFile:", err)
-										}
+					for _, fs := range c.fileSyncs {
+						if fs.FilePath == event.Name {
+							fa, err := c.GetFile(fs.CloudPath)
+							if err != nil {
+								continue
+							}
+							f2, err := fs.WatcherEvent(&event, fa)
+							if err == nil && f2 != nil {
+								if c.LockFile(fs.CloudPath) {
+									err := c.UpdateFile(f2, fs.CloudPath)
+									if err != nil {
+										utils.GetLogger().Println("[ERROR] UpdateFile:", err)
 									}
-									c.UnlockFile(fs.CloudPath)
 								}
+								c.UnlockFile(fs.CloudPath)
 							}
 						}
 					}
@@ -227,7 +206,7 @@ func (c *cloud) SyncFile(cloudPath string, localPath string) error {
 					},
 					FilePath: localPath,
 				},
-				Watcher: c.watcher,
+				CloudPath: cloudPath,
 			}
 			c.fileStorageMutex.Unlock()
 			c.AddFile(localFile, cloudPath, localPath)
@@ -251,7 +230,7 @@ func (c *cloud) SyncFile(cloudPath string, localPath string) error {
 					},
 					FilePath: localPath,
 				},
-				Watcher: c.watcher,
+				CloudPath: cloudPath,
 			}
 			c.fileStorageMutex.Unlock()
 			c.watcher.Add(localPath)
@@ -266,15 +245,12 @@ func (c *cloud) SyncFile(cloudPath string, localPath string) error {
 				},
 				FilePath: localPath,
 			},
-			Watcher: c.watcher,
+			CloudPath: cloudPath,
 		}
 		c.fileStorageMutex.Unlock()
 		c.watcher.Add(localPath)
 	}
-	c.fileSyncs = append(c.fileSyncs, fileSync{
-		LocalPath: localPath,
-		CloudPath: cloudPath,
-	})
+	c.fileSyncs = append(c.fileSyncs, c.fileStorage[cloudPath].(*datastore.SyncFileStore))
 	return nil
 }
 
@@ -349,6 +325,7 @@ func (c *cloud) SyncFolder(cloudPath string, localPath string) error {
 	return nil
 }
 
+// IsDirEmpty returns true if the provided directory is empty.
 func IsDirEmpty(name string) (bool, error) {
 	f, err := os.Open(name)
 	if err != nil {

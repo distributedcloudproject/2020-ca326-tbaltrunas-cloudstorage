@@ -8,8 +8,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 type FileStore interface {
@@ -203,31 +205,46 @@ func (f *FullFileStore) StoreChunk(chunkID ChunkID, content []byte) error {
 
 type SyncFileStore struct {
 	FullFileStore
+	CloudPath string
 
-	Watcher   *fsnotify.Watcher
-	inWatcher bool
-}
-
-func (f *SyncFileStore) StartWatching() {
-	if f.Watcher != nil {
-		f.Watcher.Add(f.FilePath)
-		f.inWatcher = true
-	}
-}
-
-func (f *SyncFileStore) StopWatching() {
-	if f.Watcher != nil {
-		f.Watcher.Remove(f.FilePath)
-		f.inWatcher = false
-	}
+	LastEdit time.Time
 }
 
 func (f *SyncFileStore) StoreChunk(chunkID ChunkID, content []byte) error {
-	if f.inWatcher && f.Watcher != nil {
-		f.Watcher.Remove(f.FilePath)
-		defer f.Watcher.Add(f.FilePath)
-	}
+	f.LastEdit = time.Now()
+	defer func() {
+		f.LastEdit = time.Now()
+	}()
 	return f.FullFileStore.StoreChunk(chunkID, content)
+}
+
+func (f *SyncFileStore) WatcherEvent(event *fsnotify.Event, fa *File) (*File, error) {
+	if event.Op&fsnotify.Write == fsnotify.Write {
+		utils.GetLogger().Println("[INFO] modified file:", event.Name)
+
+		reader, err := os.Open(f.FilePath)
+		if err != nil {
+			return nil, err
+		}
+		info, err := reader.Stat()
+		if err != nil {
+			return nil, err
+		}
+		if !info.ModTime().After(f.LastEdit) {
+			return nil, nil
+		}
+		f.LastEdit = info.ModTime()
+
+		f2, err := NewFile(reader, path.Base(f.CloudPath), fa.Chunks.ChunkSize)
+		if len(f2.Chunks.Chunks) == 0 {
+			return nil, nil
+		}
+		reader.Close()
+		if err == nil {
+			return f2, nil
+		}
+	}
+	return nil, nil
 }
 
 type PartialFileStore struct {

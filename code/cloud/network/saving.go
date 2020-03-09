@@ -13,6 +13,7 @@ func init() {
 	gob.Register(SavedNetworkState{})
 }
 
+// SavedNetworkState contains information to re-spawn a network from an offline state.
 type SavedNetworkState struct {
 	Network Network
 	Config  CloudConfig
@@ -21,7 +22,7 @@ type SavedNetworkState struct {
 	PrivateKey *rsa.PrivateKey
 
 	FileStorage map[string]datastore.FileStore
-	FileSyncs   []fileSync
+	FileSyncs   []*datastore.SyncFileStore
 	FolderSyncs []fileSync
 }
 
@@ -43,6 +44,8 @@ func (c *cloud) SavedNetworkState() SavedNetworkState {
 	}
 }
 
+// LoadNetwork uses a SavedNetworkState to connect to the network, if it's up. If the network is offline, it will bring
+// it back online.
 func LoadNetwork(s SavedNetworkState) Cloud {
 	utils.GetLogger().Println("[INFO] Loading cloud network.")
 
@@ -65,7 +68,7 @@ func LoadNetwork(s SavedNetworkState) Cloud {
 	//fmt.Println(cc.folderSyncs, s.FolderSyncs)
 	cc.createWatcher()
 	for _, f := range cc.fileSyncs {
-		cc.watcher.Add(f.LocalPath)
+		cc.watcher.Add(f.FilePath)
 	}
 	for _, f := range cc.folderSyncs {
 		cc.watcher.Add(f.LocalPath)

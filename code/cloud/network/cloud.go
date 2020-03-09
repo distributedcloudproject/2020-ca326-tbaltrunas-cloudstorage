@@ -166,7 +166,7 @@ type cloud struct {
 
 	downloadManager *DownloadManager
 
-	fileSyncs   []fileSync
+	fileSyncs   []*datastore.SyncFileStore
 	folderSyncs []fileSync
 	watcher     *fsnotify.Watcher
 
