@@ -5,8 +5,16 @@ import Col from 'react-bootstrap/Col';
 import Logout from './Logout';
 import CloudInfo from './CloudInfo';
 import FileExplorer from './FileExplorer';
+import { useAuthContext} from '../context/Authentication';
 
 export default function Home(props) {
+    // Quick fix to avoid loading the page with API calls before authentication finishes
+    // FIXME: Do this in each PrivateRoute (check cookie)
+    const { isAuthenticated } = useAuthContext();
+    if (!isAuthenticated) {
+        return null;
+    }
+    
     return (
         <Container>
             {/* TODO: reuse container "styling" */}

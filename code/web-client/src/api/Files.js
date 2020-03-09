@@ -132,8 +132,11 @@ export function GetFolder(folderID, callback) {
 }
 
 // Perform a PUT request on a folder.
-export function UpdateFolder(folderID, folder, callback) {
+export function UpdateFolder(oldFolderKey, newFolderKey) {
     console.log("Called API method: UpdateFolder")
+    console.log("Changing from: " + oldFolderKey + " to: " + newFolderKey)
+    DeleteFolder(oldFolderKey)
+    CreateFolder(newFolderKey)
 }
 
 // Perform a DELETE request on a folder.

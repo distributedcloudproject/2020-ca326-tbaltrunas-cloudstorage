@@ -10,6 +10,7 @@ import (
 	"errors"
 	"path"
 	"strings"
+	"path/filepath"
 )
 
 type ChunkNodes map[datastore.ChunkID][]string
@@ -18,6 +19,12 @@ type FileNodes map[datastore.FileID][]string
 type request struct {
 	Cloud    *cloud
 	FromNode *cloudNode
+}
+
+// NetworkFile is used for returning a File variable together with its full path.
+type NetworkFile struct {
+	File *datastore.File
+	Path string
 }
 
 type NetworkFolder struct {
@@ -96,7 +103,7 @@ func (c *cloud) GetFolders() []*NetworkFolder {
 	return c.network.GetFolders()
 }
 
-func (c *cloud) GetFiles() []*datastore.File {
+func (c *cloud) GetFiles() []*NetworkFile {
 	c.networkMutex.RLock()
 	defer c.networkMutex.RUnlock()
 	return c.network.GetFiles()
@@ -152,26 +159,49 @@ func (n *Network) GetFolder(folder string) (*NetworkFolder, error) {
 }
 
 func (n *Network) GetFolders() []*NetworkFolder {
-	return nil
+	return n.rGetFolders(n.RootFolder)
 }
 
-func (n *Network) GetFiles() []*datastore.File {
+func (n *Network) rGetFolders(folder *NetworkFolder) []*NetworkFolder {
+	folders := make([]*NetworkFolder, 0)
+
+	// base case
+	if folder == nil {
+		return folders
+	}
+
+	// recursive case
+	folders = append(folders, folder)
+	for _, subfolder := range folder.SubFolders {
+		subfolders := n.rGetFolders(subfolder)
+		folders = append(folders, subfolders...)
+	}
+	return folders
+}
+
+func (n *Network) GetFiles() []*NetworkFile {
 	return n.rGetFiles(n.RootFolder)
 }
 
-func (n *Network) rGetFiles(folder *NetworkFolder) []*datastore.File {
-	files := make([]*datastore.File, 0)
+func (n *Network) rGetFiles(folder *NetworkFolder) []*NetworkFile {
+	netFiles := make([]*NetworkFile, 0)
 	// base case
 	if folder == nil {
-		return files
+		return netFiles
 	}
+
 	// recursive case
-	files = append(files, folder.Files.Files...)
-	for _, subfolder := range folder.SubFolders {
-		subfiles := n.rGetFiles(subfolder)
-		files = append(files, subfiles...)
+	for _, file := range folder.Files.Files {
+		netFiles = append(netFiles, &NetworkFile{
+			File: file,
+			Path: filepath.Join(folder.Name, file.Name),
+		})
 	}
-	return files
+	for _, subfolder := range folder.SubFolders {
+		netSubfiles := n.rGetFiles(subfolder)
+		netFiles = append(netFiles, netSubfiles...)
+	}
+	return netFiles
 }
 
 func (c *cloud) NodeByID(ID string) (node Node, found bool) {

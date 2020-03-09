@@ -418,6 +418,7 @@ func (r request) OnMoveFileRequest(filepath string, newfilepath string) error {
 	}
 
 	folderName, filename := path.Split(filepath)
+	utils.GetLogger().Printf("[DEBUG] Split into folderName: '%s', filename: '%s'", folderName, filename)
 	c.networkMutex.Lock()
 	defer c.networkMutex.Unlock()
 	folder, err := c.network.GetFolder(folderName)

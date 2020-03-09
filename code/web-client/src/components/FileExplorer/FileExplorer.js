@@ -13,6 +13,9 @@ import * as CustomRenderers from './fileBrowserCustom';
 
 export default class FileExplorer extends React.Component {
     state = {
+      // A list of objects. 
+      // Files have key (path), size, modified since (optional).
+      // Folders have key (path) only. Must have a "/" at the end of the path.
       files: [],
       selectedFile: {key: 'test'},
     }
@@ -22,9 +25,15 @@ export default class FileExplorer extends React.Component {
       try {
         const files = await FilesAPI.GetFiles();
         console.log('Received number of files: ' + files.length);
+        console.log(files);
         const folders = await FilesAPI.GetFolders();
         console.log('Received number of folders: ' + folders.length);
-        this.setState({ files: files });  
+        console.log(folders);
+        // TODO: merge files and folders
+
+        const mergedFiles = files.concat(folders);
+
+        this.setState({ files: mergedFiles });
       } catch (error) {
         console.error(error)
       }
@@ -90,11 +99,12 @@ export default class FileExplorer extends React.Component {
     handleCreateFolder = (folderKey) => {
       FilesAPI.CreateFolder(folderKey)
       this.setState({state: UpdateUI.UpdateUICreateFolder(this.state, folderKey)})
+      console.log(this.state.files)
     }
 
     // handleRenameFolder renames an existing folder.
     handleRenameFolder = (oldKey, newKey) => {
-      FilesAPI.UpdateFolder()
+      FilesAPI.UpdateFolder(oldKey, newKey)
       this.setState({state: UpdateUI.UpdateUIRenameFolder(this.state, oldKey, newKey)})
     }
 
