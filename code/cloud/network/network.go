@@ -11,7 +11,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"path/filepath"
 )
 
 type ChunkNodes map[datastore.ChunkID][]string
@@ -187,7 +186,7 @@ func (n *Network) rGetFolders(folder *NetworkFolder) []*NetworkFolder {
 }
 
 // GetFiles retrieve the files in the network.
-func (n *Network) GetFiles() []*datastore.File {
+func (n *Network) GetFiles() []*NetworkFile {
 	return n.rGetFiles(n.RootFolder)
 }
 

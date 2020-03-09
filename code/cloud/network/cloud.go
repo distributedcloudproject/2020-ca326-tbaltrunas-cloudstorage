@@ -59,7 +59,7 @@ type Cloud interface {
 	// GetFile retrieves the metadata of a file on the cloud.
 	GetFile(file string) (*datastore.File, error)
 	// GetFiles retrieves all metadata files on the cloud.
-	GetFiles() []*datastore.File
+	GetFiles() []*NetworkFile
 	// GetFolders retrieves all folders on the cloud.
 	GetFolders() []*NetworkFolder
 	// DistributeChunk calculates where it should distribute the chunk on the cloud and sends the data over.
