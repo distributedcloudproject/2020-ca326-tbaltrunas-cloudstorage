@@ -33,6 +33,10 @@ type WebFile struct {
 	Size int `json:"size"`
 }
 
+type WebFolder struct {
+	Key string `json:"key"`
+}
+
 func NewWebApp(c network.Cloud) WebApp {
 	 webapp := webapp{
 		cloud: c,
@@ -229,8 +233,8 @@ func (wapp *webapp) ReadFiles(w http.ResponseWriter, req *http.Request) {
 	filesWeb := make([]WebFile, 0)
 	for _, file := range files {
 		webFile := WebFile{
-			Key: file.Name,
-			Size: int(file.Size),
+			Key: file.Path, // FIXME: need to include full path
+			Size: int(file.File.Size),
 		}
 		filesWeb = append(filesWeb, webFile)
 	}
@@ -357,10 +361,33 @@ func (wapp *webapp) CreateDirectory(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ReadDirectories API call returns all directories.
 func (wapp *webapp) ReadDirectories(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
+	// get a list of all directories, empty or not.
+	directories := wapp.cloud.GetFolders()
+	utils.GetLogger().Printf("[DEBUG] Got directories: %d", len(directories))
+
+	directoriesWeb := make([]WebFolder, 0)
+	for _, dir := range directories {
+		directoriesWeb = append(directoriesWeb, WebFolder{
+			Key: dir.Name + "/",
+		})
+	}
+	utils.GetLogger().Printf("[DEBUG] Got web directories: %d", len(directoriesWeb))
+
+	// Serialize as JSON.
+	data, err := json.Marshal(directoriesWeb)
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.Write(data)
 }
 
+// DeleteDirectory API call deletes a directory.
+// FIXME: delete all directory contents first, else delete fails
 // Note that cannot pass the directory path as part of the endpoint URL, else get 404 no route matched.
 // Need to pass as a query string or another parameter.
 func (wapp *webapp) DeleteDirectory(w http.ResponseWriter, req *http.Request) {

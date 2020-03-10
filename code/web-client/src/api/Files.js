@@ -132,14 +132,20 @@ export function GetFolder(folderID, callback) {
 }
 
 // Perform a PUT request on a folder.
-export function UpdateFolder(folderID, folder, callback) {
+export function UpdateFolder(oldFolderKey, newFolderKey) {
     console.log("Called API method: UpdateFolder")
+    console.log("Changing from: " + oldFolderKey + " to: " + newFolderKey)
+    DeleteFolder(oldFolderKey)
+    CreateFolder(newFolderKey)
 }
 
 // Perform a DELETE request on a folder.
 export function DeleteFolder(folderKey) {
     console.log("Called API method: DeleteFolder")
     console.log("Deleting folder: "+ folderKey)
+    if (folderKey[folderKey.length-1]) {
+        folderKey = folderKey
+    }
     const url = urljoin(Constants.GetBase(), '/directories', `?path=/${folderKey}`)
     console.log("Computed URL: " + url)
     axios.delete(url)

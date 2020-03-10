@@ -42,7 +42,7 @@ type Cloud interface {
 	// File
 	GetFolder(path string) (*NetworkFolder, error)
 	GetFile(file string) (*datastore.File, error)
-	GetFiles() []*datastore.File
+	GetFiles() []*NetworkFile
 	GetFolders() []*NetworkFolder
 	DistributeChunk(cloudPath string, store datastore.FileStore, chunkID datastore.ChunkID) error
 	CreateDirectory(folderPath string) error
