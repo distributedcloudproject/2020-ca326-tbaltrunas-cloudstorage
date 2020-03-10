@@ -144,7 +144,7 @@ Install the node package manager from https://www.npmjs.com/.
 
 **2. Install front-end dependencies**
 
-Navigate to the front-end source in the repo: `cd code/client`.
+Navigate to the front-end source in the repo: `cd code/web-client`.
 
 Run `npm install` to install dependencies.
 
