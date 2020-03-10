@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
+// Messages used for authentication.
 const (
 	AuthMsg = "authenticate_me"
 )
 
+// AuthRequest is sent when attempting to authenticate with a node.
 type AuthRequest struct {
 	ID   string
 	IP   string

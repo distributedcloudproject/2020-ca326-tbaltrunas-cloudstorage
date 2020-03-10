@@ -5,12 +5,12 @@ import (
 	"cloud/utils"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"strings"
 )
 
+// Messages for data communications.
 const (
 	CreateDirectoryMsg = "CreateDirectory"
 	DeleteDirectoryMsg = "DeleteDirectory"
@@ -105,6 +105,7 @@ func (r request) OnDeleteDirectory(folderPath string) error {
 // AddFile adds a file to the Network. It distributes the file automatically.
 // TODO: Use reader instead of LocalPath.
 func (c *cloud) AddFile(file *datastore.File, cloudPath string, localPath string) error {
+	cloudPath = CleanNetworkPath(cloudPath)
 	var err error
 	fs := c.FileStore(cloudPath)
 	if fs == nil {
@@ -303,23 +304,18 @@ func (r request) OnUpdateFileRequest(file *datastore.File, cloudpath string) err
 
 	if fileStore := c.fileStorage[cloudpath]; fileStore != nil {
 		newChunks, _ := fileStore.SetChunks(file.Chunks.Chunks)
-		if sf, ok := fileStore.(*datastore.SyncFileStore); ok {
-			go func() {
-				sf.StopWatching()
-				for _, chunk := range newChunks {
-					if r.FromNode.ID != c.MyNode().ID {
-						res, err := r.FromNode.client.SendMessage(GetChunkMsg, cloudpath, chunk.ID)
-						fmt.Println("Got", r.FromNode.ID, len(res[0].([]byte)), err)
-						if err == nil {
-							content := res[0].([]byte)
-							sf.StoreChunk(chunk.ID, content)
-						}
+		go func() {
+			for _, chunk := range newChunks {
+				if r.FromNode.ID != c.MyNode().ID {
+					res, err := r.FromNode.client.SendMessage(GetChunkMsg, cloudpath, chunk.ID)
+					if err == nil {
+						content := res[0].([]byte)
+						fileStore.StoreChunk(chunk.ID, content)
 					}
-					go c.updateChunkNodes(chunk.ID, r.Cloud.MyNode().ID)
 				}
-				sf.StartWatching()
-			}()
-		}
+				go c.updateChunkNodes(chunk.ID, r.Cloud.MyNode().ID)
+			}
+		}()
 	}
 	return nil
 }
@@ -505,18 +501,26 @@ func (r request) OnSaveChunkRequest(sr SaveChunkRequest) error {
 }
 
 func (c *cloud) GetChunk(filePath string, chunkID datastore.ChunkID) (content []byte, err error) {
+	utils.GetLogger().Printf("[INFO] Downloading file: %v chunk: %v", filePath, chunkID)
+	filePath = CleanNetworkPath(filePath)
 	c.networkMutex.RLock()
 	nodes := c.network.ChunkNodes[chunkID]
 	c.networkMutex.RUnlock()
 
+	var lastErr error
 	for _, n := range nodes {
 		cnode := c.GetCloudNode(n)
 		if cnode != nil {
+			utils.GetLogger().Printf("[INFO] Downloading chunk %v from: %v", chunkID, cnode.ID)
 			res, err := cnode.client.SendMessage(GetChunkMsg, filePath, chunkID)
 			if err == nil {
 				return res[0].([]byte), nil
 			}
+			lastErr = err
 		}
+	}
+	if lastErr != nil {
+		return nil, lastErr
 	}
 	return nil, errors.New("could not download chunk")
 }
@@ -529,7 +533,7 @@ func (r request) OnGetChunkRequest(filePath string, chunkID datastore.ChunkID) (
 	c.fileStorageMutex.RUnlock()
 
 	if storage == nil {
-		return nil, errors.New("chunk is not stored")
+		return nil, errors.New("file is not stored")
 	}
 	return storage.ReadChunk(chunkID)
 }

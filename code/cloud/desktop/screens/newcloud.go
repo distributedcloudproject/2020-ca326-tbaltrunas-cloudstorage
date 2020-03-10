@@ -106,22 +106,26 @@ func NewCloudScreen(win fyne.Window) fyne.CanvasObject {
 			filename, err := LoadFileDialog()
 			if err == nil {
 				r, err := os.Open(filename)
-				if err == nil {
-					defer r.Close()
-					decoder := gob.NewDecoder(r)
-					var savedNetwork network.SavedNetworkState
-					err := decoder.Decode(&savedNetwork)
-					if err == nil {
-						c := network.LoadNetwork(savedNetwork)
-						err = c.Listen()
-						if err != nil {
-							fdialog.ShowError(err, win)
-							return
-						}
-						fmt.Printf("%v\n", c)
-						win.SetContent(connectedToNetwork(win, c))
-					}
+				if err != nil {
+					fdialog.ShowError(err, win)
+					return
 				}
+				defer r.Close()
+				decoder := gob.NewDecoder(r)
+				var savedNetwork network.SavedNetworkState
+				err = decoder.Decode(&savedNetwork)
+				if err != nil {
+					fdialog.ShowError(err, win)
+					return
+				}
+				c := network.LoadNetwork(savedNetwork)
+				err = c.Listen()
+				if err != nil {
+					fdialog.ShowError(err, win)
+					return
+				}
+				fmt.Printf("%v\n", c)
+				win.SetContent(connectedToNetwork(win, c))
 			}
 		}),
 		widget.NewButton("Create", func() {

@@ -17,10 +17,10 @@ type ChunkID string
 type FileIOReader io.ReaderAt
 
 func init() {
-	gob.Register(BaseFileStore{})
-	gob.Register(FullFileStore{})
-	gob.Register(SyncFileStore{})
-	gob.Register(PartialFileStore{})
+	gob.Register(&BaseFileStore{})
+	gob.Register(&FullFileStore{})
+	gob.Register(&SyncFileStore{})
+	gob.Register(&PartialFileStore{})
 }
 
 // File represents a user's file stored on the cloud.
