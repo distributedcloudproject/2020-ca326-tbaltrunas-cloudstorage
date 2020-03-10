@@ -8,7 +8,7 @@ export async function GetFileDownloadLink(fileID) {
     // FIXME: authorization not being sent
     console.log("Called API method: GetFileDownloadLink")
     // TODO: actual call
-    const url = urljoin(Constants.GetBase(), `/downloadlink/${fileID}`)
+    const url = urljoin(Constants.GetBase(), `/downloadlink/?fileKey=${fileID}`)
     try {
         const response = await axios.get(url)
         if (response.status !== 200) {

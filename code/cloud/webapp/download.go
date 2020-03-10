@@ -8,8 +8,9 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"net/url"
 
-	"github.com/gorilla/mux"
+	// "github.com/gorilla/mux"
 )
 
 // FileDownloadLink API call generates a public (unauthenticated) temporary download link for a file.
@@ -23,15 +24,19 @@ import (
 // - The body of the request will contain the file download link (endpoint + token as a query string parameter).
 // Approach based on: https://codeburst.io/part-1-jwt-to-authenticate-downloadable-files-at-client-8e0b979c9ac1
 func (wapp *webapp) FileDownloadLink(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	fileID := vars["fileKey"]
+	fileID, err := GetQueryParam(req.URL, "fileKey")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	token, err := GenerateDownloadToken(fileID)
 	if err != nil {
 		utils.GetLogger().Printf("[ERROR] %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	fileURL := fmt.Sprintf("/downloadfile/%s?token=%s", fileID, token)
+	fileURL := fmt.Sprintf("/download/file?fileKey=%s&token=%s", url.QueryEscape(fileID), token)
 	w.Write([]byte(fileURL))
 }
 
@@ -46,10 +51,16 @@ func (wapp *webapp) FileDownloadLink(w http.ResponseWriter, req *http.Request) {
 // Response:
 // - The file as an octect (byte) stream with the suitable browser headers.
 func (wapp *webapp) DownloadFile(w http.ResponseWriter, req *http.Request) {
-	// token should be verified by middleware
-	vars := mux.Vars(req)
-	fileKey := vars["fileKey"]
+	// token should be verified by middleware	
+
+	fileKey, err := GetQueryParam(req.URL, "fileKey")
+	if err != nil {
+		utils.GetLogger().Printf("[ERROR] %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	filepath := fileKey
+
 
 	// Get the file by key for extra information
 	file, err := wapp.cloud.GetFile(filepath)
